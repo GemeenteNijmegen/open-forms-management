@@ -14,7 +14,7 @@ export class Statics {
 
   static readonly ssmDummyParameter = `/${Statics.projectName}/dummy/parameter`;
 
-  // MARK: environments
+  // environments
   static readonly buildEnvironment = {
     account: '836443378780',
     region: 'eu-central-1',
