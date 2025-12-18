@@ -16,22 +16,17 @@ export class Statics {
 
   // MARK: environments
   static readonly buildEnvironment = {
-    account: '',
+    account: '836443378780',
     region: 'eu-central-1',
   };
 
-  static readonly productionEnvironment = {
-    account: '',
+  static readonly gnOpenFormsAccp = {
+    account: '043309345347',
     region: 'eu-central-1',
   };
 
-  static readonly acceptanceEnvironment = {
-    account: '',
-    region: 'eu-central-1',
-  };
-
-  static readonly developmentEnvironment = {
-    account: '',
+  static readonly gnOpenFormsProd = {
+    account: '761018864362',
     region: 'eu-central-1',
   };
 
@@ -39,5 +34,6 @@ export class Statics {
   static readonly accountHostedzonePath = '/gemeente-nijmegen/account/hostedzone';
   static readonly accountHostedzoneName = '/gemeente-nijmegen/account/hostedzone/name';
   static readonly accountHostedzoneId = '/gemeente-nijmegen/account/hostedzone/id';
+  static readonly domainPrefix = 'management';
 
 }

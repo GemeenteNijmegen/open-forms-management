@@ -43,21 +43,15 @@ export interface Configuration {
 
 const configurations: Configuration[] = [
   {
-    branchName: 'development',
-    buildEnvironment: Statics.buildEnvironment,
-    deploymentEnvironment: Statics.developmentEnvironment,
-    criticality: new Criticality('low'),
-  },
-  {
     branchName: 'acceptance',
     buildEnvironment: Statics.buildEnvironment,
-    deploymentEnvironment: Statics.acceptanceEnvironment,
+    deploymentEnvironment: Statics.gnOpenFormsAccp,
     criticality: new Criticality('medium'),
   },
   {
     branchName: 'main',
     buildEnvironment: Statics.buildEnvironment,
-    deploymentEnvironment: Statics.productionEnvironment,
+    deploymentEnvironment: Statics.gnOpenFormsProd,
     criticality: new Criticality('high'),
   },
 ];
