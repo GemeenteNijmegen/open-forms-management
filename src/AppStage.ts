@@ -1,18 +1,18 @@
 import { PermissionsBoundaryAspect } from '@gemeentenijmegen/aws-constructs';
 import { Aspects, Stage, StageProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
+import { AppStack } from './AppStack';
 import { Configurable } from './Configuration';
-import { MainStack } from './MainStack';
 
-interface MainStageProps extends StageProps, Configurable { }
+interface AppStageProps extends StageProps, Configurable { }
 
 /**
  * Main cdk app stage
  * TODO you probably want to rename this stage
  */
-export class MainStage extends Stage {
+export class AppStage extends Stage {
 
-  constructor(scope: Construct, id: string, props: MainStageProps) {
+  constructor(scope: Construct, id: string, props: AppStageProps) {
     super(scope, id, props);
     Aspects.of(this).add(new PermissionsBoundaryAspect());
 
@@ -20,7 +20,7 @@ export class MainStage extends Stage {
      * Main stack of this project
      * TODO you probably want to rename this stack
      */
-    new MainStack(this, 'stack', { // Translates to mijn-services-stack
+    new AppStack(this, 'app-stack', {
       env: props.configuration.deploymentEnvironment,
       configuration: props.configuration,
     });
