@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "@gemeentenijmegen/aws-constructs": "^0.0.46",
+    "@gemeentenijmegen/config": "^0.0.8",
     "aws-cdk-lib": "^2.1.0",
     "constructs": "^10.0.5"
   },
