@@ -2,7 +2,8 @@ import { GemeenteNijmegenCdkApp } from '@gemeentenijmegen/projen-project-type';
 const project = new GemeenteNijmegenCdkApp({
   cdkVersion: '2.1.0',
   defaultReleaseBranch: 'main',
-  devDeps: ['@gemeentenijmegen/projen-project-type'],
+  projenVersion: '0.98.29',
+  devDeps: ['@gemeentenijmegen/projen-project-type@1.11.10'],
   name: 'open-forms-management',
   projenrcTs: true,
   repository: 'https://github.com/GemeenteNijmegen/open-forms-management',

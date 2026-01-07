@@ -18,5 +18,7 @@ describe('AppStack', () => {
   it('should have a ConfigTable resource', () => {
     const template = Template.fromStack(stack);
     template.resourceCountIs('AWS::DynamoDB::Table', 1);
+    const tables = template.findResources('AWS::DynamoDB::Table');
+    expect(Object.values(tables)).toMatchSnapshot();
   });
 });
