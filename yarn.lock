@@ -1310,10 +1310,10 @@
   resolved "https://registry.yarnpkg.com/@gemeentenijmegen/aws-constructs/-/aws-constructs-0.0.47.tgz#f718c539d71ff567ee9dc38e0374968c27f80347"
   integrity sha512-/oedntMDPqqNQS3GawlnpWc6HXMJ77g5UjmU8N8wV5ybzPZ7wkCMbaoRmTMDITxCIBFu7n14yX7axVmK4Y0FPA==
 
-"@gemeentenijmegen/config@^0.0.8":
-  version "0.0.8"
-  resolved "https://registry.yarnpkg.com/@gemeentenijmegen/config/-/config-0.0.8.tgz#2e8ef3fa0ed986671133b01d1db955b87d96bfa9"
-  integrity sha512-snvJow2hM2xsj6foLNoW5KMu4zjw7WsYwF1I1utNTEIUmlT/oZ32QeKjKjdrOpViwyT8TOisco/l0kD1p7PHug==
+"@gemeentenijmegen/config@^0.0.9":
+  version "0.0.9"
+  resolved "https://registry.yarnpkg.com/@gemeentenijmegen/config/-/config-0.0.9.tgz#5882ac5ed2268c8dda289753e97df932182b0c3c"
+  integrity sha512-3IdaKJbh841OIlQrgaVJmWe1ZxT0THFku/yRyv+AZnghjtMoA4seXEXHTWM20QmO03Y08UXajh4jZPjQve0TCQ==
   dependencies:
     "@aws-sdk/client-dynamodb" "^3.914.0"
     "@gemeentenijmegen/utils" "^0.0.38"
