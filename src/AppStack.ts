@@ -2,6 +2,7 @@ import { ConfigTable } from '@gemeentenijmegen/config';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Configurable } from './Configuration';
+import { HomeFunction } from './home/home-function';
 
 interface AppStackProps extends StackProps, Configurable { }
 
@@ -14,5 +15,6 @@ export class AppStack extends Stack {
         someKey: 'somevalue',
       },
     });
+    new HomeFunction(this, 'home-function');
   }
 }
