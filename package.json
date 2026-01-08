@@ -8,6 +8,8 @@
     "build": "npx projen build",
     "bump": "npx projen bump",
     "bundle": "npx projen bundle",
+    "bundle:home/home.lambda": "npx projen bundle:home/home.lambda",
+    "bundle:home/home.lambda:watch": "npx projen bundle:home/home.lambda:watch",
     "clobber": "npx projen clobber",
     "compile": "npx projen compile",
     "default": "npx projen default",
