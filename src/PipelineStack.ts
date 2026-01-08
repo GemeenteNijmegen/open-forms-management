@@ -75,6 +75,15 @@ export class PipelineStack extends Stack {
       synth: synthStep,
       dockerCredentials: [pipelines.DockerCredential.dockerHub(dockerHub)],
       pipelineType: PipelineType.V1,
+      // synthCodeBuildDefaults: {  partialBuildSpec: BuildSpec.fromObject({
+      //   phases: {
+      //     install: {
+      //       'runtime-versions': {
+      //         nodejs: // Zet hier je versie zoals je wil, eventueel ingelasden vanuit een bestand gemaakt door projen met een default fallback CODEBUILD_VERSION
+      //       }
+      //     }
+      //   }
+      // }
     });
     return pipeline;
   }
