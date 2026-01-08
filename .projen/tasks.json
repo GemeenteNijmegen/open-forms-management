@@ -44,7 +44,30 @@
     },
     "bundle": {
       "name": "bundle",
-      "description": "Prepare assets"
+      "description": "Prepare assets",
+      "steps": [
+        {
+          "spawn": "bundle:home/home.lambda"
+        }
+      ]
+    },
+    "bundle:home/home.lambda": {
+      "name": "bundle:home/home.lambda",
+      "description": "Create a JavaScript bundle from src/home/home.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/home/home.lambda/index.js\" --tsconfig=\"tsconfig.dev.json\" --external:@aws-sdk/*"
+        }
+      ]
+    },
+    "bundle:home/home.lambda:watch": {
+      "name": "bundle:home/home.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/home/home.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/home/home.lambda/index.js\" --tsconfig=\"tsconfig.dev.json\" --external:@aws-sdk/* --watch"
+        }
+      ]
     },
     "clobber": {
       "name": "clobber",
@@ -291,7 +314,7 @@
       },
       "steps": [
         {
-          "exec": "npx npm-check-updates@18 --upgrade --target=minor --peer --no-deprecated --dep=dev,peer,prod,optional --filter=@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,ts-jest,ts-node,typescript,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/config"
+          "exec": "npx npm-check-updates@18 --upgrade --target=minor --peer --no-deprecated --dep=dev,peer,prod,optional --filter=@gemeentenijmegen/projen-project-type,@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/config"
         },
         {
           "exec": "yarn install --check-files"

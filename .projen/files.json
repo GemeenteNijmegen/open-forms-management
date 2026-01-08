@@ -16,6 +16,7 @@
     ".projen/tasks.json",
     "cdk.json",
     "LICENSE",
+    "src/home/home-function.ts",
     "tsconfig.dev.json",
     "tsconfig.json"
   ],
