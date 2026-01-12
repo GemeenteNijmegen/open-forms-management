@@ -1,5 +1,7 @@
 import { PermissionsBoundaryAspect } from '@gemeentenijmegen/aws-constructs';
+import { getNodeVersion } from '@gemeentenijmegen/projen-project-type';
 import { Aspects, CfnParameter, Stack, StackProps, Tags, pipelines } from 'aws-cdk-lib';
+import { BuildSpec } from 'aws-cdk-lib/aws-codebuild';
 import { PipelineType } from 'aws-cdk-lib/aws-codepipeline';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
@@ -19,7 +21,7 @@ export class PipelineStack extends Stack {
 
   constructor(scope: Construct, id: string, private readonly props: PipelineStackProps) {
     super(scope, id, props);
-    Tags.of(this).add('cdkManaged', 'yes');
+    Tags.of(this).add('cdkManaged', 'no');
     Tags.of(this).add('Project', Statics.projectName);
     Aspects.of(this).add(new PermissionsBoundaryAspect());
 
@@ -75,15 +77,17 @@ export class PipelineStack extends Stack {
       synth: synthStep,
       dockerCredentials: [pipelines.DockerCredential.dockerHub(dockerHub)],
       pipelineType: PipelineType.V1,
-      // synthCodeBuildDefaults: {  partialBuildSpec: BuildSpec.fromObject({
-      //   phases: {
-      //     install: {
-      //       'runtime-versions': {
-      //         nodejs: // Zet hier je versie zoals je wil, eventueel ingelasden vanuit een bestand gemaakt door projen met een default fallback CODEBUILD_VERSION
-      //       }
-      //     }
-      //   }
-      // }
+      synthCodeBuildDefaults: {
+        partialBuildSpec: BuildSpec.fromObject({
+          phases: {
+            install: {
+              'runtime-versions': {
+                nodejs: getNodeVersion(),
+              },
+            },
+          },
+        }),
+      },
     });
     return pipeline;
   }

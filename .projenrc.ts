@@ -3,11 +3,12 @@ const project = new GemeenteNijmegenCdkApp({
   cdkVersion: '2.1.0',
   defaultReleaseBranch: 'main',
   projenVersion: '0.98.29',
-  devDeps: ['@gemeentenijmegen/projen-project-type'],
+  devDeps: [],
   name: 'open-forms-management',
   projenrcTs: true,
   repository: 'https://github.com/GemeenteNijmegen/open-forms-management',
   deps: [
+    '@gemeentenijmegen/projen-project-type',
     '@gemeentenijmegen/aws-constructs',
     '@gemeentenijmegen/config',
   ], /* Runtime dependencies of this module. */
