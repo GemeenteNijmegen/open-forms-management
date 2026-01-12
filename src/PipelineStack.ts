@@ -64,6 +64,8 @@ export class PipelineStack extends Stack {
         BRANCH_NAME: this.props.configuration.branchName,
       },
       commands: [
+        'echo "Node version before n lts:"',
+        'node -v',
         'n lts',
         'yarn install --frozen-lockfile',
         'npx projen build',
