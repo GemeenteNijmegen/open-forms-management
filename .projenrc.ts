@@ -2,7 +2,6 @@ import { GemeenteNijmegenCdkApp } from '@gemeentenijmegen/projen-project-type';
 const project = new GemeenteNijmegenCdkApp({
   cdkVersion: '2.1.0',
   defaultReleaseBranch: 'main',
-  projenVersion: '0.98.29',
   devDeps: [],
   name: 'open-forms-management',
   projenrcTs: true,
@@ -16,7 +15,9 @@ const project = new GemeenteNijmegenCdkApp({
   // packageName: undefined,  /* The "name" in package.json. */
   tsconfig: {
     compilerOptions: {
-      isolatedModules: true, // Dit versnelt jest tests met >10x. Impact op applicatie is me nog niet helder, dus in een nieuw project veilig(er)?
+      isolatedModules: true,
+      esModuleInterop: true,
+      allowSyntheticDefaultImports: true,
     },
   },
 });

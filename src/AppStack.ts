@@ -1,4 +1,4 @@
-import { ConfigTable } from '@gemeentenijmegen/config';
+import { ConfigTable } from '@gemeentenijmegen/config/construct';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Configurable } from './Configuration';

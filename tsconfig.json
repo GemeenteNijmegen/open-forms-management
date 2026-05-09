@@ -26,11 +26,16 @@
     "strictPropertyInitialization": false,
     "stripInternal": true,
     "target": "ES2022",
+    "types": [
+      "jest",
+      "node"
+    ],
     "moduleResolution": "nodenext",
     "typeRoots": [
       "./node_modules/@types"
     ],
-    "isolatedModules": true
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*.ts"
