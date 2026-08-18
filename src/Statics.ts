@@ -60,4 +60,21 @@ export class Statics {
   static readonly ssmManagementCertificateArn = `${Statics.ssmUsEastOutputsPath}/certificate-arn`;
   static readonly ssmManagementWafWebAclArn = `${Statics.ssmUsEastOutputsPath}/waf-web-acl-arn`;
 
+  /**
+   * Hosted zone label per branch, without the shared `.csp-nijmegen.nl`
+   * suffix (added at the call site, like `cspSubDomain` in mijn-nijmegen).
+   */
+  static hostedZoneLabel(branchName: string) {
+    const hostedZoneLabelMap = {
+      test: 'open-forms-accp', // Only used in unit tests
+      acceptance: 'open-forms-accp',
+      main: 'open-forms-prod',
+    };
+    const hostedZoneLabel = hostedZoneLabelMap[branchName as keyof typeof hostedZoneLabelMap];
+    if (!hostedZoneLabel) {
+      throw Error(`No hosted zone configured for branch ${branchName}`);
+    }
+    return hostedZoneLabel;
+  }
+
 }

@@ -41,10 +41,9 @@ export class UsEastStack extends Stack {
 
   private certificate() {
     const zone = this.hostedZone();
-    const domainName = `${Statics.domainPrefix}.${zone.zoneName}`;
 
     const certificate = new Certificate(this, 'certificate', {
-      domainName,
+      domainName: `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`,
       validation: CertificateValidation.fromDns(zone),
     });
 

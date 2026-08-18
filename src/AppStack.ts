@@ -1,8 +1,12 @@
 import { RemoteParameters } from '@gemeentenijmegen/cross-region-parameters';
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
+import { HostedZone } from 'aws-cdk-lib/aws-route53';
+import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { HomeFunction } from './app/home/home-function';
 import { Configurable } from './Configuration';
+import { ManagementApi } from './ManagementApi';
+import { ManagementDistribution } from './ManagementDistribution';
 import { Statics } from './Statics';
 
 interface AppStackProps extends StackProps, Configurable { }
@@ -27,6 +31,27 @@ export class AppStack extends Stack {
     this.certificateArn = usEastOutputs.get(Statics.ssmManagementCertificateArn);
     this.wafWebAclArn = usEastOutputs.get(Statics.ssmManagementWafWebAclArn);
 
-    new HomeFunction(this, 'home-function');
+    const homeFunction = new HomeFunction(this, 'home-function');
+
+    const managementApi = new ManagementApi(this, 'management-api', {
+      defaultFunction: homeFunction,
+    });
+
+    new ManagementDistribution(this, 'management-distribution', {
+      api: managementApi.api,
+      certificateArn: this.certificateArn,
+      wafWebAclArn: this.wafWebAclArn,
+      domainName: `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`,
+      hostedZone: this.hostedZone(),
+    });
+  }
+
+  private hostedZone() {
+    const zoneId = StringParameter.valueForStringParameter(this, Statics.accountHostedzoneId);
+    const zoneName = StringParameter.valueForStringParameter(this, Statics.accountHostedzoneName);
+    return HostedZone.fromHostedZoneAttributes(this, 'account-hostedzone', {
+      hostedZoneId: zoneId,
+      zoneName,
+    });
   }
 }
