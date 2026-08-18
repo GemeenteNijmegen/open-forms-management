@@ -379,7 +379,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/projen-project-type"
+            "--filter=@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type"
           ]
         },
         {
@@ -407,6 +407,7 @@
             "ts-node",
             "typescript",
             "@gemeentenijmegen/aws-constructs",
+            "@gemeentenijmegen/cross-region-parameters",
             "@gemeentenijmegen/projen-project-type",
             "aws-cdk-lib",
             "constructs"

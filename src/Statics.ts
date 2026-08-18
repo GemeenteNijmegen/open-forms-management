@@ -56,7 +56,8 @@ export class Statics {
   static readonly secretOpenZaakCredentials = `/${Statics.projectName}/open-zaak/credentials`;
 
   // MARK: UsEastStack producer-outputparameters (us-east-1, alleen door UsEastStack beschreven)
-  static readonly ssmManagementCertificateArn = `/${Statics.projectName}/cloudfront/certificate-arn`;
-  static readonly ssmManagementWafWebAclArn = `/${Statics.projectName}/cloudfront/waf-web-acl-arn`;
+  static readonly ssmUsEastOutputsPath = `/${Statics.projectName}/us-east-1`;
+  static readonly ssmManagementCertificateArn = `${Statics.ssmUsEastOutputsPath}/certificate-arn`;
+  static readonly ssmManagementWafWebAclArn = `${Statics.ssmUsEastOutputsPath}/waf-web-acl-arn`;
 
 }
