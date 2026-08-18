@@ -74,6 +74,9 @@
       "steps": [
         {
           "spawn": "bundle:app/home/home.lambda"
+        },
+        {
+          "spawn": "bundle:app/login/login.lambda"
         }
       ]
     },
@@ -92,6 +95,24 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+        }
+      ]
+    },
+    "bundle:app/login/login.lambda": {
+      "name": "bundle:app/login/login.lambda",
+      "description": "Create a JavaScript bundle from src/app/login/login.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+        }
+      ]
+    },
+    "bundle:app/login/login.lambda:watch": {
+      "name": "bundle:app/login/login.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/login/login.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
         }
       ]
     },
@@ -213,7 +234,7 @@
       },
       "steps": [
         {
-          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test build-tools projenrc .projenrc.ts",
+          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test build-tools tests projenrc .projenrc.ts",
           "receiveArgs": true
         }
       ]
@@ -379,7 +400,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@types/aws-lambda,@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,openid-client"
+            "--filter=@types/aws-lambda,@types/jest,@types/node,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-sdk/client-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,openid-client"
           ]
         },
         {
@@ -396,6 +417,7 @@
             "@typescript-eslint/eslint-plugin",
             "@typescript-eslint/parser",
             "aws-cdk",
+            "aws-sdk-client-mock",
             "commit-and-tag-version",
             "esbuild",
             "eslint-import-resolver-typescript",
@@ -408,6 +430,8 @@
             "ts-node",
             "typescript",
             "@aws-lambda-powertools/logger",
+            "@aws-sdk/client-dynamodb",
+            "@gemeentenijmegen/apigateway-http",
             "@gemeentenijmegen/aws-constructs",
             "@gemeentenijmegen/cross-region-parameters",
             "@gemeentenijmegen/projen-project-type",

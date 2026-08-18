@@ -4,6 +4,7 @@ const project = new GemeenteNijmegenCdkApp({
   defaultReleaseBranch: 'main',
   devDeps: [
     '@types/aws-lambda',
+    'aws-sdk-client-mock',
   ],
   name: 'open-forms-management',
   projenrcTs: true,
@@ -16,6 +17,8 @@ const project = new GemeenteNijmegenCdkApp({
     'openid-client',
     '@gemeentenijmegen/utils',
     '@gemeentenijmegen/session',
+    '@gemeentenijmegen/apigateway-http',
+    '@aws-sdk/client-dynamodb',
   ], /* Runtime dependencies of this module. */
   // description: undefined,  /* The description is just a string that helps people understand the purpose of the package. */
   // packageName: undefined,  /* The "name" in package.json. */
@@ -25,6 +28,10 @@ const project = new GemeenteNijmegenCdkApp({
       esModuleInterop: true,
       allowSyntheticDefaultImports: true,
     },
+  },
+  eslintOptions: {
+    dirs: ['src', 'test', 'build-tools'],
+    devdirs: ['test', 'tests', 'build-tools'],
   },
 });
 project.synth();

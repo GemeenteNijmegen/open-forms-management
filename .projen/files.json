@@ -19,6 +19,7 @@
     "LICENSE",
     "projenrc/tsconfig.json",
     "src/app/home/home-function.ts",
+    "src/app/login/login-function.ts",
     "test/tsconfig.json",
     "tsconfig.json"
   ],

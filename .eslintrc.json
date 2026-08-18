@@ -157,8 +157,10 @@
       {
         "devDependencies": [
           "**/test/**",
+          "**/tests/**",
           "**/build-tools/**",
           "src/app/home/home.lambda.ts",
+          "src/app/login/login.lambda.ts",
           ".projenrc.ts",
           "projenrc/**/*.ts"
         ],

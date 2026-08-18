@@ -60,6 +60,7 @@ junit.xml
 .cdk.staging/
 .parcel-cache/
 !/src/app/home/home-function.ts
+!/src/app/login/login-function.ts
 !/.github/workflows/emergency.yml
 !/.github/workflows/auto-merge.yml
 !/.nvmrc
