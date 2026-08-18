@@ -12,8 +12,6 @@ export class Statics {
    */
   static readonly githubRepository = `GemeenteNijmegen/${Statics.projectName}`;
 
-  static readonly ssmDummyParameter = `/${Statics.projectName}/dummy/parameter`;
-
   // environments
   static readonly buildEnvironment = {
     account: '836443378780',
@@ -39,6 +37,7 @@ export class Statics {
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;
   static readonly ssmOidcClientId = `/${Statics.projectName}/oidc/client-id`;
+  static readonly ssmOidcRedirectUrl = `/${Statics.projectName}/oidc/redirect-url`;
   static readonly secretOidcClientSecret = `/${Statics.projectName}/oidc/client-secret`;
 
   // MARK: Objects API (alleen configuratie in subproject 1, nog geen client)
