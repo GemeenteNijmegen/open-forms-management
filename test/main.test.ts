@@ -6,7 +6,7 @@ import { PipelineStack } from '../src/PipelineStack';
 
 describe('AppStack', () => {
   let stack: Stack;
-  const config = { branchName: 'test', buildEnvironment: { account: '123456789012', region: 'eu-central-1' }, deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' }, criticality: new Criticality('low') };
+  const config = { branchName: 'test', buildEnvironment: { account: '123456789012', region: 'eu-central-1' }, deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' }, criticality: new Criticality('low'), logLevel: 'DEBUG' as const };
 
   beforeEach(() => {
     stack = new AppStack(new App(), 'TestStack', { configuration: config });
@@ -19,7 +19,7 @@ describe('AppStack', () => {
 
 describe('PipelineStack', () => {
   let stack: Stack;
-  const config = { branchName: 'test', buildEnvironment: { account: '123456789012', region: 'eu-central-1' }, deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' }, criticality: new Criticality('low') };
+  const config = { branchName: 'test', buildEnvironment: { account: '123456789012', region: 'eu-central-1' }, deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' }, criticality: new Criticality('low'), logLevel: 'DEBUG' as const };
 
   beforeEach(() => {
     stack = new PipelineStack(new App(), 'TestPipelineStack', {

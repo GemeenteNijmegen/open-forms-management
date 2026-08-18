@@ -9,6 +9,8 @@ export interface Configurable {
   configuration: Configuration;
 }
 
+export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+
 /**
  * Basic configuration options per environment
  */
@@ -39,6 +41,11 @@ export interface Configuration {
    */
   criticality: Criticality;
 
+  /**
+   * POWERTOOLS_LOG_LEVEL for all Lambda's deployed for this branch.
+   */
+  logLevel: LogLevel;
+
 }
 
 const configurations: Configuration[] = [
@@ -47,12 +54,14 @@ const configurations: Configuration[] = [
     buildEnvironment: Statics.buildEnvironment,
     deploymentEnvironment: Statics.gnOpenFormsAccp,
     criticality: new Criticality('medium'),
+    logLevel: 'DEBUG',
   },
   {
     branchName: 'main',
     buildEnvironment: Statics.buildEnvironment,
     deploymentEnvironment: Statics.gnOpenFormsProd,
     criticality: new Criticality('high'),
+    logLevel: 'INFO',
   },
 ];
 
