@@ -1,8 +1,8 @@
 import { Criticality } from '@gemeentenijmegen/aws-constructs';
 import { App } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
-import { Statics } from '../src/Statics';
-import { UsEastStack } from '../src/UsEastStack';
+import { Statics } from '../Statics';
+import { UsEastStack } from '../UsEastStack';
 
 describe('UsEastStack', () => {
   const configuration = {

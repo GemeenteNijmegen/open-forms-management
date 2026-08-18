@@ -7,6 +7,7 @@ import { HomeFunction } from './app/home/home-function';
 import { Configurable } from './Configuration';
 import { ManagementApi } from './ManagementApi';
 import { ManagementDistribution } from './ManagementDistribution';
+import { applyLambdaLoggingDefaults } from './observability/LambdaLogging';
 import { Statics } from './Statics';
 
 interface AppStackProps extends StackProps, Configurable { }
@@ -32,6 +33,7 @@ export class AppStack extends Stack {
     this.wafWebAclArn = usEastOutputs.get(Statics.ssmManagementWafWebAclArn);
 
     const homeFunction = new HomeFunction(this, 'home-function');
+    applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
 
     const managementApi = new ManagementApi(this, 'management-api', {
       defaultFunction: homeFunction,

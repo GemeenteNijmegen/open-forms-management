@@ -25,7 +25,7 @@ export class AppStage extends Stage {
       env: props.configuration.deploymentEnvironment,
       configuration: props.configuration,
     });
-    appStack.addDependency(usEastStack);
+    appStack.addStackDependency(usEastStack);
 
   }
 

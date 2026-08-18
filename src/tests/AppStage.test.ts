@@ -1,9 +1,9 @@
 import { Criticality } from '@gemeentenijmegen/aws-constructs';
 import { App } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
-import { AppStack } from '../src/AppStack';
-import { AppStage } from '../src/AppStage';
-import { UsEastStack } from '../src/UsEastStack';
+import { AppStack } from '../AppStack';
+import { AppStage } from '../AppStage';
+import { UsEastStack } from '../UsEastStack';
 
 describe('AppStage', () => {
   const configuration = {

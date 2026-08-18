@@ -49,10 +49,6 @@ export class ParameterStack extends Stack {
       parameterName: Statics.ssmOidcClientId,
       stringValue: '-',
     });
-    new StringParameter(this, 'oidc-redirect-url', {
-      parameterName: Statics.ssmOidcRedirectUrl,
-      stringValue: '-',
-    });
     new Secret(this, 'oidc-client-secret', {
       secretName: Statics.secretOidcClientSecret,
       description: 'Microsoft Entra ID OIDC client secret',
