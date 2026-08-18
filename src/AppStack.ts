@@ -2,10 +2,12 @@ import { RemoteParameters } from '@gemeentenijmegen/cross-region-parameters';
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
+import { Function } from 'aws-cdk-lib/aws-lambda';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
+import { AuthFunction } from './app/auth/auth-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
 import { Configurable } from './Configuration';
@@ -49,7 +51,11 @@ export class AppStack extends Stack {
       defaultFunction: homeFunction,
     });
 
-    this.addLoginRoute(managementApi, domainName);
+    const loginFunction = new LoginFunction(this, 'login-function');
+    this.addOidcRoute(managementApi, loginFunction, domainName, '/login');
+
+    const authFunction = new AuthFunction(this, 'auth-function');
+    this.addOidcRoute(managementApi, authFunction, domainName, '/auth/callback');
 
     new ManagementDistribution(this, 'management-distribution', {
       api: managementApi.api,
@@ -60,24 +66,27 @@ export class AppStack extends Stack {
     });
   }
 
-  private addLoginRoute(managementApi: ManagementApi, domainName: string) {
-    const loginFunction = new LoginFunction(this, 'login-function');
-    applyLambdaLoggingDefaults(loginFunction, this.props.configuration);
+  /**
+   * Wires the standard logging/session/OIDC environment and permissions
+   * onto an OIDC-flow Lambda (login, auth callback) and adds its route.
+   */
+  private addOidcRoute(managementApi: ManagementApi, fn: Function, domainName: string, path: string) {
+    applyLambdaLoggingDefaults(fn, this.props.configuration);
 
-    this.sessionsTable.table.grantReadWriteData(loginFunction);
-    loginFunction.addEnvironment('SESSION_TABLE', this.sessionsTable.table.tableName);
-    loginFunction.addEnvironment('MANAGEMENT_DOMAIN', domainName);
-    loginFunction.addEnvironment('OIDC_ISSUER', StringParameter.valueForStringParameter(this, Statics.ssmOidcIssuer));
-    loginFunction.addEnvironment('OIDC_CLIENT_ID', StringParameter.valueForStringParameter(this, Statics.ssmOidcClientId));
+    this.sessionsTable.table.grantReadWriteData(fn);
+    fn.addEnvironment('SESSION_TABLE', this.sessionsTable.table.tableName);
+    fn.addEnvironment('MANAGEMENT_DOMAIN', domainName);
+    fn.addEnvironment('OIDC_ISSUER', StringParameter.valueForStringParameter(this, Statics.ssmOidcIssuer));
+    fn.addEnvironment('OIDC_CLIENT_ID', StringParameter.valueForStringParameter(this, Statics.ssmOidcClientId));
 
-    const oidcClientSecret = Secret.fromSecretNameV2(this, 'oidc-client-secret', Statics.secretOidcClientSecret);
-    oidcClientSecret.grantRead(loginFunction);
-    loginFunction.addEnvironment('OIDC_CLIENT_SECRET_ARN', oidcClientSecret.secretArn);
+    const oidcClientSecret = Secret.fromSecretNameV2(this, `oidc-client-secret-for-${fn.node.id}`, Statics.secretOidcClientSecret);
+    oidcClientSecret.grantRead(fn);
+    fn.addEnvironment('OIDC_CLIENT_SECRET_ARN', oidcClientSecret.secretArn);
 
     managementApi.api.addRoutes({
-      path: '/login',
+      path,
       methods: [HttpMethod.GET],
-      integration: new HttpLambdaIntegration('login', loginFunction),
+      integration: new HttpLambdaIntegration(`integration-${fn.node.id}`, fn),
     });
   }
 
