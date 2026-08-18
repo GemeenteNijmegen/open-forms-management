@@ -158,7 +158,7 @@
         "devDependencies": [
           "**/test/**",
           "**/build-tools/**",
-          "src/home/home.lambda.ts",
+          "src/app/home/home.lambda.ts",
           ".projenrc.ts",
           "projenrc/**/*.ts"
         ],

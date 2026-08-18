@@ -73,25 +73,25 @@
       "description": "Prepare assets",
       "steps": [
         {
-          "spawn": "bundle:home/home.lambda"
+          "spawn": "bundle:app/home/home.lambda"
         }
       ]
     },
-    "bundle:home/home.lambda": {
-      "name": "bundle:home/home.lambda",
-      "description": "Create a JavaScript bundle from src/home/home.lambda.ts",
+    "bundle:app/home/home.lambda": {
+      "name": "bundle:app/home/home.lambda",
+      "description": "Create a JavaScript bundle from src/app/home/home.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
         }
       ]
     },
-    "bundle:home/home.lambda:watch": {
-      "name": "bundle:home/home.lambda:watch",
-      "description": "Continuously update the JavaScript bundle from src/home/home.lambda.ts",
+    "bundle:app/home/home.lambda:watch": {
+      "name": "bundle:app/home/home.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/home/home.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
         }
       ]
     },
@@ -379,7 +379,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/config,@gemeentenijmegen/projen-project-type"
+            "--filter=@types/jest,@types/node,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/projen-project-type"
           ]
         },
         {
@@ -407,7 +407,6 @@
             "ts-node",
             "typescript",
             "@gemeentenijmegen/aws-constructs",
-            "@gemeentenijmegen/config",
             "@gemeentenijmegen/projen-project-type",
             "aws-cdk-lib",
             "constructs"

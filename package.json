@@ -9,8 +9,8 @@
     "bump": "projen bump",
     "bump:releasable-commits": "projen bump:releasable-commits",
     "bundle": "projen bundle",
-    "bundle:home/home.lambda": "projen bundle:home/home.lambda",
-    "bundle:home/home.lambda:watch": "projen bundle:home/home.lambda:watch",
+    "bundle:app/home/home.lambda": "projen bundle:app/home/home.lambda",
+    "bundle:app/home/home.lambda:watch": "projen bundle:app/home/home.lambda:watch",
     "cfn-lint": "projen cfn-lint",
     "clobber": "projen clobber",
     "compile": "projen compile",
@@ -55,7 +55,6 @@
   },
   "dependencies": {
     "@gemeentenijmegen/aws-constructs": "^0.0.54",
-    "@gemeentenijmegen/config": "^0.1.2",
     "@gemeentenijmegen/projen-project-type": "^1.15.0",
     "aws-cdk-lib": "^2.1.0",
     "constructs": "^10.5.1"

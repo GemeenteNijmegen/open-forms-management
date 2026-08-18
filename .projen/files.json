@@ -18,7 +18,7 @@
     "cdk.json",
     "LICENSE",
     "projenrc/tsconfig.json",
-    "src/home/home-function.ts",
+    "src/app/home/home-function.ts",
     "test/tsconfig.json",
     "tsconfig.json"
   ],

@@ -80,10 +80,6 @@
       "type": "runtime"
     },
     {
-      "name": "@gemeentenijmegen/config",
-      "type": "runtime"
-    },
-    {
       "name": "@gemeentenijmegen/projen-project-type",
       "type": "runtime"
     },
