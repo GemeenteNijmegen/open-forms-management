@@ -1,15 +1,15 @@
 import { Criticality } from '@gemeentenijmegen/aws-constructs';
-import { Stack } from 'aws-cdk-lib';
+import { App, Stack } from 'aws-cdk-lib';
 import { Template } from 'aws-cdk-lib/assertions';
 import { AppStack } from '../src/AppStack';
 import { PipelineStack } from '../src/PipelineStack';
 
 describe('AppStack', () => {
   let stack: Stack;
-  const config = { branchName: 'test', buildEnvironment: { account: 'test', region: 'eu-central-1' }, deploymentEnvironment: { account: 'test', region: 'eu-central-1' }, criticality: new Criticality('low') };
+  const config = { branchName: 'test', buildEnvironment: { account: '123456789012', region: 'eu-central-1' }, deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' }, criticality: new Criticality('low') };
 
   beforeEach(() => {
-    stack = new AppStack(new Stack(), 'TestStack', { configuration: config });
+    stack = new AppStack(new App(), 'TestStack', { configuration: config });
   });
 
   it('should create a stack', () => {
@@ -26,11 +26,11 @@ describe('AppStack', () => {
 
 describe('PipelineStack', () => {
   let stack: Stack;
-  const config = { branchName: 'test', buildEnvironment: { account: 'test', region: 'eu-central-1' }, deploymentEnvironment: { account: 'test', region: 'eu-central-1' }, criticality: new Criticality('low') };
+  const config = { branchName: 'test', buildEnvironment: { account: '123456789012', region: 'eu-central-1' }, deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' }, criticality: new Criticality('low') };
 
   beforeEach(() => {
-    stack = new PipelineStack(new Stack(), 'TestPipelineStack', {
-      env: { account: 'test', region: 'eu-central-1' },
+    stack = new PipelineStack(new App(), 'TestPipelineStack', {
+      env: { account: '123456789012', region: 'eu-central-1' },
       configuration: config,
     });
   });

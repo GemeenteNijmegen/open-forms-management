@@ -7,9 +7,11 @@
   "scripts": {
     "build": "projen build",
     "bump": "projen bump",
+    "bump:releasable-commits": "projen bump:releasable-commits",
     "bundle": "projen bundle",
     "bundle:home/home.lambda": "projen bundle:home/home.lambda",
     "bundle:home/home.lambda:watch": "projen bundle:home/home.lambda:watch",
+    "cfn-lint": "projen cfn-lint",
     "clobber": "projen clobber",
     "compile": "projen compile",
     "default": "projen default",
@@ -18,7 +20,6 @@
     "diff": "projen diff",
     "eject": "projen eject",
     "eslint": "projen eslint",
-    "lint": "projen lint",
     "package": "projen package",
     "post-compile": "projen post-compile",
     "post-upgrade": "projen post-upgrade",
@@ -36,26 +37,26 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^2",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.6.2",
+    "@types/node": "^25.9.5",
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",
     "aws-cdk": "^2",
     "commit-and-tag-version": "^12",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
-    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
     "jest": "^30.4.2",
     "jest-junit": "^17",
-    "projen": "^0.99.57",
-    "ts-jest": "^29.4.9",
+    "projen": "^0.101.32",
+    "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@gemeentenijmegen/aws-constructs": "^0.0.51",
+    "@gemeentenijmegen/aws-constructs": "^0.0.54",
     "@gemeentenijmegen/config": "^0.1.2",
-    "@gemeentenijmegen/projen-project-type": "^1.13.0",
+    "@gemeentenijmegen/projen-project-type": "^1.15.0",
     "aws-cdk-lib": "^2.1.0",
     "constructs": "^10.5.1"
   },
@@ -110,7 +111,7 @@
       "^.+\\.[t]sx?$": [
         "ts-jest",
         {
-          "tsconfig": "tsconfig.dev.json"
+          "tsconfig": "test/tsconfig.json"
         }
       ]
     }
