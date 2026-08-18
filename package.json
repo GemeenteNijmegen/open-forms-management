@@ -59,6 +59,7 @@
     "@gemeentenijmegen/aws-constructs": "^0.0.54",
     "@gemeentenijmegen/cross-region-parameters": "^0.0.9",
     "@gemeentenijmegen/projen-project-type": "^1.15.0",
+    "@gemeentenijmegen/session": "^0.0.37",
     "@gemeentenijmegen/utils": "^0.0.38",
     "aws-cdk-lib": "^2.1.0",
     "constructs": "^10.5.1",

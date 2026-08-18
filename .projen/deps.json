@@ -96,6 +96,10 @@
       "type": "runtime"
     },
     {
+      "name": "@gemeentenijmegen/session",
+      "type": "runtime"
+    },
+    {
       "name": "@gemeentenijmegen/utils",
       "type": "runtime"
     },

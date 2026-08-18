@@ -34,6 +34,9 @@ export class Statics {
   static readonly accountHostedzoneId = '/gemeente-nijmegen/account/hostedzone/id';
   static readonly domainPrefix = 'management';
 
+  // MARK: sessions
+  static readonly sessionsTableName = `${Statics.projectName}-sessions`;
+
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;
   static readonly ssmOidcClientId = `/${Statics.projectName}/oidc/client-id`;

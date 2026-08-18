@@ -8,6 +8,7 @@ import { Configurable } from './Configuration';
 import { ManagementApi } from './ManagementApi';
 import { ManagementDistribution } from './ManagementDistribution';
 import { applyLambdaLoggingDefaults } from './observability/LambdaLogging';
+import { SessionsTable } from './SessionsTable';
 import { Statics } from './Statics';
 
 interface AppStackProps extends StackProps, Configurable { }
@@ -20,6 +21,7 @@ export class AppStack extends Stack {
    */
   public readonly certificateArn: string;
   public readonly wafWebAclArn: string;
+  public readonly sessionsTable: SessionsTable;
 
   constructor(scope: Construct, id: string, private readonly props: AppStackProps) {
     super(scope, id, props);
@@ -31,6 +33,8 @@ export class AppStack extends Stack {
     });
     this.certificateArn = usEastOutputs.get(Statics.ssmManagementCertificateArn);
     this.wafWebAclArn = usEastOutputs.get(Statics.ssmManagementWafWebAclArn);
+
+    this.sessionsTable = new SessionsTable(this, 'sessions-table');
 
     const homeFunction = new HomeFunction(this, 'home-function');
     applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
