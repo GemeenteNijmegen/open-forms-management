@@ -78,7 +78,10 @@ describe('full login -> protected route -> logout flow', () => {
     const sessionCookie = toCookieHeader(callbackResponse);
 
     const authorized = await new AuthorizerRequestHandler(dynamoDBClient).handleRequest(sessionCookie);
-    expect(authorized).toEqual({ isAuthorized: true, context: { principalId: 'employee-1' } });
+    expect(authorized).toEqual({
+      isAuthorized: true,
+      context: { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
+    });
 
     const logoutResponse = await new LogoutRequestHandler().handleRequest(sessionCookie, dynamoDBClient);
     expect(logoutResponse.statusCode).toBe(302);

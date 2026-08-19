@@ -77,4 +77,28 @@ describe('AuthorizerRequestHandler', () => {
 
     expect(result).toEqual({ isAuthorized: true, context: { principalId: 'employee-principal-id' } });
   });
+
+  it('includes email in the context when the session has one, for permission lookups keyed on email', async () => {
+    dynamoMock.on(GetItemCommand).resolves({
+      Item: {
+        sessionid: { S: 'hash' },
+        data: {
+          M: {
+            loggedin: { BOOL: true },
+            principalId: { S: 'employee-principal-id' },
+            email: { S: 'medewerker@nijmegen.nl' },
+          },
+        },
+      },
+    });
+
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+
+    const result = await handler.handleRequest('session=valid-token');
+
+    expect(result).toEqual({
+      isAuthorized: true,
+      context: { principalId: 'employee-principal-id', email: 'medewerker@nijmegen.nl' },
+    });
+  });
 });

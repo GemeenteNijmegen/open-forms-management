@@ -87,6 +87,16 @@ describe('DynamoDbPermissionRepository', () => {
     expect(grants).toEqual([]);
   });
 
+  it('drops a grant whose scopes value is not an object instead of granting extra access', async () => {
+    documentMock.on(QueryCommand).resolves({
+      Items: [{ pk: 'medewerker@nijmegen.nl', sk: 'testresource#1', resource: 'testresource', actions: ['view'], scopes: ['dukenburg'] }],
+    });
+
+    const grants = await newRepository().getGrants('medewerker@nijmegen.nl');
+
+    expect(grants).toEqual([]);
+  });
+
   it('keeps the valid grants in a query result and drops only the invalid one', async () => {
     documentMock.on(QueryCommand).resolves({
       Items: [
