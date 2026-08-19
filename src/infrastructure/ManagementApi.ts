@@ -6,12 +6,11 @@ import { Construct } from 'constructs';
 export interface ManagementApiProps {
   /**
    * Lambda invoked for any route without a more specific integration.
-   * Later issues (login, callback, logout) add explicit routes next to this.
    */
   defaultFunction: IFunction;
   /**
    * Authorizer applied to every route unless a route overrides it explicitly
-   * (e.g. the public login/callback routes use `HttpNoneAuthorizer`).
+   * (e.g. the public login/auth-callback/logout routes use `HttpNoneAuthorizer`).
    */
   defaultAuthorizer: IHttpRouteAuthorizer;
 }
