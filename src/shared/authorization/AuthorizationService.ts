@@ -3,6 +3,7 @@ import { AuthorizationContext } from './AuthorizationContext';
 import { PermissionCheck, PermissionEvaluator } from './PermissionEvaluator';
 import { PermissionRepository } from './PermissionRepository';
 import { logger } from '../../observability/Logger';
+import { countMetric } from '../../observability/Metrics';
 import { xRayTraceId } from '../../observability/xRayTraceId';
 import { AuditTrail } from '../audit/AuditTrail';
 import { recordAudit } from '../audit/recordAudit';
@@ -38,6 +39,7 @@ export class AuthorizationService {
     }
 
     logger.info('Access denied', { resource: check.resource, action: check.action });
+    countMetric('AccessDenied');
     await recordAudit(this.auditTrail, {
       eventType: 'ACCESS_DENIED',
       outcome: 'DENIED',

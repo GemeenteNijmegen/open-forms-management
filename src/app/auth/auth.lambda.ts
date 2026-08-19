@@ -4,6 +4,7 @@ import { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { AuthRequestHandler } from './AuthRequestHandler';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
+import { countMetric, metrics } from '../../observability/Metrics';
 import { createAuditTrail } from '../../shared/audit/createAuditTrail';
 import { EntraOidcClient } from '../../shared/auth/EntraOidcClient';
 import { loadOidcConfiguration } from '../../shared/auth/OidcConfiguration';
@@ -38,6 +39,9 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<ApiGateway
     return await requestHandler.handleRequest();
   } catch (error) {
     logger.error('Unhandled error in auth callback', { reason: errorReason(error) });
+    countMetric('UnhandledError');
     return Response.error(500);
+  } finally {
+    metrics.publishStoredMetrics();
   }
 }

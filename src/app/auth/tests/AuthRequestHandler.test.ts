@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { metrics } from '../../../observability/Metrics';
 import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
 import { FakeOidcClient } from '../../../shared/auth/tests/FakeOidcClient';
 import { AuthRequestHandler } from '../AuthRequestHandler';
@@ -125,6 +126,7 @@ describe('AuthRequestHandler', () => {
       scopes: ['openid', 'email'],
     };
     const auditTrail = new FakeAuditTrail();
+    const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
     const handler = new AuthRequestHandler({
       cookies: 'session=pending-token',
@@ -139,6 +141,7 @@ describe('AuthRequestHandler', () => {
     expect(auditTrail.events.map((event) => event.eventType)).toEqual(['LOGIN_SUCCEEDED', 'SESSION_CREATED']);
     expect(auditTrail.events[0]).toMatchObject({ outcome: 'SUCCESS', actorEmail: 'medewerker@nijmegen.nl', flowId: 'fake-flow-id' });
     expect(auditTrail.events[1]).toMatchObject({ outcome: 'SUCCESS', actorEmail: 'medewerker@nijmegen.nl', flowId: 'fake-flow-id' });
+    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginSuccess', 'SessionCreated']);
   });
 
   it('redirects to /login without creating a session when the code exchange fails (e.g. state/nonce mismatch)', async () => {
@@ -152,6 +155,7 @@ describe('AuthRequestHandler', () => {
     const oidcClient = new FakeOidcClient();
     jest.spyOn(oidcClient, 'exchangeAuthorizationCode').mockRejectedValue(new Error('state mismatch'));
     const auditTrail = new FakeAuditTrail();
+    const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
     const handler = new AuthRequestHandler({
       cookies: 'session=pending-token',
@@ -168,6 +172,7 @@ describe('AuthRequestHandler', () => {
     expect(auditTrail.events).toEqual([expect.objectContaining({
       eventType: 'LOGIN_FAILED', outcome: 'FAILURE', metadata: { reason: 'state mismatch' },
     })]);
+    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginFailure']);
   });
 
   it('redirects to /login without creating a session when the claims cannot be mapped to an identity', async () => {
@@ -207,6 +212,7 @@ describe('AuthRequestHandler', () => {
     const oidcClient = new FakeOidcClient();
     oidcClient.authorizationResult = { claims: { sub: 'employee-principal-id' }, scopes: ['openid'] };
     const auditTrail = new FakeAuditTrail();
+    const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
     const handler = new AuthRequestHandler({
       cookies: 'session=pending-token',
@@ -221,5 +227,6 @@ describe('AuthRequestHandler', () => {
     expect(response.statusCode).toBe(500);
     expect(auditTrail.events.map((event) => event.eventType)).toEqual(['LOGIN_SUCCEEDED', 'LOGIN_FAILED']);
     expect(auditTrail.events[1]).toMatchObject({ outcome: 'FAILURE', metadata: { reason: 'DynamoDB unavailable' } });
+    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginSuccess', 'LoginFailure']);
   });
 });

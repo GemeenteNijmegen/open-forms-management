@@ -3,6 +3,7 @@ import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-htt
 import { Session } from '@gemeentenijmegen/session';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
+import { countMetric } from '../../observability/Metrics';
 import { xRayTraceId } from '../../observability/xRayTraceId';
 import { AuditTrail } from '../../shared/audit/AuditTrail';
 import { recordAudit } from '../../shared/audit/recordAudit';
@@ -53,12 +54,14 @@ export class AuthRequestHandler {
     } catch (error) {
       const reason = errorReason(error);
       logger.info('Login failed', { flowId, reason });
+      countMetric('LoginFailure');
       await recordAudit(this.props.auditTrail, {
         eventType: 'LOGIN_FAILED', outcome: 'FAILURE', correlationId, flowId, metadata: { reason },
       });
       return Response.redirect('/login');
     }
 
+    countMetric('LoginSuccess');
     await recordAudit(this.props.auditTrail, {
       eventType: 'LOGIN_SUCCEEDED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
     });
@@ -74,6 +77,7 @@ export class AuthRequestHandler {
     } catch (error) {
       const reason = errorReason(error);
       logger.error('Failed to create session after successful login', { flowId, reason });
+      countMetric('LoginFailure');
       await recordAudit(this.props.auditTrail, {
         eventType: 'LOGIN_FAILED',
         outcome: 'FAILURE',
@@ -85,6 +89,7 @@ export class AuthRequestHandler {
       return Response.error(500);
     }
 
+    countMetric('SessionCreated');
     await recordAudit(this.props.auditTrail, {
       eventType: 'SESSION_CREATED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
     });

@@ -4,6 +4,7 @@ import { AUDIT_EVENT_TYPES, AUDIT_OUTCOMES, AuditEvent, AuditEventType, AuditOut
 import { AuditDateRange, AuditTrail } from './AuditTrail';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
+import { countMetric } from '../../observability/Metrics';
 
 // Fixed pk shared by every event, so every query here runs against one partition instead of scanning the table.
 const PARTITION_KEY = 'AUDIT';
@@ -73,6 +74,7 @@ export class DynamoDbAuditTrail implements AuditTrail {
       }));
     } catch (error) {
       logger.error('Audit write failed', { eventType: input.eventType, reason: errorReason(error) });
+      countMetric('AuditWriteFailure');
       throw error;
     }
 

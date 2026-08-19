@@ -88,6 +88,10 @@
       "type": "runtime"
     },
     {
+      "name": "@aws-lambda-powertools/metrics",
+      "type": "runtime"
+    },
+    {
       "name": "@aws-sdk/client-dynamodb",
       "type": "runtime"
     },

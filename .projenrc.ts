@@ -14,6 +14,7 @@ const project = new GemeenteNijmegenCdkApp({
     '@gemeentenijmegen/aws-constructs',
     '@gemeentenijmegen/cross-region-parameters',
     '@aws-lambda-powertools/logger',
+    '@aws-lambda-powertools/metrics',
     'openid-client',
     '@gemeentenijmegen/utils',
     '@gemeentenijmegen/session',

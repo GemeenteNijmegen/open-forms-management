@@ -1,4 +1,5 @@
 import { FakePermissionRepository } from './FakePermissionRepository';
+import { metrics } from '../../../observability/Metrics';
 import { FakeAuditTrail } from '../../audit/tests/FakeAuditTrail';
 import { AuthorizationService } from '../AuthorizationService';
 
@@ -29,15 +30,17 @@ describe('AuthorizationService', () => {
   });
 
   describe('requireAuthorization', () => {
-    it('returns undefined so the handler can proceed when the check is allowed', async () => {
+    it('returns undefined so the handler can proceed when the check is allowed, without recording a metric', async () => {
       const repository = new FakePermissionRepository();
       repository.seedGrants('medewerker@nijmegen.nl', [{ resource: 'testresource', actions: ['view'] }]);
       const service = new AuthorizationService(repository, new FakeAuditTrail());
       const context = await service.loadContext({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
+      const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
       const response = await service.requireAuthorization(context, { resource: 'testresource', action: 'view' });
 
       expect(response).toBeUndefined();
+      expect(addMetricSpy).not.toHaveBeenCalled();
     });
 
     it('returns a 403 response when the check is denied', async () => {
@@ -61,14 +64,16 @@ describe('AuthorizationService', () => {
       expect(response).toBeUndefined();
     });
 
-    it('records an ACCESS_DENIED audit event with the resource, action and actor when denied', async () => {
+    it('records an ACCESS_DENIED audit event and an AccessDenied metric with the resource, action and actor when denied', async () => {
       const repository = new FakePermissionRepository();
       const auditTrail = new FakeAuditTrail();
       const service = new AuthorizationService(repository, auditTrail);
       const context = await service.loadContext({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
+      const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
       await service.requireAuthorization(context, { resource: 'testresource', action: 'view' });
 
+      expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AccessDenied']);
       expect(auditTrail.events).toEqual([{
         eventId: expect.any(String),
         occurredAt: expect.any(String),

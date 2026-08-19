@@ -1,3 +1,4 @@
+import { ErrorMonitoringAlarm } from '@gemeentenijmegen/aws-constructs';
 import { Duration } from 'aws-cdk-lib';
 import { IHttpRouteAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaAuthorizer, HttpLambdaResponseType } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
@@ -24,6 +25,7 @@ export function createSessionAuthorizer(
   authorizerFunction.addEnvironment('SESSION_TABLE', sessionsTable.table.tableName);
   auditTrailTable.grantPut(authorizerFunction);
   authorizerFunction.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
+  new ErrorMonitoringAlarm(scope, 'authorizer-function-error-alarm', { lambda: authorizerFunction, criticality: configuration.criticality });
 
   return new HttpLambdaAuthorizer('session-authorizer', authorizerFunction, {
     identitySource: ['$request.header.Cookie'],

@@ -1,3 +1,4 @@
+import { ErrorMonitoringAlarm } from '@gemeentenijmegen/aws-constructs';
 import { HttpMethod, HttpNoneAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Tracing } from 'aws-cdk-lib/aws-lambda';
@@ -30,6 +31,7 @@ export function addLogoutRoute(
   logoutFunction.addEnvironment('SESSION_TABLE', sessionsTable.table.tableName);
   auditTrailTable.grantPut(logoutFunction);
   logoutFunction.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
+  new ErrorMonitoringAlarm(scope, 'logout-function-error-alarm', { lambda: logoutFunction, criticality: configuration.criticality });
 
   managementApi.api.addRoutes({
     path: '/logout',

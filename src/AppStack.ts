@@ -1,3 +1,4 @@
+import { ErrorMonitoringAlarm } from '@gemeentenijmegen/aws-constructs';
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
@@ -6,6 +7,7 @@ import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
 import { Configurable } from './Configuration';
 import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
+import { addApplicationAlarms } from './infrastructure/ApplicationAlarms';
 import { AuditTrailTable } from './infrastructure/AuditTrailTable';
 import { addLogoutRoute } from './infrastructure/LogoutRoute';
 import { ManagementApi } from './infrastructure/ManagementApi';
@@ -53,6 +55,7 @@ export class AppStack extends Stack {
       logGroup: createLambdaLogGroup(this, 'home-function'),
     });
     applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
+    new ErrorMonitoringAlarm(this, 'home-function-error-alarm', { lambda: homeFunction, criticality: this.props.configuration.criticality });
 
     const managementApi = new ManagementApi(this, 'management-api', {
       defaultFunction: homeFunction,
@@ -64,14 +67,17 @@ export class AppStack extends Stack {
       logGroup: createLambdaLogGroup(this, 'login-function'),
     });
     addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, loginFunction, domainName, '/login');
+    new ErrorMonitoringAlarm(this, 'login-function-error-alarm', { lambda: loginFunction, criticality: this.props.configuration.criticality });
 
     const authFunction = new AuthFunction(this, 'auth-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'auth-function'),
     });
     addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, authFunction, domainName, '/auth/callback');
+    new ErrorMonitoringAlarm(this, 'auth-function-error-alarm', { lambda: authFunction, criticality: this.props.configuration.criticality });
 
     addLogoutRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration);
+    addApplicationAlarms(this, managementApi.api, this.props.configuration);
 
     /**
      * CloudFront in front of the HTTP API and static assets, the public web entrance.

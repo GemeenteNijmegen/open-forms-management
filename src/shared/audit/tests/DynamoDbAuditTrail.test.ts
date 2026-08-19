@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { logger } from '../../../observability/Logger';
+import { metrics } from '../../../observability/Metrics';
 import { DynamoDbAuditTrail } from '../DynamoDbAuditTrail';
 
 const documentMock = mockClient(DynamoDBDocumentClient);
@@ -90,8 +91,9 @@ describe('DynamoDbAuditTrail', () => {
       expect(item.metadata).toEqual({ reason: 'no-grant' });
     });
 
-    it('logs an ERROR and propagates the failure when the write fails', async () => {
+    it('logs an ERROR, records an AuditWriteFailure metric and propagates the failure when the write fails', async () => {
       documentMock.on(PutCommand).rejects(new Error('ProvisionedThroughputExceededException'));
+      const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
       await expect(newAuditTrail().record({ eventType: 'LOGIN_STARTED', outcome: 'SUCCESS', correlationId: 'trace-1' }))
         .rejects.toThrow('ProvisionedThroughputExceededException');
@@ -100,6 +102,7 @@ describe('DynamoDbAuditTrail', () => {
         eventType: 'LOGIN_STARTED',
         reason: 'ProvisionedThroughputExceededException',
       });
+      expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AuditWriteFailure']);
     });
   });
 
@@ -135,6 +138,40 @@ describe('DynamoDbAuditTrail', () => {
         ScanIndexForward: false,
         Limit: 100,
       });
+    });
+
+    it('maps flowId, actorEmail, resource, action and metadata through when the stored item has them', async () => {
+      documentMock.on(QueryCommand).resolves({
+        Items: [{
+          pk: 'AUDIT',
+          sk: `2026-01-02T00:00:00.000Z#${EVENT_ID_1}`,
+          eventId: EVENT_ID_1,
+          occurredAt: '2026-01-02T00:00:00.000Z',
+          eventType: 'ACCESS_DENIED',
+          outcome: 'DENIED',
+          correlationId: 'trace-1',
+          flowId: 'flow-1',
+          actorEmail: 'medewerker@nijmegen.nl',
+          resource: 'sport',
+          action: 'write',
+          metadata: { reason: 'no-grant' },
+        }],
+      });
+
+      const events = await newAuditTrail().findLatest(10);
+
+      expect(events).toEqual([{
+        eventId: EVENT_ID_1,
+        occurredAt: '2026-01-02T00:00:00.000Z',
+        eventType: 'ACCESS_DENIED',
+        outcome: 'DENIED',
+        correlationId: 'trace-1',
+        flowId: 'flow-1',
+        actorEmail: 'medewerker@nijmegen.nl',
+        resource: 'sport',
+        action: 'write',
+        metadata: { reason: 'no-grant' },
+      }]);
     });
 
     it('returns an empty array when there are no events', async () => {

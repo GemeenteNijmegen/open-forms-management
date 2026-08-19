@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { Session } from '@gemeentenijmegen/session';
 import { logger } from '../../observability/Logger';
+import { countMetric } from '../../observability/Metrics';
 import { xRayTraceId } from '../../observability/xRayTraceId';
 import { AuditTrail } from '../../shared/audit/AuditTrail';
 import { recordAudit } from '../../shared/audit/recordAudit';
@@ -29,6 +30,12 @@ export class AuthorizerRequestHandler {
 
     if (session.sessionId === false || !session.isLoggedIn()) {
       logger.info('Authorization denied: no valid session');
+      countMetric('AuthenticationDenied');
+      // A cookie was presented but no longer maps to a valid session, as opposed to no cookie at all: the
+      // closest signal we have to "expired" without @gemeentenijmegen/session distinguishing expiry from revocation.
+      if (session.sessionId !== false) {
+        countMetric('SessionExpired');
+      }
       await recordAudit(this.auditTrail, {
         eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED', correlationId, metadata: { reason: 'no-valid-session' },
       });
@@ -38,6 +45,7 @@ export class AuthorizerRequestHandler {
     const principalId = session.getValue('principalId');
     if (typeof principalId !== 'string' || principalId.length === 0) {
       logger.info('Authorization denied: session has no principalId');
+      countMetric('AuthenticationDenied');
       await recordAudit(this.auditTrail, {
         eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED', correlationId, metadata: { reason: 'missing-principal-id' },
       });

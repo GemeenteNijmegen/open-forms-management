@@ -66,4 +66,46 @@ describe('AppStack authorizer wiring', () => {
     }));
     expect(Object.keys(logGroups)).toHaveLength(5);
   });
+
+  it('creates exactly 8 alarms: 5 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
+    template.resourceCountIs('AWS::CloudWatch::Alarm', 8);
+  });
+
+  it.each([
+    'home-function-error-alarm',
+    'login-function-error-alarm',
+    'auth-function-error-alarm',
+    'logout-function-error-alarm',
+    'authorizer-function-error-alarm',
+  ])('creates an error-rate alarm for %s with the branch criticality suffix', (alarmId) => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
+      AlarmName: `increased-error-rate-${alarmId}-low-lvl`,
+    }));
+  });
+
+  it('creates an AuditWriteFailure alarm that triggers on any failure', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
+      AlarmName: 'audit-write-failure-low-lvl',
+      Namespace: 'open-forms-management',
+      MetricName: 'AuditWriteFailure',
+      ComparisonOperator: 'GreaterThanThreshold',
+      Threshold: 0,
+    }));
+  });
+
+  it('creates a LoginFailure rate alarm', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
+      AlarmName: 'login-failure-rate-low-lvl',
+      Namespace: 'open-forms-management',
+      MetricName: 'LoginFailure',
+    }));
+  });
+
+  it('creates an API 5xx alarm on the management HTTP API', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
+      AlarmName: 'management-api-5xx-low-lvl',
+      Namespace: 'AWS/ApiGateway',
+      MetricName: '5xx',
+    }));
+  });
 });
