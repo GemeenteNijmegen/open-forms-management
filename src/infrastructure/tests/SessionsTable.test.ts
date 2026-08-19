@@ -1,7 +1,7 @@
 import { App, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
+import { Statics } from '../../Statics';
 import { SessionsTable } from '../SessionsTable';
-import { Statics } from '../Statics';
 
 describe('SessionsTable', () => {
   const stack = new Stack(new App(), 'TestStack');

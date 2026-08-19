@@ -1,7 +1,7 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
 import { AttributeType, BillingMode, Table, TableEncryption } from 'aws-cdk-lib/aws-dynamodb';
 import { Construct } from 'constructs';
-import { Statics } from './Statics';
+import { Statics } from '../Statics';
 
 /**
  * `sessionid` and `ttl` match the schema expected by the

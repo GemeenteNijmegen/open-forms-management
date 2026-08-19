@@ -3,7 +3,7 @@ import { App, Stack } from 'aws-cdk-lib';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { Code, Function, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Statics } from '../../Statics';
-import { applyLambdaLoggingDefaults } from '../LambdaLogging';
+import { applyLambdaLoggingDefaults, createLambdaLogGroup } from '../LambdaLogging';
 
 describe('applyLambdaLoggingDefaults', () => {
   it('sets POWERTOOLS_LOG_LEVEL from the configuration and POWERTOOLS_SERVICE_NAME', () => {
@@ -30,6 +30,20 @@ describe('applyLambdaLoggingDefaults', () => {
           POWERTOOLS_SERVICE_NAME: Statics.projectName,
         }),
       }),
+    }));
+  });
+});
+
+describe('createLambdaLogGroup', () => {
+  it('creates a LogGroup with a fixed retention instead of the CloudWatch default', () => {
+    const stack = new Stack(new App(), 'TestStack');
+
+    createLambdaLogGroup(stack, 'fn');
+
+    const template = Template.fromStack(stack);
+    template.resourceCountIs('AWS::Logs::LogGroup', 1);
+    template.hasResourceProperties('AWS::Logs::LogGroup', Match.objectLike({
+      RetentionInDays: 30,
     }));
   });
 });

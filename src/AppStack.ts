@@ -1,22 +1,18 @@
-import { RemoteParameters } from '@gemeentenijmegen/cross-region-parameters';
-import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import { HttpMethod, HttpNoneAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
-import { HttpLambdaAuthorizer, HttpLambdaResponseType } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
-import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import { Function, Tracing } from 'aws-cdk-lib/aws-lambda';
-import { HostedZone } from 'aws-cdk-lib/aws-route53';
-import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
-import { StringParameter } from 'aws-cdk-lib/aws-ssm';
+import { Stack, StackProps } from 'aws-cdk-lib';
+import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
-import { AuthorizerFunction } from './app/authorizer/authorizer-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
 import { Configurable } from './Configuration';
-import { ManagementApi } from './ManagementApi';
-import { ManagementDistribution } from './ManagementDistribution';
-import { applyLambdaLoggingDefaults } from './observability/LambdaLogging';
-import { SessionsTable } from './SessionsTable';
+import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
+import { ManagementApi } from './infrastructure/ManagementApi';
+import { ManagementDistribution } from './infrastructure/ManagementDistribution';
+import { addOidcRoute } from './infrastructure/OidcRoute';
+import { createSessionAuthorizer } from './infrastructure/SessionAuthorizer';
+import { SessionsTable } from './infrastructure/SessionsTable';
+import { resolveUsEastOutputs } from './infrastructure/UsEastOutputs';
+import { applyLambdaLoggingDefaults, createLambdaLogGroup } from './observability/LambdaLogging';
 import { Statics } from './Statics';
 
 interface AppStackProps extends StackProps, Configurable { }
@@ -34,30 +30,24 @@ export class AppStack extends Stack {
   constructor(scope: Construct, id: string, private readonly props: AppStackProps) {
     super(scope, id, props);
 
-    const usEastOutputs = new RemoteParameters(this, 'us-east-1-outputs', {
-      path: `${Statics.ssmUsEastOutputsPath}/`,
-      region: 'us-east-1',
-      timeout: Duration.seconds(10),
-    });
-    this.certificateArn = usEastOutputs.get(Statics.ssmManagementCertificateArn);
-    this.wafWebAclArn = usEastOutputs.get(Statics.ssmManagementWafWebAclArn);
-
+    /**
+     * Properties
+     */
+    const usEastOutputs = resolveUsEastOutputs(this);
+    this.certificateArn = usEastOutputs.certificateArn;
+    this.wafWebAclArn = usEastOutputs.wafWebAclArn;
     this.sessionsTable = new SessionsTable(this, 'sessions-table');
-
     const domainName = `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`;
 
-    const authorizerFunction = new AuthorizerFunction(this, 'authorizer-function', { tracing: Tracing.ACTIVE });
-    applyLambdaLoggingDefaults(authorizerFunction, this.props.configuration);
-    this.sessionsTable.table.grantReadData(authorizerFunction);
-    authorizerFunction.addEnvironment('SESSION_TABLE', this.sessionsTable.table.tableName);
+    /**
+     * Lambdas and their routes
+     */
+    const sessionAuthorizer = createSessionAuthorizer(this, this.sessionsTable, this.props.configuration);
 
-    const sessionAuthorizer = new HttpLambdaAuthorizer('session-authorizer', authorizerFunction, {
-      identitySource: ['$request.header.Cookie'],
-      resultsCacheTtl: Duration.seconds(0),
-      responseTypes: [HttpLambdaResponseType.SIMPLE],
+    const homeFunction = new HomeFunction(this, 'home-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'home-function'),
     });
-
-    const homeFunction = new HomeFunction(this, 'home-function', { tracing: Tracing.ACTIVE });
     applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
 
     const managementApi = new ManagementApi(this, 'management-api', {
@@ -65,52 +55,27 @@ export class AppStack extends Stack {
       defaultAuthorizer: sessionAuthorizer,
     });
 
-    const loginFunction = new LoginFunction(this, 'login-function', { tracing: Tracing.ACTIVE });
-    this.addOidcRoute(managementApi, loginFunction, domainName, '/login');
+    const loginFunction = new LoginFunction(this, 'login-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'login-function'),
+    });
+    addOidcRoute(this, managementApi, this.sessionsTable, this.props.configuration, loginFunction, domainName, '/login');
 
-    const authFunction = new AuthFunction(this, 'auth-function', { tracing: Tracing.ACTIVE });
-    this.addOidcRoute(managementApi, authFunction, domainName, '/auth/callback');
+    const authFunction = new AuthFunction(this, 'auth-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'auth-function'),
+    });
+    addOidcRoute(this, managementApi, this.sessionsTable, this.props.configuration, authFunction, domainName, '/auth/callback');
 
+    /**
+     * CloudFront in front of the HTTP API and static assets, the public web entrance.
+     */
     new ManagementDistribution(this, 'management-distribution', {
       api: managementApi.api,
       certificateArn: this.certificateArn,
       wafWebAclArn: this.wafWebAclArn,
       domainName,
-      hostedZone: this.hostedZone(),
-    });
-  }
-
-  /**
-   * Wires the standard logging/session/OIDC environment and permissions
-   * onto an OIDC-flow Lambda (login, auth callback) and adds its route.
-   */
-  private addOidcRoute(managementApi: ManagementApi, fn: Function, domainName: string, path: string) {
-    applyLambdaLoggingDefaults(fn, this.props.configuration);
-
-    this.sessionsTable.table.grantReadWriteData(fn);
-    fn.addEnvironment('SESSION_TABLE', this.sessionsTable.table.tableName);
-    fn.addEnvironment('MANAGEMENT_DOMAIN', domainName);
-    fn.addEnvironment('OIDC_ISSUER', StringParameter.valueForStringParameter(this, Statics.ssmOidcIssuer));
-    fn.addEnvironment('OIDC_CLIENT_ID', StringParameter.valueForStringParameter(this, Statics.ssmOidcClientId));
-
-    const oidcClientSecret = Secret.fromSecretNameV2(this, `oidc-client-secret-for-${fn.node.id}`, Statics.secretOidcClientSecret);
-    oidcClientSecret.grantRead(fn);
-    fn.addEnvironment('OIDC_CLIENT_SECRET_ARN', oidcClientSecret.secretArn);
-
-    managementApi.api.addRoutes({
-      path,
-      methods: [HttpMethod.GET],
-      integration: new HttpLambdaIntegration(`integration-${fn.node.id}`, fn),
-      authorizer: new HttpNoneAuthorizer(),
-    });
-  }
-
-  private hostedZone() {
-    const zoneId = StringParameter.valueForStringParameter(this, Statics.accountHostedzoneId);
-    const zoneName = StringParameter.valueForStringParameter(this, Statics.accountHostedzoneName);
-    return HostedZone.fromHostedZoneAttributes(this, 'account-hostedzone', {
-      hostedZoneId: zoneId,
-      zoneName,
+      hostedZone: resolveAccountHostedZone(this),
     });
   }
 }

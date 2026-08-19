@@ -58,4 +58,11 @@ describe('AppStack authorizer wiring', () => {
       TracingConfig: { Mode: 'Active' },
     }));
   });
+
+  it('creates an explicit LogGroup with a fixed retention for every route Lambda', () => {
+    const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
+      Properties: { RetentionInDays: 30 },
+    }));
+    expect(Object.keys(logGroups)).toHaveLength(4);
+  });
 });
