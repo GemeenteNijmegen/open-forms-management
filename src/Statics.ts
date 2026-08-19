@@ -40,6 +40,9 @@ export class Statics {
   // MARK: permissions
   static readonly permissionsTableName = `${Statics.projectName}-permissions`;
 
+  // MARK: audit trail
+  static readonly auditTrailTableName = `${Statics.projectName}-audit-trail`;
+
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;
   static readonly ssmOidcClientId = `/${Statics.projectName}/oidc/client-id`;

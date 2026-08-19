@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { Session } from '@gemeentenijmegen/session';
+import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 
 export class LogoutRequestHandler {
@@ -12,9 +13,7 @@ export class LogoutRequestHandler {
       try {
         await session.updateSession({ loggedin: { BOOL: false } });
       } catch (error) {
-        logger.error('Failed to revoke session on logout', {
-          reason: error instanceof Error ? error.message : String(error),
-        });
+        logger.error('Failed to revoke session on logout', { reason: errorReason(error) });
         return Response.error(500);
       }
       logger.info('Logout completed');

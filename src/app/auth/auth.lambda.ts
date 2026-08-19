@@ -2,6 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { AuthRequestHandler } from './AuthRequestHandler';
+import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 import { EntraOidcClient } from '../../shared/auth/EntraOidcClient';
 import { loadOidcConfiguration } from '../../shared/auth/OidcConfiguration';
@@ -33,7 +34,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<ApiGateway
     });
     return await requestHandler.handleRequest();
   } catch (error) {
-    logger.error('Unhandled error in auth callback', { reason: error instanceof Error ? error.message : String(error) });
+    logger.error('Unhandled error in auth callback', { reason: errorReason(error) });
     return Response.error(500);
   }
 }

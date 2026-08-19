@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import * as client from 'openid-client';
 import { OidcAuthorizationResult, OidcClient } from './OidcClient';
+import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 
 export interface EntraOidcClientConfiguration {
@@ -44,7 +45,7 @@ export class EntraOidcClient implements OidcClient {
         expectedNonce,
       });
     } catch (error) {
-      logger.error('Authorization code exchange failed', { reason: error instanceof Error ? error.message : String(error) });
+      logger.error('Authorization code exchange failed', { reason: errorReason(error) });
       throw error;
     }
 
@@ -79,10 +80,7 @@ export class EntraOidcClient implements OidcClient {
           { client_secret: this.settings.clientSecret },
         );
       } catch (error) {
-        logger.error('OIDC discovery failed', {
-          issuer: this.settings.issuer,
-          reason: error instanceof Error ? error.message : String(error),
-        });
+        logger.error('OIDC discovery failed', { issuer: this.settings.issuer, reason: errorReason(error) });
         throw error;
       }
     }

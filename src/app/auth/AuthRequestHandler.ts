@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { Session } from '@gemeentenijmegen/session';
+import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 import { mapToEmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
 import { OidcClient } from '../../shared/auth/OidcClient';
@@ -44,7 +45,7 @@ export class AuthRequestHandler {
       const result = await this.props.oidcClient.exchangeAuthorizationCode(this.props.fullUrl, expectedState, expectedNonce);
       identity = mapToEmployeeIdentity(result.claims);
     } catch (error) {
-      logger.info('Login failed', { flowId, reason: error instanceof Error ? error.message : String(error) });
+      logger.info('Login failed', { flowId, reason: errorReason(error) });
       return Response.redirect('/login');
     }
 
@@ -57,10 +58,7 @@ export class AuthRequestHandler {
         ...(identity.email ? { email: { S: identity.email } } : {}),
       });
     } catch (error) {
-      logger.error('Failed to create session after successful login', {
-        flowId,
-        reason: error instanceof Error ? error.message : String(error),
-      });
+      logger.error('Failed to create session after successful login', { flowId, reason: errorReason(error) });
       return Response.error(500);
     }
 
