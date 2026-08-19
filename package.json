@@ -66,6 +66,7 @@
   "dependencies": {
     "@aws-lambda-powertools/logger": "^2.35.0",
     "@aws-sdk/client-dynamodb": "^3.1113.0",
+    "@aws-sdk/lib-dynamodb": "^3.1113.0",
     "@gemeentenijmegen/apigateway-http": "^0.0.40",
     "@gemeentenijmegen/aws-constructs": "^0.0.54",
     "@gemeentenijmegen/cross-region-parameters": "^0.0.9",

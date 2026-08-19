@@ -463,7 +463,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@types/aws-lambda,@types/jest,@types/node,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-sdk/client-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,openid-client"
+            "--filter=@types/aws-lambda,@types/jest,@types/node,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,openid-client"
           ]
         },
         {
@@ -494,6 +494,7 @@
             "typescript",
             "@aws-lambda-powertools/logger",
             "@aws-sdk/client-dynamodb",
+            "@aws-sdk/lib-dynamodb",
             "@gemeentenijmegen/apigateway-http",
             "@gemeentenijmegen/aws-constructs",
             "@gemeentenijmegen/cross-region-parameters",

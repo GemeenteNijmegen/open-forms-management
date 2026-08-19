@@ -37,6 +37,9 @@ export class Statics {
   // MARK: sessions
   static readonly sessionsTableName = `${Statics.projectName}-sessions`;
 
+  // MARK: permissions
+  static readonly permissionsTableName = `${Statics.projectName}-permissions`;
+
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;
   static readonly ssmOidcClientId = `/${Statics.projectName}/oidc/client-id`;

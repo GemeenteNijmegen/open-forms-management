@@ -92,6 +92,10 @@
       "type": "runtime"
     },
     {
+      "name": "@aws-sdk/lib-dynamodb",
+      "type": "runtime"
+    },
+    {
       "name": "@gemeentenijmegen/apigateway-http",
       "type": "runtime"
     },
