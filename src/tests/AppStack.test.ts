@@ -108,4 +108,27 @@ describe('AppStack authorizer wiring', () => {
       MetricName: '5xx',
     }));
   });
+
+  it('logs CloudFront access to a private bucket without cookies, with a 90-day expiration', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', Match.objectLike({
+      DistributionConfig: Match.objectLike({
+        Logging: Match.objectLike({ IncludeCookies: false, Bucket: Match.anyValue() }),
+      }),
+    }));
+    template.hasResourceProperties('AWS::S3::Bucket', Match.objectLike({
+      OwnershipControls: { Rules: [{ ObjectOwnership: 'ObjectWriter' }] },
+      PublicAccessBlockConfiguration: Match.objectLike({ BlockPublicAcls: true }),
+      LifecycleConfiguration: { Rules: Match.arrayWith([Match.objectLike({ Status: 'Enabled', ExpirationInDays: 90 })]) },
+    }));
+  });
+
+  it('logs API access to a LogGroup with a safe format and no headers/cookies', () => {
+    template.hasResourceProperties('AWS::Logs::LogGroup', Match.objectLike({ RetentionInDays: 90 }));
+    const stages = template.findResources('AWS::ApiGatewayV2::Stage');
+    const [apiStage]: any[] = Object.values(stages);
+    expect(apiStage.Properties.StageName).toBe('$default');
+    expect(apiStage.Properties.AccessLogSettings.DestinationArn).toBeDefined();
+    const format = JSON.stringify(apiStage.Properties.AccessLogSettings.Format);
+    expect(format.toLowerCase()).not.toMatch(/cookie|authorization/);
+  });
 });
