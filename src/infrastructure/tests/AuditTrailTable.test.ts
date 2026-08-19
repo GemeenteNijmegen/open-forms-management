@@ -38,9 +38,9 @@ describe('AuditTrailTable', () => {
     }));
   });
 
-  it('has no TTL attribute configured', () => {
+  it('has a 2-year retention TTL on the ttl attribute', () => {
     template.hasResourceProperties('AWS::DynamoDB::Table', Match.objectLike({
-      TimeToLiveSpecification: Match.absent(),
+      TimeToLiveSpecification: { AttributeName: 'ttl', Enabled: true },
     }));
   });
 

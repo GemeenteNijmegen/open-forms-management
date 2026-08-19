@@ -60,6 +60,10 @@ describe('DynamoDbAuditTrail', () => {
       expect(item.outcome).toBe('SUCCESS');
       expect(item.correlationId).toBe('trace-1');
       expect(item).not.toHaveProperty('actorEmail');
+
+      const occurredAtSeconds = Math.floor(new Date(item.occurredAt as string).getTime() / 1000);
+      const twoYearsInSeconds = 2 * 365 * 24 * 60 * 60;
+      expect(item.ttl).toBe(occurredAtSeconds + twoYearsInSeconds);
     });
 
     it('stores actorEmail as a plain attribute when given, not as part of the key', async () => {

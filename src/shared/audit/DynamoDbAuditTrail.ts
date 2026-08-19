@@ -12,6 +12,8 @@ const PARTITION_KEY = 'AUDIT';
 
 const DEFAULT_LIMIT = 100;
 
+const RETENTION_SECONDS = 2 * 365 * 24 * 60 * 60;
+
 // sk is `<occurredAt>#<eventId>`, so a plain occurredAt as upper bound would exclude events at that exact
 // timestamp (their sk is longer). U+FFFF sorts after any eventId, so appending it keeps the date-based range correct.
 const HIGH_SORT_SUFFIX = '#\uFFFF';
@@ -45,7 +47,8 @@ export class DynamoDbAuditTrail implements AuditTrail {
 
   async record(input: RecordAuditEventInput): Promise<void> {
     const eventId = randomUUID();
-    const occurredAt = new Date().toISOString();
+    const now = new Date();
+    const occurredAt = now.toISOString();
 
     try {
       await this.documentClient.send(new PutCommand({
@@ -55,6 +58,7 @@ export class DynamoDbAuditTrail implements AuditTrail {
           sk: `${occurredAt}#${eventId}`,
           eventId,
           occurredAt,
+          ttl: Math.floor(now.getTime() / 1000) + RETENTION_SECONDS,
           eventType: input.eventType,
           outcome: input.outcome,
           correlationId: input.correlationId,
