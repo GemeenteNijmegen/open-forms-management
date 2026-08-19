@@ -15,6 +15,7 @@ import { HttpOrigin, S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { AaaaRecord, ARecord, IHostedZone, RecordTarget } from 'aws-cdk-lib/aws-route53';
 import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
+import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
 
 export interface ManagementDistributionProps {
@@ -72,6 +73,14 @@ export class ManagementDistribution extends Construct {
           viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
       },
+    });
+
+    new BucketDeployment(this, 'static-resources-deployment', {
+      sources: [Source.asset('./src/app/static-resources/static')],
+      destinationBucket: this.staticResourcesBucket,
+      destinationKeyPrefix: 'static',
+      distribution: this.distribution,
+      distributionPaths: ['/static/*'],
     });
 
     this.addDnsRecords(props.hostedZone);

@@ -131,4 +131,11 @@ describe('AppStack authorizer wiring', () => {
     const format = JSON.stringify(apiStage.Properties.AccessLogSettings.Format);
     expect(format.toLowerCase()).not.toMatch(/cookie|authorization/);
   });
+
+  it('deploys the static assets to the static-resources bucket under a static/ prefix, invalidating /static/* on deploy', () => {
+    template.hasResourceProperties('Custom::CDKBucketDeployment', Match.objectLike({
+      DestinationBucketKeyPrefix: 'static',
+      DistributionPaths: ['/static/*'],
+    }));
+  });
 });
