@@ -1,11 +1,9 @@
 import { randomUUID } from 'crypto';
 import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { AuditEvent, AuditOutcome, RecordAuditEventInput } from './AuditEvent';
+import { AUDIT_EVENT_TYPES, AUDIT_OUTCOMES, AuditEvent, AuditEventType, AuditOutcome, RecordAuditEventInput } from './AuditEvent';
 import { AuditDateRange, AuditTrail } from './AuditTrail';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
-
-const OUTCOMES: AuditOutcome[] = ['SUCCESS', 'FAILURE', 'DENIED'];
 
 // Fixed pk shared by every event, so every query here runs against one partition instead of scanning the table.
 const PARTITION_KEY = 'AUDIT';
@@ -19,7 +17,11 @@ const RETENTION_SECONDS = 2 * 365 * 24 * 60 * 60;
 const HIGH_SORT_SUFFIX = '#\uFFFF';
 
 function isOutcome(value: unknown): value is AuditOutcome {
-  return typeof value === 'string' && OUTCOMES.includes(value as AuditOutcome);
+  return typeof value === 'string' && (AUDIT_OUTCOMES as readonly string[]).includes(value);
+}
+
+function isEventType(value: unknown): value is AuditEventType {
+  return typeof value === 'string' && (AUDIT_EVENT_TYPES as readonly string[]).includes(value);
 }
 
 function isMetadata(value: unknown): value is Record<string, string | number | boolean> {
@@ -129,8 +131,13 @@ export class DynamoDbAuditTrail implements AuditTrail {
   }
 
   private toAuditEvent(item: Record<string, unknown>): AuditEvent | undefined {
-    if (typeof item.eventId !== 'string' || typeof item.occurredAt !== 'string' || typeof item.eventType !== 'string') {
-      logger.warn('Ignoring audit record with an invalid identity/type', { pk: item.pk });
+    if (typeof item.eventId !== 'string' || typeof item.occurredAt !== 'string') {
+      logger.warn('Ignoring audit record with an invalid identity', { pk: item.pk });
+      return undefined;
+    }
+
+    if (!isEventType(item.eventType)) {
+      logger.warn('Ignoring audit record with an invalid eventType', { eventId: item.eventId });
       return undefined;
     }
 

@@ -282,8 +282,14 @@ describe('DynamoDbAuditTrail', () => {
   });
 
   describe('mapping invalid records', () => {
-    it('drops a record with a missing eventId/occurredAt/eventType', async () => {
+    it('drops a record with a missing eventId/occurredAt', async () => {
       documentMock.on(QueryCommand).resolves({ Items: [{ pk: 'AUDIT', outcome: 'SUCCESS', correlationId: 'trace-1' }] });
+
+      expect(await newAuditTrail().findLatest(10)).toEqual([]);
+    });
+
+    it('drops a record with an eventType outside the known set', async () => {
+      documentMock.on(QueryCommand).resolves({ Items: [{ ...validItem, eventType: 'SOMETHING_ELSE' }] });
 
       expect(await newAuditTrail().findLatest(10)).toEqual([]);
     });

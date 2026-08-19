@@ -1,9 +1,18 @@
-export type AuditOutcome = 'SUCCESS' | 'FAILURE' | 'DENIED';
+export const AUDIT_OUTCOMES = ['SUCCESS', 'FAILURE', 'DENIED'] as const;
+
+export type AuditOutcome = typeof AUDIT_OUTCOMES[number];
+
+export const AUDIT_EVENT_TYPES = [
+  'LOGIN_STARTED', 'LOGIN_SUCCEEDED', 'LOGIN_FAILED', 'SESSION_CREATED', 'SESSION_REVOKED', 'LOGOUT',
+  'AUTHENTICATION_DENIED', 'ACCESS_DENIED',
+] as const;
+
+export type AuditEventType = typeof AUDIT_EVENT_TYPES[number];
 
 export interface AuditEvent {
   eventId: string;
   occurredAt: string;
-  eventType: string;
+  eventType: AuditEventType;
   outcome: AuditOutcome;
 
   actorEmail?: string;
