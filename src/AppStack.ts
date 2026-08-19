@@ -6,6 +6,7 @@ import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
 import { Configurable } from './Configuration';
 import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
+import { AuditTrailTable } from './infrastructure/AuditTrailTable';
 import { addLogoutRoute } from './infrastructure/LogoutRoute';
 import { ManagementApi } from './infrastructure/ManagementApi';
 import { ManagementDistribution } from './infrastructure/ManagementDistribution';
@@ -27,6 +28,7 @@ export class AppStack extends Stack {
   public readonly certificateArn: string;
   public readonly wafWebAclArn: string;
   public readonly sessionsTable: SessionsTable;
+  public readonly auditTrailTable: AuditTrailTable;
 
   constructor(scope: Construct, id: string, private readonly props: AppStackProps) {
     super(scope, id, props);
@@ -38,12 +40,13 @@ export class AppStack extends Stack {
     this.certificateArn = usEastOutputs.certificateArn;
     this.wafWebAclArn = usEastOutputs.wafWebAclArn;
     this.sessionsTable = new SessionsTable(this, 'sessions-table');
+    this.auditTrailTable = new AuditTrailTable(this, 'audit-trail-table');
     const domainName = `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`;
 
     /**
      * Lambdas and their routes
      */
-    const sessionAuthorizer = createSessionAuthorizer(this, this.sessionsTable, this.props.configuration);
+    const sessionAuthorizer = createSessionAuthorizer(this, this.sessionsTable, this.auditTrailTable, this.props.configuration);
 
     const homeFunction = new HomeFunction(this, 'home-function', {
       tracing: Tracing.ACTIVE,
@@ -60,15 +63,15 @@ export class AppStack extends Stack {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'login-function'),
     });
-    addOidcRoute(this, managementApi, this.sessionsTable, this.props.configuration, loginFunction, domainName, '/login');
+    addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, loginFunction, domainName, '/login');
 
     const authFunction = new AuthFunction(this, 'auth-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'auth-function'),
     });
-    addOidcRoute(this, managementApi, this.sessionsTable, this.props.configuration, authFunction, domainName, '/auth/callback');
+    addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, authFunction, domainName, '/auth/callback');
 
-    addLogoutRoute(this, managementApi, this.sessionsTable, this.props.configuration);
+    addLogoutRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration);
 
     /**
      * CloudFront in front of the HTTP API and static assets, the public web entrance.

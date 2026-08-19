@@ -4,10 +4,12 @@ import { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { AuthRequestHandler } from './AuthRequestHandler';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
+import { createAuditTrail } from '../../shared/audit/createAuditTrail';
 import { EntraOidcClient } from '../../shared/auth/EntraOidcClient';
 import { loadOidcConfiguration } from '../../shared/auth/OidcConfiguration';
 
 const dynamoDBClient = new DynamoDBClient({});
+const auditTrail = createAuditTrail(dynamoDBClient);
 
 let oidcClient: EntraOidcClient | undefined;
 async function initialize(): Promise<EntraOidcClient> {
@@ -31,6 +33,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<ApiGateway
       queryStringParamError: event.queryStringParameters?.error,
       dynamoDBClient,
       oidcClient: client,
+      auditTrail,
     });
     return await requestHandler.handleRequest();
   } catch (error) {

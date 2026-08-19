@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
 import { AuthorizerRequestHandler } from '../AuthorizerRequestHandler';
 
 const dynamoMock = mockClient(DynamoDBClient);
@@ -11,18 +12,20 @@ describe('AuthorizerRequestHandler', () => {
   });
 
   it('denies when there is no session cookie', async () => {
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const auditTrail = new FakeAuditTrail();
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), auditTrail);
 
     const result = await handler.handleRequest(undefined);
 
     expect(result).toEqual({ isAuthorized: false });
     expect(dynamoMock.commandCalls(GetItemCommand)).toHaveLength(0);
+    expect(auditTrail.events).toEqual([expect.objectContaining({ eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED' })]);
   });
 
   it('denies when the session token is unknown', async () => {
     dynamoMock.on(GetItemCommand).resolves({});
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
 
     const result = await handler.handleRequest('session=unknown-token');
 
@@ -34,7 +37,7 @@ describe('AuthorizerRequestHandler', () => {
       Item: { sessionid: { S: 'hash' }, data: { M: { loggedin: { BOOL: false } } } },
     });
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
 
     const result = await handler.handleRequest('session=pending-token');
 
@@ -44,7 +47,7 @@ describe('AuthorizerRequestHandler', () => {
   it('denies when the session has expired (TTL removed the item)', async () => {
     dynamoMock.on(GetItemCommand).resolves({ Item: undefined });
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
 
     const result = await handler.handleRequest('session=expired-token');
 
@@ -56,11 +59,15 @@ describe('AuthorizerRequestHandler', () => {
       Item: { sessionid: { S: 'hash' }, data: { M: { loggedin: { BOOL: true } } } },
     });
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const auditTrail = new FakeAuditTrail();
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), auditTrail);
 
     const result = await handler.handleRequest('session=broken-token');
 
     expect(result).toEqual({ isAuthorized: false });
+    expect(auditTrail.events).toEqual([expect.objectContaining({
+      eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED', metadata: { reason: 'missing-principal-id' },
+    })]);
   });
 
   it('authorizes and returns a compact identity context for a valid session', async () => {
@@ -71,11 +78,13 @@ describe('AuthorizerRequestHandler', () => {
       },
     });
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const auditTrail = new FakeAuditTrail();
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), auditTrail);
 
     const result = await handler.handleRequest('session=valid-token');
 
     expect(result).toEqual({ isAuthorized: true, context: { principalId: 'employee-principal-id' } });
+    expect(auditTrail.events).toEqual([]);
   });
 
   it('includes email in the context when the session has one, for permission lookups keyed on email', async () => {
@@ -92,7 +101,7 @@ describe('AuthorizerRequestHandler', () => {
       },
     });
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}));
+    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
 
     const result = await handler.handleRequest('session=valid-token');
 

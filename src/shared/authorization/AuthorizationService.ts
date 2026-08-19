@@ -3,6 +3,9 @@ import { AuthorizationContext } from './AuthorizationContext';
 import { PermissionCheck, PermissionEvaluator } from './PermissionEvaluator';
 import { PermissionRepository } from './PermissionRepository';
 import { logger } from '../../observability/Logger';
+import { xRayTraceId } from '../../observability/xRayTraceId';
+import { AuditTrail } from '../audit/AuditTrail';
+import { recordAudit } from '../audit/recordAudit';
 import { EmployeeIdentity } from '../auth/EmployeeIdentity';
 
 /**
@@ -11,7 +14,7 @@ import { EmployeeIdentity } from '../auth/EmployeeIdentity';
  * handlers call this instead of writing their own admin/wildcard checks.
  */
 export class AuthorizationService {
-  constructor(private readonly permissionRepository: PermissionRepository) { }
+  constructor(private readonly permissionRepository: PermissionRepository, private readonly auditTrail: AuditTrail) { }
 
   async loadContext(identity: EmployeeIdentity): Promise<AuthorizationContext> {
     if (!identity.email) {
@@ -26,7 +29,7 @@ export class AuthorizationService {
   /**
    * Returns a 403 response when denied, or undefined when the handler should proceed.
    */
-  requireAuthorization(context: AuthorizationContext, check: PermissionCheck): ApiGatewayV2Response | undefined {
+  async requireAuthorization(context: AuthorizationContext, check: PermissionCheck): Promise<ApiGatewayV2Response | undefined> {
     const decision = context.evaluator.evaluate(check);
     logger.debug('Permission decision evaluated', { resource: check.resource, action: check.action, decision });
 
@@ -35,6 +38,14 @@ export class AuthorizationService {
     }
 
     logger.info('Access denied', { resource: check.resource, action: check.action });
+    await recordAudit(this.auditTrail, {
+      eventType: 'ACCESS_DENIED',
+      outcome: 'DENIED',
+      correlationId: xRayTraceId(),
+      resource: check.resource,
+      action: check.action,
+      ...(context.identity.email ? { actorEmail: context.identity.email } : {}),
+    });
     return Response.error(403);
   }
 }

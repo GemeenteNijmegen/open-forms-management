@@ -1,6 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { Session } from '@gemeentenijmegen/session';
 import { logger } from '../../observability/Logger';
+import { xRayTraceId } from '../../observability/xRayTraceId';
+import { AuditTrail } from '../../shared/audit/AuditTrail';
+import { recordAudit } from '../../shared/audit/recordAudit';
 import { EmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
 
 export type AuthorizerContext = EmployeeIdentity;
@@ -17,20 +20,27 @@ export interface AuthorizerResult {
  * has one, since permission grants are looked up by email, not principalId.
  */
 export class AuthorizerRequestHandler {
-  constructor(private readonly dynamoDBClient: DynamoDBClient) { }
+  constructor(private readonly dynamoDBClient: DynamoDBClient, private readonly auditTrail: AuditTrail) { }
 
   async handleRequest(cookieHeader: string | undefined): Promise<AuthorizerResult> {
     const session = new Session(cookieHeader ?? '', this.dynamoDBClient);
     await session.init();
+    const correlationId = xRayTraceId();
 
     if (session.sessionId === false || !session.isLoggedIn()) {
       logger.info('Authorization denied: no valid session');
+      await recordAudit(this.auditTrail, {
+        eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED', correlationId, metadata: { reason: 'no-valid-session' },
+      });
       return { isAuthorized: false };
     }
 
     const principalId = session.getValue('principalId');
     if (typeof principalId !== 'string' || principalId.length === 0) {
       logger.info('Authorization denied: session has no principalId');
+      await recordAudit(this.auditTrail, {
+        eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED', correlationId, metadata: { reason: 'missing-principal-id' },
+      });
       return { isAuthorized: false };
     }
 

@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
 import { LogoutRequestHandler } from '../LogoutRequestHandler';
 
 const dynamoMock = mockClient(DynamoDBClient);
@@ -11,22 +12,28 @@ describe('LogoutRequestHandler', () => {
   });
 
   it('redirects to /login and clears the cookie without touching DynamoDB when there is no session', async () => {
-    const handler = new LogoutRequestHandler();
+    const auditTrail = new FakeAuditTrail();
+    const handler = new LogoutRequestHandler(auditTrail);
     const response = await handler.handleRequest(undefined, new DynamoDBClient({}));
 
     expect(response.statusCode).toBe(302);
     expect(response.headers?.Location).toBe('/login');
     expect(response.cookies?.[0]).toContain('session=;');
     expect(dynamoMock.commandCalls(UpdateItemCommand)).toHaveLength(0);
+    expect(auditTrail.events).toEqual([]);
   });
 
-  it('revokes an active session and clears the cookie', async () => {
+  it('revokes an active session, clears the cookie and records SESSION_REVOKED and LOGOUT', async () => {
     dynamoMock.on(GetItemCommand).resolves({
-      Item: { sessionid: { S: 'hash' }, data: { M: { loggedin: { BOOL: true }, principalId: { S: 'employee-1' } } } },
+      Item: {
+        sessionid: { S: 'hash' },
+        data: { M: { loggedin: { BOOL: true }, principalId: { S: 'employee-1' }, email: { S: 'medewerker@nijmegen.nl' } } },
+      },
     });
     dynamoMock.on(UpdateItemCommand).resolves({});
 
-    const handler = new LogoutRequestHandler();
+    const auditTrail = new FakeAuditTrail();
+    const handler = new LogoutRequestHandler(auditTrail);
     const response = await handler.handleRequest('session=active-token', new DynamoDBClient({}));
 
     expect(response.statusCode).toBe(302);
@@ -39,6 +46,10 @@ describe('LogoutRequestHandler', () => {
     expect(updateCall.args[0].input.ExpressionAttributeValues?.[':data']).toEqual({
       M: { loggedin: { BOOL: false } },
     });
+
+    expect(auditTrail.events.map((event) => event.eventType)).toEqual(['SESSION_REVOKED', 'LOGOUT']);
+    expect(auditTrail.events[0]).toMatchObject({ outcome: 'SUCCESS', actorEmail: 'medewerker@nijmegen.nl' });
+    expect(auditTrail.events[1]).toMatchObject({ outcome: 'SUCCESS', actorEmail: 'medewerker@nijmegen.nl' });
   });
 
   it('is idempotent for an already logged-out session', async () => {
@@ -47,13 +58,13 @@ describe('LogoutRequestHandler', () => {
     });
     dynamoMock.on(UpdateItemCommand).resolves({});
 
-    const handler = new LogoutRequestHandler();
+    const handler = new LogoutRequestHandler(new FakeAuditTrail());
     const response = await handler.handleRequest('session=already-logged-out-token', new DynamoDBClient({}));
 
     expect(response.statusCode).toBe(302);
   });
 
-  it('returns a 500 without clearing the cookie when revocation fails', async () => {
+  it('returns a 500 without clearing the cookie and records SESSION_REVOKED as a failure when revocation fails', async () => {
     // @gemeentenijmegen/session logs this failure via console.error itself before rethrowing.
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
@@ -62,11 +73,15 @@ describe('LogoutRequestHandler', () => {
     });
     dynamoMock.on(UpdateItemCommand).rejects(new Error('DynamoDB unavailable'));
 
-    const handler = new LogoutRequestHandler();
+    const auditTrail = new FakeAuditTrail();
+    const handler = new LogoutRequestHandler(auditTrail);
     const response = await handler.handleRequest('session=active-token', new DynamoDBClient({}));
 
     expect(response.statusCode).toBe(500);
     expect(response.cookies).toBeUndefined();
+    expect(auditTrail.events).toEqual([expect.objectContaining({
+      eventType: 'SESSION_REVOKED', outcome: 'FAILURE', metadata: { reason: 'DynamoDB unavailable' },
+    })]);
 
     consoleErrorSpy.mockRestore();
   });

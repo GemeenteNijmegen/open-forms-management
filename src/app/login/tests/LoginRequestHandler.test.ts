@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
 import { FakeOidcClient } from '../../../shared/auth/tests/FakeOidcClient';
 import { LoginRequestHandler } from '../LoginRequestHandler';
 
@@ -19,7 +20,7 @@ describe('LoginRequestHandler', () => {
       },
     });
 
-    const handler = new LoginRequestHandler(new FakeOidcClient());
+    const handler = new LoginRequestHandler(new FakeOidcClient(), new FakeAuditTrail());
     const response = await handler.handleRequest('session=existing-token', new DynamoDBClient({}));
 
     expect(response.statusCode).toBe(302);
@@ -31,7 +32,7 @@ describe('LoginRequestHandler', () => {
     const oidcClient = new FakeOidcClient();
     oidcClient.authorizationUrl = 'https://login.microsoftonline.com/test-tenant/authorize?state=x';
 
-    const handler = new LoginRequestHandler(oidcClient);
+    const handler = new LoginRequestHandler(oidcClient, new FakeAuditTrail());
     const response = await handler.handleRequest(undefined, new DynamoDBClient({}));
 
     expect(response.statusCode).toBe(302);
@@ -49,9 +50,20 @@ describe('LoginRequestHandler', () => {
     const oidcClient = new FakeOidcClient();
     const getAuthorizationUrlSpy = jest.spyOn(oidcClient, 'getAuthorizationUrl');
 
-    const handler = new LoginRequestHandler(oidcClient);
+    const handler = new LoginRequestHandler(oidcClient, new FakeAuditTrail());
     await handler.handleRequest(undefined, new DynamoDBClient({}));
 
     expect(getAuthorizationUrlSpy).toHaveBeenCalledWith('fake-state', 'fake-nonce', 'openid email');
+  });
+
+  it('records a LOGIN_STARTED audit event with the generated flowId', async () => {
+    dynamoMock.on(PutItemCommand).resolves({});
+    const auditTrail = new FakeAuditTrail();
+
+    const handler = new LoginRequestHandler(new FakeOidcClient(), auditTrail);
+    await handler.handleRequest(undefined, new DynamoDBClient({}));
+
+    expect(auditTrail.events).toHaveLength(1);
+    expect(auditTrail.events[0]).toMatchObject({ eventType: 'LOGIN_STARTED', outcome: 'SUCCESS', flowId: expect.any(String) });
   });
 });

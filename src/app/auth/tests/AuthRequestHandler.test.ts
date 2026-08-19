@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
 import { FakeOidcClient } from '../../../shared/auth/tests/FakeOidcClient';
 import { AuthRequestHandler } from '../AuthRequestHandler';
 
@@ -20,6 +21,7 @@ describe('AuthRequestHandler', () => {
       queryStringParamError: 'access_denied',
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient: new FakeOidcClient(),
+      auditTrail: new FakeAuditTrail(),
     });
 
     const response = await handler.handleRequest();
@@ -34,6 +36,7 @@ describe('AuthRequestHandler', () => {
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient: new FakeOidcClient(),
+      auditTrail: new FakeAuditTrail(),
     });
 
     const response = await handler.handleRequest();
@@ -51,6 +54,7 @@ describe('AuthRequestHandler', () => {
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient: new FakeOidcClient(),
+      auditTrail: new FakeAuditTrail(),
     });
 
     const response = await handler.handleRequest();
@@ -85,6 +89,7 @@ describe('AuthRequestHandler', () => {
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient,
+      auditTrail: new FakeAuditTrail(),
     });
 
     const response = await handler.handleRequest();
@@ -98,6 +103,44 @@ describe('AuthRequestHandler', () => {
     expect(data?.email).toEqual({ S: 'medewerker@nijmegen.nl' });
   });
 
+  it('records LOGIN_SUCCEEDED and SESSION_CREATED with the actor email on success', async () => {
+    dynamoMock.on(GetItemCommand).resolves({
+      Item: {
+        sessionid: { S: 'hash' },
+        data: {
+          M: {
+            loggedin: { BOOL: false },
+            state: { S: 'fake-state' },
+            nonce: { S: 'fake-nonce' },
+            flowId: { S: 'fake-flow-id' },
+          },
+        },
+      },
+    });
+    dynamoMock.on(PutItemCommand).resolves({});
+
+    const oidcClient = new FakeOidcClient();
+    oidcClient.authorizationResult = {
+      claims: { sub: 'employee-principal-id', email: 'medewerker@nijmegen.nl' },
+      scopes: ['openid', 'email'],
+    };
+    const auditTrail = new FakeAuditTrail();
+
+    const handler = new AuthRequestHandler({
+      cookies: 'session=pending-token',
+      fullUrl,
+      dynamoDBClient: new DynamoDBClient({}),
+      oidcClient,
+      auditTrail,
+    });
+
+    await handler.handleRequest();
+
+    expect(auditTrail.events.map((event) => event.eventType)).toEqual(['LOGIN_SUCCEEDED', 'SESSION_CREATED']);
+    expect(auditTrail.events[0]).toMatchObject({ outcome: 'SUCCESS', actorEmail: 'medewerker@nijmegen.nl', flowId: 'fake-flow-id' });
+    expect(auditTrail.events[1]).toMatchObject({ outcome: 'SUCCESS', actorEmail: 'medewerker@nijmegen.nl', flowId: 'fake-flow-id' });
+  });
+
   it('redirects to /login without creating a session when the code exchange fails (e.g. state/nonce mismatch)', async () => {
     dynamoMock.on(GetItemCommand).resolves({
       Item: {
@@ -108,18 +151,23 @@ describe('AuthRequestHandler', () => {
 
     const oidcClient = new FakeOidcClient();
     jest.spyOn(oidcClient, 'exchangeAuthorizationCode').mockRejectedValue(new Error('state mismatch'));
+    const auditTrail = new FakeAuditTrail();
 
     const handler = new AuthRequestHandler({
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient,
+      auditTrail,
     });
 
     const response = await handler.handleRequest();
 
     expect(response.statusCode).toBe(302);
     expect(dynamoMock.commandCalls(PutItemCommand)).toHaveLength(0);
+    expect(auditTrail.events).toEqual([expect.objectContaining({
+      eventType: 'LOGIN_FAILED', outcome: 'FAILURE', metadata: { reason: 'state mismatch' },
+    })]);
   });
 
   it('redirects to /login without creating a session when the claims cannot be mapped to an identity', async () => {
@@ -138,6 +186,7 @@ describe('AuthRequestHandler', () => {
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient,
+      auditTrail: new FakeAuditTrail(),
     });
 
     const response = await handler.handleRequest();
@@ -157,16 +206,20 @@ describe('AuthRequestHandler', () => {
 
     const oidcClient = new FakeOidcClient();
     oidcClient.authorizationResult = { claims: { sub: 'employee-principal-id' }, scopes: ['openid'] };
+    const auditTrail = new FakeAuditTrail();
 
     const handler = new AuthRequestHandler({
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
       oidcClient,
+      auditTrail,
     });
 
     const response = await handler.handleRequest();
 
     expect(response.statusCode).toBe(500);
+    expect(auditTrail.events.map((event) => event.eventType)).toEqual(['LOGIN_SUCCEEDED', 'LOGIN_FAILED']);
+    expect(auditTrail.events[1]).toMatchObject({ outcome: 'FAILURE', metadata: { reason: 'DynamoDB unavailable' } });
   });
 });

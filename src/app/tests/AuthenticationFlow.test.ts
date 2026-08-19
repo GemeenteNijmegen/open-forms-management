@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { FakeAuditTrail } from '../../shared/audit/tests/FakeAuditTrail';
 import { FakeOidcClient } from '../../shared/auth/tests/FakeOidcClient';
 import { AuthRequestHandler } from '../auth/AuthRequestHandler';
 import { AuthorizerRequestHandler } from '../authorizer/AuthorizerRequestHandler';
@@ -60,8 +61,9 @@ describe('full login -> protected route -> logout flow', () => {
       claims: { sub: 'employee-1', email: 'medewerker@nijmegen.nl' },
       scopes: ['openid', 'email'],
     };
+    const auditTrail = new FakeAuditTrail();
 
-    const loginResponse = await new LoginRequestHandler(oidcClient).handleRequest(undefined, dynamoDBClient);
+    const loginResponse = await new LoginRequestHandler(oidcClient, auditTrail).handleRequest(undefined, dynamoDBClient);
     expect(loginResponse.statusCode).toBe(302);
     const pendingCookie = toCookieHeader(loginResponse);
     const pendingSessionData = Array.from(store.values())[0]!.data.M;
@@ -72,23 +74,33 @@ describe('full login -> protected route -> logout flow', () => {
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
       oidcClient,
+      auditTrail,
     }).handleRequest();
     expect(callbackResponse.statusCode).toBe(302);
     expect(callbackResponse.headers?.Location).toBe('/home');
     const sessionCookie = toCookieHeader(callbackResponse);
 
-    const authorized = await new AuthorizerRequestHandler(dynamoDBClient).handleRequest(sessionCookie);
+    const authorized = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
     expect(authorized).toEqual({
       isAuthorized: true,
       context: { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
     });
 
-    const logoutResponse = await new LogoutRequestHandler().handleRequest(sessionCookie, dynamoDBClient);
+    const logoutResponse = await new LogoutRequestHandler(auditTrail).handleRequest(sessionCookie, dynamoDBClient);
     expect(logoutResponse.statusCode).toBe(302);
     expect(logoutResponse.headers?.Location).toBe('/login');
 
-    const deniedAfterLogout = await new AuthorizerRequestHandler(dynamoDBClient).handleRequest(sessionCookie);
+    const deniedAfterLogout = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
     expect(deniedAfterLogout).toEqual({ isAuthorized: false });
+
+    expect(auditTrail.events.map((event) => event.eventType)).toEqual([
+      'LOGIN_STARTED',
+      'LOGIN_SUCCEEDED',
+      'SESSION_CREATED',
+      'SESSION_REVOKED',
+      'LOGOUT',
+      'AUTHENTICATION_DENIED',
+    ]);
   });
 });
 
@@ -102,6 +114,7 @@ describe('callback without a valid pending session', () => {
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
       oidcClient,
+      auditTrail: new FakeAuditTrail(),
     }).handleRequest();
 
     expect(response.statusCode).toBe(302);
@@ -115,12 +128,13 @@ describe('replayed authorization code', () => {
     const dynamoDBClient = new DynamoDBClient({});
     const oidcClient = new FakeOidcClient();
     oidcClient.authorizationResult = { claims: { sub: 'employee-1' }, scopes: ['openid'] };
+    const auditTrail = new FakeAuditTrail();
 
-    const loginResponse = await new LoginRequestHandler(oidcClient).handleRequest(undefined, dynamoDBClient);
+    const loginResponse = await new LoginRequestHandler(oidcClient, auditTrail).handleRequest(undefined, dynamoDBClient);
     const pendingCookie = toCookieHeader(loginResponse);
     const fullUrl = new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state');
 
-    const firstCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient }).handleRequest();
+    const firstCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient, auditTrail }).handleRequest();
     expect(firstCallback.statusCode).toBe(302);
     expect(firstCallback.headers?.Location).toBe('/home');
     const sessionCookie = toCookieHeader(firstCallback);
@@ -128,12 +142,16 @@ describe('replayed authorization code', () => {
     // Entra's authorization code is single-use: a second exchange attempt with the same
     // pending cookie fails at the idp, which the fake simulates directly here.
     jest.spyOn(oidcClient, 'exchangeAuthorizationCode').mockRejectedValueOnce(new Error('authorization code already used'));
-    const secondCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient }).handleRequest();
+    const secondCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient, auditTrail }).handleRequest();
     expect(secondCallback.statusCode).toBe(302);
     expect(secondCallback.headers?.Location).toBe('/login');
 
-    const stillAuthorized = await new AuthorizerRequestHandler(dynamoDBClient).handleRequest(sessionCookie);
+    const stillAuthorized = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
     expect(stillAuthorized).toEqual({ isAuthorized: true, context: { principalId: 'employee-1' } });
+
+    expect(auditTrail.events.map((event) => event.eventType)).toEqual([
+      'LOGIN_STARTED', 'LOGIN_SUCCEEDED', 'SESSION_CREATED', 'LOGIN_FAILED',
+    ]);
   });
 });
 
@@ -142,20 +160,22 @@ describe('expired session', () => {
     const dynamoDBClient = new DynamoDBClient({});
     const oidcClient = new FakeOidcClient();
     oidcClient.authorizationResult = { claims: { sub: 'employee-1' }, scopes: ['openid'] };
+    const auditTrail = new FakeAuditTrail();
 
-    const loginResponse = await new LoginRequestHandler(oidcClient).handleRequest(undefined, dynamoDBClient);
+    const loginResponse = await new LoginRequestHandler(oidcClient, auditTrail).handleRequest(undefined, dynamoDBClient);
     const pendingCookie = toCookieHeader(loginResponse);
     const callbackResponse = await new AuthRequestHandler({
       cookies: pendingCookie,
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
       oidcClient,
+      auditTrail,
     }).handleRequest();
     const sessionCookie = toCookieHeader(callbackResponse);
 
     store.clear(); // simulate the TTL removing the record
 
-    const denied = await new AuthorizerRequestHandler(dynamoDBClient).handleRequest(sessionCookie);
+    const denied = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
     expect(denied).toEqual({ isAuthorized: false });
   });
 });

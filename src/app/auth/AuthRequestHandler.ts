@@ -3,6 +3,9 @@ import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-htt
 import { Session } from '@gemeentenijmegen/session';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
+import { xRayTraceId } from '../../observability/xRayTraceId';
+import { AuditTrail } from '../../shared/audit/AuditTrail';
+import { recordAudit } from '../../shared/audit/recordAudit';
 import { mapToEmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
 import { OidcClient } from '../../shared/auth/OidcClient';
 
@@ -12,6 +15,7 @@ export interface AuthRequestHandlerProps {
   queryStringParamError?: string;
   dynamoDBClient: DynamoDBClient;
   oidcClient: OidcClient;
+  auditTrail: AuditTrail;
 }
 
 export class AuthRequestHandler {
@@ -40,14 +44,24 @@ export class AuthRequestHandler {
 
     logger.debug('OIDC callback received', { flowId });
 
+    const correlationId = xRayTraceId();
+
     let identity;
     try {
       const result = await this.props.oidcClient.exchangeAuthorizationCode(this.props.fullUrl, expectedState, expectedNonce);
       identity = mapToEmployeeIdentity(result.claims);
     } catch (error) {
-      logger.info('Login failed', { flowId, reason: errorReason(error) });
+      const reason = errorReason(error);
+      logger.info('Login failed', { flowId, reason });
+      await recordAudit(this.props.auditTrail, {
+        eventType: 'LOGIN_FAILED', outcome: 'FAILURE', correlationId, flowId, metadata: { reason },
+      });
       return Response.redirect('/login');
     }
+
+    await recordAudit(this.props.auditTrail, {
+      eventType: 'LOGIN_SUCCEEDED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
+    });
 
     try {
       // A fresh session (new token) is created here rather than updating the
@@ -58,9 +72,22 @@ export class AuthRequestHandler {
         ...(identity.email ? { email: { S: identity.email } } : {}),
       });
     } catch (error) {
-      logger.error('Failed to create session after successful login', { flowId, reason: errorReason(error) });
+      const reason = errorReason(error);
+      logger.error('Failed to create session after successful login', { flowId, reason });
+      await recordAudit(this.props.auditTrail, {
+        eventType: 'LOGIN_FAILED',
+        outcome: 'FAILURE',
+        correlationId,
+        flowId,
+        ...(identity.email ? { actorEmail: identity.email } : {}),
+        metadata: { reason },
+      });
       return Response.error(500);
     }
+
+    await recordAudit(this.props.auditTrail, {
+      eventType: 'SESSION_CREATED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
+    });
 
     logger.info('Login completed', { flowId });
 

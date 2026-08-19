@@ -5,10 +5,16 @@ import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { AuthorizerFunction } from '../app/authorizer/authorizer-function';
 import { Configuration } from '../Configuration';
+import { AuditTrailTable } from './AuditTrailTable';
 import { SessionsTable } from './SessionsTable';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from '../observability/LambdaLogging';
 
-export function createSessionAuthorizer(scope: Construct, sessionsTable: SessionsTable, configuration: Configuration): IHttpRouteAuthorizer {
+export function createSessionAuthorizer(
+  scope: Construct,
+  sessionsTable: SessionsTable,
+  auditTrailTable: AuditTrailTable,
+  configuration: Configuration,
+): IHttpRouteAuthorizer {
   const authorizerFunction = new AuthorizerFunction(scope, 'authorizer-function', {
     tracing: Tracing.ACTIVE,
     logGroup: createLambdaLogGroup(scope, 'authorizer-function'),
@@ -16,6 +22,8 @@ export function createSessionAuthorizer(scope: Construct, sessionsTable: Session
   applyLambdaLoggingDefaults(authorizerFunction, configuration);
   sessionsTable.table.grantReadData(authorizerFunction);
   authorizerFunction.addEnvironment('SESSION_TABLE', sessionsTable.table.tableName);
+  auditTrailTable.grantPut(authorizerFunction);
+  authorizerFunction.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
 
   return new HttpLambdaAuthorizer('session-authorizer', authorizerFunction, {
     identitySource: ['$request.header.Cookie'],

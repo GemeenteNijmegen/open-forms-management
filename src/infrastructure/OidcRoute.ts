@@ -4,6 +4,7 @@ import { Function } from 'aws-cdk-lib/aws-lambda';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
+import { AuditTrailTable } from './AuditTrailTable';
 import { Configuration } from '../Configuration';
 import { applyLambdaLoggingDefaults } from '../observability/LambdaLogging';
 import { Statics } from '../Statics';
@@ -18,6 +19,7 @@ export function addOidcRoute(
   scope: Construct,
   managementApi: ManagementApi,
   sessionsTable: SessionsTable,
+  auditTrailTable: AuditTrailTable,
   configuration: Configuration,
   fn: Function,
   domainName: string,
@@ -27,6 +29,8 @@ export function addOidcRoute(
 
   sessionsTable.table.grantReadWriteData(fn);
   fn.addEnvironment('SESSION_TABLE', sessionsTable.table.tableName);
+  auditTrailTable.grantPut(fn);
+  fn.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
   fn.addEnvironment('MANAGEMENT_DOMAIN', domainName);
   fn.addEnvironment('OIDC_ISSUER', StringParameter.valueForStringParameter(scope, Statics.ssmOidcIssuer));
   fn.addEnvironment('OIDC_CLIENT_ID', StringParameter.valueForStringParameter(scope, Statics.ssmOidcClientId));

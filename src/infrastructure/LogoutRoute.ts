@@ -4,6 +4,7 @@ import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { LogoutFunction } from '../app/logout/logout-function';
 import { Configuration } from '../Configuration';
+import { AuditTrailTable } from './AuditTrailTable';
 import { ManagementApi } from './ManagementApi';
 import { SessionsTable } from './SessionsTable';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from '../observability/LambdaLogging';
@@ -11,9 +12,15 @@ import { applyLambdaLoggingDefaults, createLambdaLogGroup } from '../observabili
 /**
  * Wires the logout Lambda and adds its public route. Unlike login/auth
  * callback it never talks to the OIDC provider, so it only needs session
- * table access.
+ * table and audit trail access.
  */
-export function addLogoutRoute(scope: Construct, managementApi: ManagementApi, sessionsTable: SessionsTable, configuration: Configuration) {
+export function addLogoutRoute(
+  scope: Construct,
+  managementApi: ManagementApi,
+  sessionsTable: SessionsTable,
+  auditTrailTable: AuditTrailTable,
+  configuration: Configuration,
+) {
   const logoutFunction = new LogoutFunction(scope, 'logout-function', {
     tracing: Tracing.ACTIVE,
     logGroup: createLambdaLogGroup(scope, 'logout-function'),
@@ -21,6 +28,8 @@ export function addLogoutRoute(scope: Construct, managementApi: ManagementApi, s
   applyLambdaLoggingDefaults(logoutFunction, configuration);
   sessionsTable.table.grantReadWriteData(logoutFunction);
   logoutFunction.addEnvironment('SESSION_TABLE', sessionsTable.table.tableName);
+  auditTrailTable.grantPut(logoutFunction);
+  logoutFunction.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
 
   managementApi.api.addRoutes({
     path: '/logout',
