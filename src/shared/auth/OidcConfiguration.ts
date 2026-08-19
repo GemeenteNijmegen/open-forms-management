@@ -1,5 +1,6 @@
 import { AWS } from '@gemeentenijmegen/utils';
 import { EntraOidcClientConfiguration } from './EntraOidcClient';
+import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 
 const requiredEnvironmentVariables = ['OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET_ARN', 'MANAGEMENT_DOMAIN'] as const;
@@ -27,7 +28,7 @@ export async function loadOidcConfiguration(): Promise<EntraOidcClientConfigurat
   try {
     clientSecret = await AWS.getSecret(clientSecretArn);
   } catch (error) {
-    logger.error('Failed to fetch OIDC client secret from Secrets Manager', { clientSecretArn });
+    logger.error('Failed to fetch OIDC client secret from Secrets Manager', { clientSecretArn, reason: errorReason(error) });
     throw error;
   }
 

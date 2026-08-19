@@ -50,4 +50,15 @@ describe('loadOidcConfiguration', () => {
       expect(AWS.getSecret).not.toHaveBeenCalled();
     },
   );
+
+  it('logs the failure reason and rethrows when fetching the secret fails', async () => {
+    (AWS.getSecret as jest.Mock).mockRejectedValue(new Error('AccessDeniedException'));
+
+    await expect(loadOidcConfiguration()).rejects.toThrow('AccessDeniedException');
+
+    expect(logger.error).toHaveBeenCalledWith('Failed to fetch OIDC client secret from Secrets Manager', {
+      clientSecretArn: process.env.OIDC_CLIENT_SECRET_ARN,
+      reason: 'AccessDeniedException',
+    });
+  });
 });

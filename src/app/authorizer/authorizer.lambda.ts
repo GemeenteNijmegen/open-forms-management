@@ -1,15 +1,17 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { APIGatewayRequestAuthorizerEventV2 } from 'aws-lambda';
+import { APIGatewayRequestAuthorizerEventV2, Context } from 'aws-lambda';
 import { AuthorizerRequestHandler, AuthorizerResult } from './AuthorizerRequestHandler';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 import { countMetric, metrics } from '../../observability/Metrics';
+import { bindRequestLogging, resetRequestLogging } from '../../observability/RequestLogging';
 import { createAuditTrail } from '../../shared/audit/createAuditTrail';
 
 const dynamoDBClient = new DynamoDBClient({});
 const requestHandler = new AuthorizerRequestHandler(dynamoDBClient, createAuditTrail(dynamoDBClient));
 
-export async function handler(event: APIGatewayRequestAuthorizerEventV2): Promise<AuthorizerResult> {
+export async function handler(event: APIGatewayRequestAuthorizerEventV2, context: Context): Promise<AuthorizerResult> {
+  bindRequestLogging(context);
   try {
     return await requestHandler.handleRequest(event.cookies?.join(';'));
   } catch (error) {
@@ -18,5 +20,6 @@ export async function handler(event: APIGatewayRequestAuthorizerEventV2): Promis
     return { isAuthorized: false };
   } finally {
     metrics.publishStoredMetrics();
+    resetRequestLogging();
   }
 }
