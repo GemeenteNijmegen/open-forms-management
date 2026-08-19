@@ -63,6 +63,7 @@ junit.xml
 !/src/app/authorizer/authorizer-function.ts
 !/src/app/home/home-function.ts
 !/src/app/login/login-function.ts
+!/src/app/logout/logout-function.ts
 !/.github/workflows/emergency.yml
 !/.github/workflows/auto-merge.yml
 !/.nvmrc

@@ -36,13 +36,13 @@ describe('AppStack authorizer wiring', () => {
     }));
   });
 
-  it('leaves the login and callback routes public', () => {
+  it.each([
+    'GET /login',
+    'GET /auth/callback',
+    'GET /logout',
+  ])('leaves %s public', (routeKey) => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', Match.objectLike({
-      RouteKey: 'GET /login',
-      AuthorizationType: 'NONE',
-    }));
-    template.hasResourceProperties('AWS::ApiGatewayV2::Route', Match.objectLike({
-      RouteKey: 'GET /auth/callback',
+      RouteKey: routeKey,
       AuthorizationType: 'NONE',
     }));
   });
@@ -52,6 +52,7 @@ describe('AppStack authorizer wiring', () => {
     'src/app/login/login.lambda.ts',
     'src/app/auth/auth.lambda.ts',
     'src/app/authorizer/authorizer.lambda.ts',
+    'src/app/logout/logout.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -63,6 +64,6 @@ describe('AppStack authorizer wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(4);
+    expect(Object.keys(logGroups)).toHaveLength(5);
   });
 });

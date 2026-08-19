@@ -6,6 +6,7 @@ import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
 import { Configurable } from './Configuration';
 import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
+import { addLogoutRoute } from './infrastructure/LogoutRoute';
 import { ManagementApi } from './infrastructure/ManagementApi';
 import { ManagementDistribution } from './infrastructure/ManagementDistribution';
 import { addOidcRoute } from './infrastructure/OidcRoute';
@@ -66,6 +67,8 @@ export class AppStack extends Stack {
       logGroup: createLambdaLogGroup(this, 'auth-function'),
     });
     addOidcRoute(this, managementApi, this.sessionsTable, this.props.configuration, authFunction, domainName, '/auth/callback');
+
+    addLogoutRoute(this, managementApi, this.sessionsTable, this.props.configuration);
 
     /**
      * CloudFront in front of the HTTP API and static assets, the public web entrance.

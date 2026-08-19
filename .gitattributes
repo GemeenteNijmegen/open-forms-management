@@ -27,5 +27,6 @@
 /src/app/authorizer/authorizer-function.ts linguist-generated
 /src/app/home/home-function.ts linguist-generated
 /src/app/login/login-function.ts linguist-generated
+/src/app/logout/logout-function.ts linguist-generated
 /test/tsconfig.json linguist-generated linguist-language=JSON-with-Comments
 /tsconfig.json linguist-generated linguist-language=JSON-with-Comments

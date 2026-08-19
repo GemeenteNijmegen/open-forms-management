@@ -17,6 +17,8 @@
     "bundle:app/home/home.lambda:watch": "projen bundle:app/home/home.lambda:watch",
     "bundle:app/login/login.lambda": "projen bundle:app/login/login.lambda",
     "bundle:app/login/login.lambda:watch": "projen bundle:app/login/login.lambda:watch",
+    "bundle:app/logout/logout.lambda": "projen bundle:app/logout/logout.lambda",
+    "bundle:app/logout/logout.lambda:watch": "projen bundle:app/logout/logout.lambda:watch",
     "cfn-lint": "projen cfn-lint",
     "clobber": "projen clobber",
     "compile": "projen compile",
