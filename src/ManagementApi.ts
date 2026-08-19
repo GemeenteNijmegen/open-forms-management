@@ -1,4 +1,4 @@
-import { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpApi, IHttpRouteAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
@@ -9,6 +9,11 @@ export interface ManagementApiProps {
    * Later issues (login, callback, logout) add explicit routes next to this.
    */
   defaultFunction: IFunction;
+  /**
+   * Authorizer applied to every route unless a route overrides it explicitly
+   * (e.g. the public login/callback routes use `HttpNoneAuthorizer`).
+   */
+  defaultAuthorizer: IHttpRouteAuthorizer;
 }
 
 export class ManagementApi extends Construct {
@@ -19,6 +24,7 @@ export class ManagementApi extends Construct {
 
     this.api = new HttpApi(this, 'api', {
       defaultIntegration: new HttpLambdaIntegration('default-integration', props.defaultFunction),
+      defaultAuthorizer: props.defaultAuthorizer,
     });
   }
 }

@@ -33,5 +33,10 @@ const project = new GemeenteNijmegenCdkApp({
     dirs: ['src', 'test', 'build-tools'],
     devdirs: ['test', 'tests', 'build-tools'],
   },
+  jestOptions: {
+    jestConfig: {
+      setupFiles: ['<rootDir>/test/jest.setup.ts'],
+    },
+  },
 });
 project.synth();

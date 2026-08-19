@@ -1,13 +1,15 @@
 import { RemoteParameters } from '@gemeentenijmegen/cross-region-parameters';
 import { Duration, Stack, StackProps } from 'aws-cdk-lib';
-import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpMethod, HttpNoneAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpLambdaAuthorizer, HttpLambdaResponseType } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import { Function } from 'aws-cdk-lib/aws-lambda';
+import { Function, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { HostedZone } from 'aws-cdk-lib/aws-route53';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
+import { AuthorizerFunction } from './app/authorizer/authorizer-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
 import { Configurable } from './Configuration';
@@ -44,17 +46,29 @@ export class AppStack extends Stack {
 
     const domainName = `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`;
 
-    const homeFunction = new HomeFunction(this, 'home-function');
+    const authorizerFunction = new AuthorizerFunction(this, 'authorizer-function', { tracing: Tracing.ACTIVE });
+    applyLambdaLoggingDefaults(authorizerFunction, this.props.configuration);
+    this.sessionsTable.table.grantReadData(authorizerFunction);
+    authorizerFunction.addEnvironment('SESSION_TABLE', this.sessionsTable.table.tableName);
+
+    const sessionAuthorizer = new HttpLambdaAuthorizer('session-authorizer', authorizerFunction, {
+      identitySource: ['$request.header.Cookie'],
+      resultsCacheTtl: Duration.seconds(0),
+      responseTypes: [HttpLambdaResponseType.SIMPLE],
+    });
+
+    const homeFunction = new HomeFunction(this, 'home-function', { tracing: Tracing.ACTIVE });
     applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
 
     const managementApi = new ManagementApi(this, 'management-api', {
       defaultFunction: homeFunction,
+      defaultAuthorizer: sessionAuthorizer,
     });
 
-    const loginFunction = new LoginFunction(this, 'login-function');
+    const loginFunction = new LoginFunction(this, 'login-function', { tracing: Tracing.ACTIVE });
     this.addOidcRoute(managementApi, loginFunction, domainName, '/login');
 
-    const authFunction = new AuthFunction(this, 'auth-function');
+    const authFunction = new AuthFunction(this, 'auth-function', { tracing: Tracing.ACTIVE });
     this.addOidcRoute(managementApi, authFunction, domainName, '/auth/callback');
 
     new ManagementDistribution(this, 'management-distribution', {
@@ -87,6 +101,7 @@ export class AppStack extends Stack {
       path,
       methods: [HttpMethod.GET],
       integration: new HttpLambdaIntegration(`integration-${fn.node.id}`, fn),
+      authorizer: new HttpNoneAuthorizer(),
     });
   }
 
