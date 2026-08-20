@@ -1,6 +1,6 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
 import { AccessLogFormat } from 'aws-cdk-lib/aws-apigateway';
-import { HttpApi, IHttpRouteAuthorizer, LogGroupLogDestination } from 'aws-cdk-lib/aws-apigatewayv2';
+import { CfnStage, HttpApi, IHttpRouteAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -41,8 +41,6 @@ export class ManagementApi extends Construct {
     this.api = new HttpApi(this, 'api', {
       defaultIntegration: new HttpLambdaIntegration('default-integration', props.defaultFunction),
       defaultAuthorizer: props.defaultAuthorizer,
-      // The default stage is created explicitly below instead, so access logging can be attached to it.
-      createDefaultStage: false,
     });
 
     const accessLogGroup = new LogGroup(this, 'access-log-group', {
@@ -50,12 +48,19 @@ export class ManagementApi extends Construct {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
-    this.api.addStage('default-stage', {
-      autoDeploy: true,
-      accessLogSettings: {
-        destination: new LogGroupLogDestination(accessLogGroup),
-        format: ACCESS_LOG_FORMAT,
-      },
-    });
+    /**
+     * HttpApi already creates a $default stage at a fixed logical ID (createDefaultStage defaults to true).
+     *
+     * Turning that off and calling addStage() here instead would create a second Stage resource under a
+     * different logical ID. Two stages can't both be named $default on one API, so CloudFormation can't
+     * create the "new" one while the original still exists.
+     *
+     * Attach access logging to the stage HttpApi already made instead, via the L1 escape hatch.
+     */
+    const defaultStage = this.api.defaultStage!.node.defaultChild as CfnStage;
+    defaultStage.accessLogSettings = {
+      destinationArn: accessLogGroup.logGroupArn,
+      format: ACCESS_LOG_FORMAT.toString(),
+    };
   }
 }
