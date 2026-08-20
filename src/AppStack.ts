@@ -1,5 +1,5 @@
 import { ErrorMonitoringAlarm } from '@gemeentenijmegen/aws-constructs';
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { Duration, Stack, StackProps } from 'aws-cdk-lib';
 import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
@@ -69,6 +69,8 @@ export class AppStack extends Stack {
     const loginFunction = new LoginFunction(this, 'login-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'login-function'),
+      // Calls out to the OIDC provider's discovery endpoint; the default 3s timeout is too tight for that.
+      timeout: Duration.seconds(30),
     });
     addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, loginFunction, domainName, '/login');
     new ErrorMonitoringAlarm(this, 'login-function-error-alarm', { lambda: loginFunction, criticality: this.props.configuration.criticality });
@@ -76,6 +78,8 @@ export class AppStack extends Stack {
     const authFunction = new AuthFunction(this, 'auth-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'auth-function'),
+      // Calls out to the OIDC provider for discovery and token exchange; the default 3s timeout is too tight for that.
+      timeout: Duration.seconds(30),
     });
     addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, authFunction, domainName, '/auth/callback');
     new ErrorMonitoringAlarm(this, 'auth-function-error-alarm', { lambda: authFunction, criticality: this.props.configuration.criticality });

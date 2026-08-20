@@ -77,7 +77,7 @@ describe('full login -> protected route -> logout flow', () => {
       auditTrail,
     }).handleRequest();
     expect(callbackResponse.statusCode).toBe(302);
-    expect(callbackResponse.headers?.Location).toBe('/home');
+    expect(callbackResponse.headers?.Location).toBe('/');
     const sessionCookie = toCookieHeader(callbackResponse);
 
     const authorized = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
@@ -136,7 +136,7 @@ describe('replayed authorization code', () => {
 
     const firstCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient, auditTrail }).handleRequest();
     expect(firstCallback.statusCode).toBe(302);
-    expect(firstCallback.headers?.Location).toBe('/home');
+    expect(firstCallback.headers?.Location).toBe('/');
     const sessionCookie = toCookieHeader(firstCallback);
 
     // Entra's authorization code is single-use: a second exchange attempt with the same

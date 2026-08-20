@@ -96,6 +96,6 @@ export class AuthRequestHandler {
 
     logger.info('Login completed', { flowId });
 
-    return Response.redirect('/home', 302, session.getCookie());
+    return Response.redirect('/', 302, session.getCookie());
   }
 }
