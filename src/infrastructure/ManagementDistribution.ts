@@ -72,7 +72,9 @@ export class ManagementDistribution extends Construct {
       logIncludesCookies: false,
       // No 401/403 CustomErrorResponse: CloudFront's ErrorCode allowlist excludes 401 entirely, and a
       // CustomErrorResponse for 403 would also swallow AuthorizationService's own rendered "Geen toegang"
-      // page. A 403 is instead rewritten to a login redirect by a CloudFront Function, see ADR-029.
+      // page. 401 (no Cookie header at all, API Gateway denies before the authorizer runs) and 403 (an
+      // invalid session, or an authenticated medewerker without permission) are instead both rewritten to
+      // a login redirect by a CloudFront Function, see ADR-029.
       errorResponses: [
         { httpStatus: 500, responseHttpStatus: 500, responsePagePath: '/static/http-errors/500.html', ttl: Duration.seconds(0) },
       ],
@@ -122,9 +124,10 @@ export class ManagementDistribution extends Construct {
   }
 
   /**
-   * Rewrites any 403 from the origin (session authorizer denial, or AuthorizationService's own "Geen
-   * toegang" page) into a 302 to /login. LoginRequestHandler already redirects an already-logged-in
-   * session onward, so the extra hop for a logged-in-but-unauthorized medewerker is harmless. See ADR-029.
+   * Rewrites a 401 (no Cookie header at all, API Gateway denies before the authorizer runs) or 403
+   * (session authorizer denial, or AuthorizationService's own "Geen toegang" page) from the origin into a
+   * 302 to /login. LoginRequestHandler already redirects an already-logged-in session onward, so the extra
+   * hop for a logged-in-but-unauthorized medewerker is harmless. See ADR-029.
    */
   private redirectForbiddenToLoginFunction() {
     return new CloudFrontFunction(this, 'redirect-forbidden-to-login', {
