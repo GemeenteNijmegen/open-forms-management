@@ -43,7 +43,7 @@ describe('AuthorizationService', () => {
       expect(addMetricSpy).not.toHaveBeenCalled();
     });
 
-    it('returns a 403 response when the check is denied', async () => {
+    it('returns a rendered 403 response when the check is denied', async () => {
       const repository = new FakePermissionRepository();
       const service = new AuthorizationService(repository, new FakeAuditTrail());
       const context = await service.loadContext({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
@@ -51,6 +51,7 @@ describe('AuthorizationService', () => {
       const response = await service.requireAuthorization(context, { resource: 'testresource', action: 'view' });
 
       expect(response?.statusCode).toBe(403);
+      expect(response?.body).toContain('Geen toegang');
     });
 
     it('allows any resource and action for a global admin grant, without the caller writing wildcard logic', async () => {

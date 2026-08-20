@@ -4,4 +4,5 @@ export interface Feature {
   route: string;
   resource: string;
   action: string;
+  icon?: string;
 }

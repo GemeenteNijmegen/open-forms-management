@@ -94,7 +94,7 @@
       "description": "Create a JavaScript bundle from src/app/auth/auth.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+          "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
         }
       ]
     },
@@ -103,7 +103,7 @@
       "description": "Continuously update the JavaScript bundle from src/app/auth/auth.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+          "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },
@@ -112,7 +112,7 @@
       "description": "Create a JavaScript bundle from src/app/authorizer/authorizer.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/authorizer/authorizer.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/authorizer/authorizer.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+          "exec": "esbuild --bundle src/app/authorizer/authorizer.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/authorizer/authorizer.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
         }
       ]
     },
@@ -121,7 +121,7 @@
       "description": "Continuously update the JavaScript bundle from src/app/authorizer/authorizer.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/authorizer/authorizer.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/authorizer/authorizer.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+          "exec": "esbuild --bundle src/app/authorizer/authorizer.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/authorizer/authorizer.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },
@@ -130,7 +130,7 @@
       "description": "Create a JavaScript bundle from src/app/home/home.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
         }
       ]
     },
@@ -139,7 +139,7 @@
       "description": "Continuously update the JavaScript bundle from src/app/home/home.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },
@@ -148,7 +148,7 @@
       "description": "Create a JavaScript bundle from src/app/login/login.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
         }
       ]
     },
@@ -157,7 +157,7 @@
       "description": "Continuously update the JavaScript bundle from src/app/login/login.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },
@@ -166,7 +166,7 @@
       "description": "Create a JavaScript bundle from src/app/logout/logout.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/*"
+          "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
         }
       ]
     },
@@ -175,7 +175,25 @@
       "description": "Continuously update the JavaScript bundle from src/app/logout/logout.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --watch"
+          "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:copy-web-components": {
+      "name": "bundle:copy-web-components",
+      "description": "Copy NLDS web component IIFE bundles to static/js/web-components/, stripping CSS injection for CSP compliance",
+      "steps": [
+        {
+          "exec": "node scripts/strip-web-component-css.mjs"
+        }
+      ]
+    },
+    "bundle:css-bundle": {
+      "name": "bundle:css-bundle",
+      "description": "Bundle design system CSS into ds.css",
+      "steps": [
+        {
+          "exec": "esbuild ./src/app/static-resources/static/styles/ds-input.js --bundle --target=node22 --platform=node --outfile=./src/app/static-resources/static/styles/ds.js --loader:.css=css --loader:.mustache=text --loader:.woff2=file --loader:.woff=file --loader:.ttf=file --asset-names=[name] --sourcemap"
         }
       ]
     },
@@ -222,7 +240,15 @@
     },
     "compile": {
       "name": "compile",
-      "description": "Only compile"
+      "description": "Only compile",
+      "steps": [
+        {
+          "spawn": "bundle:css-bundle"
+        },
+        {
+          "spawn": "bundle:copy-web-components"
+        }
+      ]
     },
     "default": {
       "name": "default",
@@ -297,7 +323,7 @@
       },
       "steps": [
         {
-          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test build-tools tests projenrc .projenrc.ts",
+          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test tests projenrc .projenrc.ts",
           "receiveArgs": true
         }
       ]
@@ -357,6 +383,24 @@
     "pre-compile": {
       "name": "pre-compile",
       "description": "Prepare the project for compilation"
+    },
+    "preview": {
+      "name": "preview",
+      "description": "Render preview HTML for all pages once",
+      "steps": [
+        {
+          "exec": "ts-node -P tsconfig.json --transpile-only -r ./src/preview/mustache-register.js ./src/preview/render-previews.ts"
+        }
+      ]
+    },
+    "preview:watch": {
+      "name": "preview:watch",
+      "description": "Watch templates and re-render preview HTML on changes",
+      "steps": [
+        {
+          "exec": "ts-node -P tsconfig.json --transpile-only -r ./src/preview/mustache-register.js ./src/preview/watch.ts"
+        }
+      ]
     },
     "release": {
       "name": "release",
@@ -463,7 +507,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@types/aws-lambda,@types/jest,@types/node,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-lambda-powertools/metrics,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,openid-client"
+            "--filter=@gemeentenijmegen/components-css,@gemeentenijmegen/design-tokens,@gemeentenijmegen/layout-css,@gemeentenijmegen/semantic-html,@gemeentenijmegen/web-components,@types/aws-lambda,@types/jest,@types/mustache,@types/node,@utrecht/page-body-css,@utrecht/pre-heading-css,@utrecht/rich-text-css,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-lambda-powertools/metrics,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,chokidar,mustache,openid-client"
           ]
         },
         {
@@ -473,12 +517,38 @@
           "execArgs": [
             "npm",
             "update",
+            "@gemeentenijmegen/components-css",
+            "@gemeentenijmegen/design-tokens",
+            "@gemeentenijmegen/layout-css",
+            "@gemeentenijmegen/semantic-html",
+            "@gemeentenijmegen/web-components",
             "@stylistic/eslint-plugin",
             "@types/aws-lambda",
             "@types/jest",
+            "@types/mustache",
             "@types/node",
             "@typescript-eslint/eslint-plugin",
             "@typescript-eslint/parser",
+            "@utrecht/alert-css",
+            "@utrecht/button-css",
+            "@utrecht/button-group-css",
+            "@utrecht/document-css",
+            "@utrecht/form-field-css",
+            "@utrecht/form-field-description-css",
+            "@utrecht/form-field-error-message-css",
+            "@utrecht/form-label-css",
+            "@utrecht/heading-1-css",
+            "@utrecht/heading-2-css",
+            "@utrecht/heading-3-css",
+            "@utrecht/heading-4-css",
+            "@utrecht/heading-5-css",
+            "@utrecht/heading-6-css",
+            "@utrecht/link-css",
+            "@utrecht/page-body-css",
+            "@utrecht/paragraph-css",
+            "@utrecht/pre-heading-css",
+            "@utrecht/rich-text-css",
+            "@utrecht/textbox-css",
             "aws-cdk",
             "aws-sdk-client-mock",
             "commit-and-tag-version",
@@ -503,7 +573,9 @@
             "@gemeentenijmegen/session",
             "@gemeentenijmegen/utils",
             "aws-cdk-lib",
+            "chokidar",
             "constructs",
+            "mustache",
             "openid-client"
           ]
         },

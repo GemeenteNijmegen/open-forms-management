@@ -1,0 +1,15 @@
+<nav class="nijmegen-side-navigation" aria-label="Hoofdnavigatie">
+  <ul class="nijmegen-side-navigation__list">
+  {{#nav}}
+    <li class="nijmegen-side-navigation__item">
+      <a
+        {{#current}}aria-current="page"{{/current}}
+        class="nijmegen-side-navigation__link {{#current}}nijmegen-side-navigation__link--current{{/current}}"
+        href="{{{route}}}"
+      >
+        <span class="nijmegen-side-navigation__link-label">{{label}}</span>
+      </a>
+    </li>
+  {{/nav}}
+  </ul>
+</nav>

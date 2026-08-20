@@ -67,12 +67,11 @@ describe('AppStack authorizer wiring', () => {
     expect(Object.keys(logGroups)).toHaveLength(5);
   });
 
-  it('creates exactly 8 alarms: 5 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
-    template.resourceCountIs('AWS::CloudWatch::Alarm', 8);
+  it('creates exactly 7 alarms: 4 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
+    template.resourceCountIs('AWS::CloudWatch::Alarm', 7);
   });
 
   it.each([
-    'home-function-error-alarm',
     'login-function-error-alarm',
     'auth-function-error-alarm',
     'logout-function-error-alarm',
@@ -81,6 +80,15 @@ describe('AppStack authorizer wiring', () => {
     template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
       AlarmName: `increased-error-rate-${alarmId}-low-lvl`,
     }));
+  });
+
+  // Home is a content page, not an auth-critical Lambda: no dedicated alarm by default, see ADR-027.
+  // The API-wide 5xx alarm in ApplicationAlarms.ts still covers it.
+  it('does not create a dedicated error-rate alarm for home-function', () => {
+    const alarms = template.findResources('AWS::CloudWatch::Alarm', Match.objectLike({
+      Properties: { AlarmName: 'increased-error-rate-home-function-error-alarm-low-lvl' },
+    }));
+    expect(Object.keys(alarms)).toHaveLength(0);
   });
 
   it('creates an AuditWriteFailure alarm that triggers on any failure', () => {
@@ -137,5 +145,78 @@ describe('AppStack authorizer wiring', () => {
       DestinationBucketKeyPrefix: 'static',
       DistributionPaths: ['/static/*'],
     }));
+  });
+
+  it('gives home-function read access to the PermissionsTable and the PERMISSIONS_TABLE env var', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/home/home.lambda.ts',
+      Environment: Match.objectLike({ Variables: Match.objectLike({ PERMISSIONS_TABLE: Match.anyValue() }) }),
+    }));
+    template.hasResourceProperties('AWS::IAM::Policy', Match.objectLike({
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({ Effect: 'Allow', Action: Match.arrayWith(['dynamodb:Query']) }),
+        ]),
+      }),
+    }));
+  });
+
+  it('gives home-function write access to the AuditTrailTable and the AUDIT_TRAIL_TABLE env var', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/home/home.lambda.ts',
+      Environment: Match.objectLike({ Variables: Match.objectLike({ AUDIT_TRAIL_TABLE: Match.anyValue() }) }),
+    }));
+  });
+
+  it('serves a static fallback page for 500 responses, since a Lambda crash never reaches a handler that renders one', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', Match.objectLike({
+      DistributionConfig: Match.objectLike({
+        CustomErrorResponses: Match.arrayWith([
+          Match.objectLike({ ErrorCode: 500, ResponseCode: 500, ResponsePagePath: '/static/http-errors/500.html' }),
+        ]),
+      }),
+    }));
+  });
+
+  // 401 isn't a valid CloudFront CustomErrorResponses code, and the authorizer's actual denial code (403)
+  // would collide with AuthorizationService's own rendered 403 page. See ADR-028.
+  it('does not configure a custom error response for 401 or 403', () => {
+    const distributions = template.findResources('AWS::CloudFront::Distribution');
+    const [distribution]: any[] = Object.values(distributions);
+    const errorCodes = distribution.Properties.DistributionConfig.CustomErrorResponses.map((response: any) => response.ErrorCode);
+    expect(errorCodes).not.toContain(401);
+    expect(errorCodes).not.toContain(403);
+  });
+
+  it('applies the same security headers policy to the dynamic and static behaviors', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', Match.objectLike({
+      DistributionConfig: Match.objectLike({
+        DefaultCacheBehavior: Match.objectLike({ ResponseHeadersPolicyId: Match.anyValue() }),
+        CacheBehaviors: Match.arrayWith([Match.objectLike({ ResponseHeadersPolicyId: Match.anyValue() })]),
+      }),
+    }));
+  });
+
+  it('sets a CSP without unsafe-inline or wildcard origins, plus the other standard security headers', () => {
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', Match.objectLike({
+      ResponseHeadersPolicyConfig: Match.objectLike({
+        SecurityHeadersConfig: Match.objectLike({
+          ContentSecurityPolicy: Match.objectLike({
+            ContentSecurityPolicy: Match.stringLikeRegexp("default-src 'none'"),
+            Override: true,
+          }),
+          ContentTypeOptions: { Override: true },
+          FrameOptions: { FrameOption: 'DENY', Override: true },
+          ReferrerPolicy: { ReferrerPolicy: 'strict-origin-when-cross-origin', Override: true },
+          StrictTransportSecurity: Match.objectLike({ AccessControlMaxAgeSec: 31536000, Override: true }),
+        }),
+      }),
+    }));
+
+    const policies = template.findResources('AWS::CloudFront::ResponseHeadersPolicy');
+    const [policy]: any[] = Object.values(policies);
+    const csp = policy.Properties.ResponseHeadersPolicyConfig.SecurityHeadersConfig.ContentSecurityPolicy.ContentSecurityPolicy;
+    expect(csp).not.toMatch(/unsafe-inline/);
+    expect(csp).not.toContain('*');
   });
 });

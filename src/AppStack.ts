@@ -13,6 +13,8 @@ import { addLogoutRoute } from './infrastructure/LogoutRoute';
 import { ManagementApi } from './infrastructure/ManagementApi';
 import { ManagementDistribution } from './infrastructure/ManagementDistribution';
 import { addOidcRoute } from './infrastructure/OidcRoute';
+import { applyPageLambdaDefaults } from './infrastructure/PageLambda';
+import { PermissionsTable } from './infrastructure/PermissionsTable';
 import { createSessionAuthorizer } from './infrastructure/SessionAuthorizer';
 import { SessionsTable } from './infrastructure/SessionsTable';
 import { resolveUsEastOutputs } from './infrastructure/UsEastOutputs';
@@ -31,6 +33,7 @@ export class AppStack extends Stack {
   public readonly wafWebAclArn: string;
   public readonly sessionsTable: SessionsTable;
   public readonly auditTrailTable: AuditTrailTable;
+  public readonly permissionsTable: PermissionsTable;
 
   constructor(scope: Construct, id: string, private readonly props: AppStackProps) {
     super(scope, id, props);
@@ -43,6 +46,7 @@ export class AppStack extends Stack {
     this.wafWebAclArn = usEastOutputs.wafWebAclArn;
     this.sessionsTable = new SessionsTable(this, 'sessions-table');
     this.auditTrailTable = new AuditTrailTable(this, 'audit-trail-table');
+    this.permissionsTable = new PermissionsTable(this, 'permissions-table');
     const domainName = `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`;
 
     /**
@@ -55,7 +59,7 @@ export class AppStack extends Stack {
       logGroup: createLambdaLogGroup(this, 'home-function'),
     });
     applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
-    new ErrorMonitoringAlarm(this, 'home-function-error-alarm', { lambda: homeFunction, criticality: this.props.configuration.criticality });
+    applyPageLambdaDefaults(this, homeFunction, this.permissionsTable, this.auditTrailTable, this.props.configuration);
 
     const managementApi = new ManagementApi(this, 'management-api', {
       defaultFunction: homeFunction,

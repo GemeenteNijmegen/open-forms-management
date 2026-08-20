@@ -54,4 +54,26 @@ describe('UsEastStack', () => {
       Name: Statics.ssmManagementWafWebAclArn,
     });
   });
+
+  it('creates an HTTPS healthcheck on /login, since a plain 2xx/3xx status is a stable enough signal', () => {
+    template.resourceCountIs('AWS::Route53::HealthCheck', 1);
+    template.hasResourceProperties('AWS::Route53::HealthCheck', {
+      HealthCheckConfig: Match.objectLike({
+        Type: 'HTTPS',
+        ResourcePath: '/login',
+        Port: 443,
+        EnableSNI: true,
+      }),
+    });
+  });
+
+  it('alarms when the login healthcheck reports unhealthy', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
+      AlarmName: 'login-healthcheck-failed-low-lvl',
+      Namespace: 'AWS/Route53',
+      MetricName: 'HealthCheckStatus',
+      ComparisonOperator: 'LessThanThreshold',
+      Threshold: 1,
+    }));
+  });
 });

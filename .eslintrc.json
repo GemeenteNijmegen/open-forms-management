@@ -158,7 +158,6 @@
         "devDependencies": [
           "**/test/**",
           "**/tests/**",
-          "**/build-tools/**",
           "src/app/auth/auth.lambda.ts",
           "src/app/authorizer/authorizer.lambda.ts",
           "src/app/home/home.lambda.ts",

@@ -8,6 +8,8 @@ import { xRayTraceId } from '../../observability/xRayTraceId';
 import { AuditTrail } from '../audit/AuditTrail';
 import { recordAudit } from '../audit/recordAudit';
 import { EmployeeIdentity } from '../auth/EmployeeIdentity';
+import { render } from '../rendering/Renderer';
+import forbiddenTemplate from '../rendering/templates/forbidden.mustache';
 
 /**
  * Loads a medewerker's permission grants after session authentication, and
@@ -48,6 +50,7 @@ export class AuthorizationService {
       action: check.action,
       ...(context.identity.email ? { actorEmail: context.identity.email } : {}),
     });
-    return Response.error(403);
+    const html = render(forbiddenTemplate, { title: 'Geen toegang', features: [], currentPath: '/', actorEmail: context.identity.email });
+    return Response.html(html, 403);
   }
 }

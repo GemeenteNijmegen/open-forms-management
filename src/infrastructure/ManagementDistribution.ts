@@ -4,10 +4,13 @@ import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import {
   CachePolicy,
   Distribution,
+  HeadersFrameOption,
+  HeadersReferrerPolicy,
   OriginRequestCookieBehavior,
   OriginRequestHeaderBehavior,
   OriginRequestPolicy,
   OriginRequestQueryStringBehavior,
+  ResponseHeadersPolicy,
   SecurityPolicyProtocol,
   ViewerProtocolPolicy,
 } from 'aws-cdk-lib/aws-cloudfront';
@@ -52,6 +55,8 @@ export class ManagementDistribution extends Construct {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    const securityHeadersPolicy = this.securityHeadersPolicy();
+
     this.distribution = new Distribution(this, 'distribution', {
       domainNames: [props.domainName],
       certificate: Certificate.fromCertificateArn(this, 'certificate', props.certificateArn),
@@ -60,17 +65,27 @@ export class ManagementDistribution extends Construct {
       enableLogging: true,
       logBucket: accessLogsBucket,
       logIncludesCookies: false,
+      // No 401/403 CustomErrorResponse: CloudFront's ErrorCode allowlist excludes 401 entirely, and 403 (what
+      // a denied authorizer request actually returns) would also swallow AuthorizationService's own rendered
+      // "Geen toegang" page, since CloudFront can't tell those two 403s apart. See ADR-028.
+      //
+      // A denied request now reaches the client as a bare 403 with no page.
+      errorResponses: [
+        { httpStatus: 500, responseHttpStatus: 500, responsePagePath: '/static/http-errors/500.html', ttl: Duration.seconds(0) },
+      ],
       defaultBehavior: {
         // API Gateway receives its own execute-api domain as Host, not the CloudFront custom domain.
         origin: new HttpOrigin(Fn.select(2, Fn.split('/', props.api.apiEndpoint))),
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: CachePolicy.CACHING_DISABLED,
         originRequestPolicy: this.dynamicOriginRequestPolicy(),
+        responseHeadersPolicy: securityHeadersPolicy,
       },
       additionalBehaviors: {
         '/static/*': {
           origin: S3BucketOrigin.withOriginAccessControl(this.staticResourcesBucket),
           viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+          responseHeadersPolicy: securityHeadersPolicy,
         },
       },
     });
@@ -96,6 +111,25 @@ export class ManagementDistribution extends Construct {
       cookieBehavior: OriginRequestCookieBehavior.all(),
       queryStringBehavior: OriginRequestQueryStringBehavior.all(),
       headerBehavior: OriginRequestHeaderBehavior.allowList('Accept', 'Accept-Language'),
+    });
+  }
+
+  // No inline scripts/styles and no external CDN anywhere in this app, so the CSP can deny everything by
+  // default instead of allowlisting 'unsafe-inline' or a wildcard origin.
+  private securityHeadersPolicy() {
+    return new ResponseHeadersPolicy(this, 'security-headers-policy', {
+      securityHeadersBehavior: {
+        contentSecurityPolicy: {
+          contentSecurityPolicy: "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; "
+            + "script-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; connect-src 'self'",
+          override: true,
+        },
+        contentTypeOptions: { override: true },
+        frameOptions: { frameOption: HeadersFrameOption.DENY, override: true },
+        referrerPolicy: { referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN, override: true },
+        strictTransportSecurity: { accessControlMaxAge: Duration.days(365), includeSubdomains: true, override: true },
+        xssProtection: { protection: true, modeBlock: true, override: true },
+      },
     });
   }
 
