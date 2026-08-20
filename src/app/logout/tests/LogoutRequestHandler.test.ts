@@ -11,13 +11,14 @@ describe('LogoutRequestHandler', () => {
     process.env.SESSION_TABLE = 'test-sessions-table';
   });
 
-  it('redirects to /login and clears the cookie without touching DynamoDB when there is no session', async () => {
+  it('shows the logout confirmation and clears the cookie without touching DynamoDB when there is no session', async () => {
     const auditTrail = new FakeAuditTrail();
     const handler = new LogoutRequestHandler(auditTrail);
     const response = await handler.handleRequest(undefined, new DynamoDBClient({}));
 
-    expect(response.statusCode).toBe(302);
-    expect(response.headers?.Location).toBe('/login');
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('Uitgelogd</h1>');
+    expect(response.body).toContain('href="/login"');
     expect(response.cookies?.[0]).toContain('session=;');
     expect(dynamoMock.commandCalls(UpdateItemCommand)).toHaveLength(0);
     expect(auditTrail.events).toEqual([]);
@@ -36,8 +37,8 @@ describe('LogoutRequestHandler', () => {
     const handler = new LogoutRequestHandler(auditTrail);
     const response = await handler.handleRequest('session=active-token', new DynamoDBClient({}));
 
-    expect(response.statusCode).toBe(302);
-    expect(response.headers?.Location).toBe('/login');
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('Uitgelogd</h1>');
     expect(response.cookies?.[0]).toContain('session=;');
 
     // updateSession replaces the stored data entirely, so principalId is
@@ -61,7 +62,7 @@ describe('LogoutRequestHandler', () => {
     const handler = new LogoutRequestHandler(new FakeAuditTrail());
     const response = await handler.handleRequest('session=already-logged-out-token', new DynamoDBClient({}));
 
-    expect(response.statusCode).toBe(302);
+    expect(response.statusCode).toBe(200);
   });
 
   it('returns a 500 without clearing the cookie and records SESSION_REVOKED as a failure when revocation fails', async () => {

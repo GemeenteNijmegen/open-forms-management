@@ -59,8 +59,8 @@ describe('full login -> protected route -> logout flow', () => {
     expect(identity).toEqual({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
 
     const logoutResponse = await new LogoutRequestHandler(auditTrail).handleRequest(sessionCookie, dynamoDBClient);
-    expect(logoutResponse.statusCode).toBe(302);
-    expect(logoutResponse.headers?.Location).toBe('/login');
+    expect(logoutResponse.statusCode).toBe(200);
+    expect(logoutResponse.body).toContain('href="/login"');
 
     const identityAfterLogout = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
     expect(identityAfterLogout).toBeUndefined();

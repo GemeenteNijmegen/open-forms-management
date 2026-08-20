@@ -1,11 +1,13 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { Session } from '@gemeentenijmegen/session';
+import logoutTemplate from './templates/logout.mustache';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 import { xRayTraceId } from '../../observability/xRayTraceId';
 import { AuditTrail } from '../../shared/audit/AuditTrail';
 import { recordAudit } from '../../shared/audit/recordAudit';
+import { render } from '../../shared/rendering/Renderer';
 
 export class LogoutRequestHandler {
   constructor(private readonly auditTrail: AuditTrail) { }
@@ -39,6 +41,10 @@ export class LogoutRequestHandler {
     // Force an empty Set-Cookie: session.sessionId still holds the old
     // token, but the DynamoDB record it refers to is revoked above.
     session.sessionId = false;
-    return Response.redirect('/login', 302, session.getCookie());
+    // A redirect straight to /login re-triggers the OIDC authorize request, which Entra silently approves
+    // when its own SSO session is still active, undoing the logout the medewerker just asked for. Showing
+    // a confirmation page with a manual /login link avoids that silent re-authentication.
+    const html = render(logoutTemplate, { title: 'Uitgelogd', features: [], currentPath: '/logout' });
+    return Response.html(html, 200, session.getCookie());
   }
 }

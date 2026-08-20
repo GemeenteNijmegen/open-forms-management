@@ -75,7 +75,7 @@ describe('login -> home -> permission check -> logout', () => {
     expect(denied?.body).toContain('Geen toegang');
 
     const logoutResponse = await new LogoutRequestHandler(auditTrail).handleRequest(sessionCookie, dynamoDBClient);
-    expect(logoutResponse.statusCode).toBe(302);
+    expect(logoutResponse.statusCode).toBe(200);
 
     expect(auditTrail.events.map((event) => event.eventType)).toEqual([
       'LOGIN_STARTED', 'LOGIN_SUCCEEDED', 'SESSION_CREATED', 'ACCESS_DENIED', 'SESSION_REVOKED', 'LOGOUT',
