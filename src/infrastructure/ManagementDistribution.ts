@@ -135,14 +135,15 @@ export class ManagementDistribution extends Construct {
     });
   }
 
-  // No inline scripts/styles and no external CDN anywhere in this app, so the CSP can deny everything by
-  // default instead of allowlisting 'unsafe-inline' or a wildcard origin.
+  // No inline scripts/styles and no external CDN anywhere in this app: the header/footer load same-origin
+  // NLDS web-component scripts (nijmegen-header, nijmegen-mobile-menu, nijmegen-toolbar-button), so
+  // script-src allows 'self' but nothing wider.
   private securityHeadersPolicy() {
     return new ResponseHeadersPolicy(this, 'security-headers-policy', {
       securityHeadersBehavior: {
         contentSecurityPolicy: {
           contentSecurityPolicy: "default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; "
-            + "script-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; connect-src 'self'",
+            + "script-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; connect-src 'self'",
           override: true,
         },
         contentTypeOptions: { override: true },
