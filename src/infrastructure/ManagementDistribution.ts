@@ -98,7 +98,7 @@ export class ManagementDistribution extends Construct {
       distributionPaths: ['/static/*'],
     });
 
-    this.addDnsRecords(props.hostedZone);
+    this.addDnsRecords(props.hostedZone, props.domainName);
   }
 
   /**
@@ -133,13 +133,19 @@ export class ManagementDistribution extends Construct {
     });
   }
 
-  private addDnsRecords(zone: IHostedZone) {
+  /**
+   * recordName is required here: ARecord/AaaaRecord default to the hosted zone root when it's left out,
+   * not to this app's subdomain.
+   */
+  private addDnsRecords(zone: IHostedZone, domainName: string) {
     new ARecord(this, 'a-record', {
       zone,
+      recordName: domainName,
       target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
     });
     new AaaaRecord(this, 'aaaa-record', {
       zone,
+      recordName: domainName,
       target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
     });
   }
