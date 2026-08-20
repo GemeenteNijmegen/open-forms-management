@@ -20,6 +20,7 @@ import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
+import { Statics } from '../Statics';
 
 export interface ManagementDistributionProps {
   api: HttpApi;
@@ -98,7 +99,7 @@ export class ManagementDistribution extends Construct {
       distributionPaths: ['/static/*'],
     });
 
-    this.addDnsRecords(props.hostedZone, props.domainName);
+    this.addDnsRecords(props.hostedZone);
   }
 
   /**
@@ -134,18 +135,20 @@ export class ManagementDistribution extends Construct {
   }
 
   /**
-   * recordName is required here: ARecord/AaaaRecord default to the hosted zone root when it's left out,
-   * not to this app's subdomain.
+   * recordName takes the relative label ("management"), not the full domainName. The account hosted
+   * zone is imported via an SSM-parameter lookup, so its zoneName is an unresolved token at synth time;
+   * CDK's own FQDN-detection can't match that token against a literal string and would append the zone
+   * suffix a second time. A relative label sidesteps that comparison entirely.
    */
-  private addDnsRecords(zone: IHostedZone, domainName: string) {
+  private addDnsRecords(zone: IHostedZone) {
     new ARecord(this, 'a-record', {
       zone,
-      recordName: domainName,
+      recordName: Statics.domainPrefix,
       target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
     });
     new AaaaRecord(this, 'aaaa-record', {
       zone,
-      recordName: domainName,
+      recordName: Statics.domainPrefix,
       target: RecordTarget.fromAlias(new CloudFrontTarget(this.distribution)),
     });
   }
