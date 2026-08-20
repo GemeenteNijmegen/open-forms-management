@@ -11,8 +11,6 @@
     "bundle": "projen bundle",
     "bundle:app/auth/auth.lambda": "projen bundle:app/auth/auth.lambda",
     "bundle:app/auth/auth.lambda:watch": "projen bundle:app/auth/auth.lambda:watch",
-    "bundle:app/authorizer/authorizer.lambda": "projen bundle:app/authorizer/authorizer.lambda",
-    "bundle:app/authorizer/authorizer.lambda:watch": "projen bundle:app/authorizer/authorizer.lambda:watch",
     "bundle:app/home/home.lambda": "projen bundle:app/home/home.lambda",
     "bundle:app/home/home.lambda:watch": "projen bundle:app/home/home.lambda:watch",
     "bundle:app/login/login.lambda": "projen bundle:app/login/login.lambda",

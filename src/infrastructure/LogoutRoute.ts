@@ -1,5 +1,5 @@
 import { ErrorMonitoringAlarm } from '@gemeentenijmegen/aws-constructs';
-import { HttpMethod, HttpNoneAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Tracing } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
@@ -37,6 +37,5 @@ export function addLogoutRoute(
     path: '/logout',
     methods: [HttpMethod.GET],
     integration: new HttpLambdaIntegration('integration-logout-function', logoutFunction),
-    authorizer: new HttpNoneAuthorizer(),
   });
 }

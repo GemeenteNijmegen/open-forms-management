@@ -1,4 +1,4 @@
-import { HttpMethod, HttpNoneAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { Function } from 'aws-cdk-lib/aws-lambda';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
@@ -43,6 +43,5 @@ export function addOidcRoute(
     path,
     methods: [HttpMethod.GET],
     integration: new HttpLambdaIntegration(`integration-${fn.node.id}`, fn),
-    authorizer: new HttpNoneAuthorizer(),
   });
 }

@@ -15,7 +15,6 @@ import { ManagementDistribution } from './infrastructure/ManagementDistribution'
 import { addOidcRoute } from './infrastructure/OidcRoute';
 import { applyPageLambdaDefaults } from './infrastructure/PageLambda';
 import { PermissionsTable } from './infrastructure/PermissionsTable';
-import { createSessionAuthorizer } from './infrastructure/SessionAuthorizer';
 import { SessionsTable } from './infrastructure/SessionsTable';
 import { resolveUsEastOutputs } from './infrastructure/UsEastOutputs';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from './observability/LambdaLogging';
@@ -52,18 +51,15 @@ export class AppStack extends Stack {
     /**
      * Lambdas and their routes
      */
-    const sessionAuthorizer = createSessionAuthorizer(this, this.sessionsTable, this.auditTrailTable, this.props.configuration);
-
     const homeFunction = new HomeFunction(this, 'home-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'home-function'),
     });
     applyLambdaLoggingDefaults(homeFunction, this.props.configuration);
-    applyPageLambdaDefaults(this, homeFunction, this.permissionsTable, this.auditTrailTable, this.props.configuration);
+    applyPageLambdaDefaults(this, homeFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable, this.props.configuration);
 
     const managementApi = new ManagementApi(this, 'management-api', {
       defaultFunction: homeFunction,
-      defaultAuthorizer: sessionAuthorizer,
     });
 
     const loginFunction = new LoginFunction(this, 'login-function', {

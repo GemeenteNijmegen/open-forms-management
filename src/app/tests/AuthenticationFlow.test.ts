@@ -1,9 +1,9 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { FakeAuditTrail } from '../../shared/audit/tests/FakeAuditTrail';
+import { requireSession } from '../../shared/auth/requireSession';
 import { FakeOidcClient } from '../../shared/auth/tests/FakeOidcClient';
 import { createInMemorySessionTable } from '../../shared/tests/InMemorySessionTable';
 import { AuthRequestHandler } from '../auth/AuthRequestHandler';
-import { AuthorizerRequestHandler } from '../authorizer/AuthorizerRequestHandler';
 import { LoginRequestHandler } from '../login/LoginRequestHandler';
 import { LogoutRequestHandler } from '../logout/LogoutRequestHandler';
 
@@ -55,18 +55,15 @@ describe('full login -> protected route -> logout flow', () => {
     expect(callbackResponse.headers?.Location).toBe('/');
     const sessionCookie = toCookieHeader(callbackResponse);
 
-    const authorized = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
-    expect(authorized).toEqual({
-      isAuthorized: true,
-      context: { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
-    });
+    const identity = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
+    expect(identity).toEqual({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
 
     const logoutResponse = await new LogoutRequestHandler(auditTrail).handleRequest(sessionCookie, dynamoDBClient);
     expect(logoutResponse.statusCode).toBe(302);
     expect(logoutResponse.headers?.Location).toBe('/login');
 
-    const deniedAfterLogout = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
-    expect(deniedAfterLogout).toEqual({ isAuthorized: false });
+    const identityAfterLogout = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
+    expect(identityAfterLogout).toBeUndefined();
 
     expect(auditTrail.events.map((event) => event.eventType)).toEqual([
       'LOGIN_STARTED',
@@ -121,8 +118,8 @@ describe('replayed authorization code', () => {
     expect(secondCallback.statusCode).toBe(302);
     expect(secondCallback.headers?.Location).toBe('/login');
 
-    const stillAuthorized = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
-    expect(stillAuthorized).toEqual({ isAuthorized: true, context: { principalId: 'employee-1' } });
+    const stillIdentity = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
+    expect(stillIdentity).toEqual({ principalId: 'employee-1' });
 
     expect(auditTrail.events.map((event) => event.eventType)).toEqual([
       'LOGIN_STARTED', 'LOGIN_SUCCEEDED', 'SESSION_CREATED', 'LOGIN_FAILED',
@@ -150,7 +147,7 @@ describe('expired session', () => {
 
     sessionTable.store.clear(); // simulate the TTL removing the record
 
-    const denied = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
-    expect(denied).toEqual({ isAuthorized: false });
+    const identity = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
+    expect(identity).toBeUndefined();
   });
 });

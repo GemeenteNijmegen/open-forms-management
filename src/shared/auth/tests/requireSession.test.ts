@@ -1,12 +1,12 @@
 import { DynamoDBClient, GetItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { metrics } from '../../../observability/Metrics';
-import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
-import { AuthorizerRequestHandler } from '../AuthorizerRequestHandler';
+import { FakeAuditTrail } from '../../audit/tests/FakeAuditTrail';
+import { requireSession } from '../requireSession';
 
 const dynamoMock = mockClient(DynamoDBClient);
 
-describe('AuthorizerRequestHandler', () => {
+describe('requireSession', () => {
   beforeEach(() => {
     dynamoMock.reset();
     process.env.SESSION_TABLE = 'test-sessions-table';
@@ -15,11 +15,10 @@ describe('AuthorizerRequestHandler', () => {
   it('denies when there is no session cookie', async () => {
     const auditTrail = new FakeAuditTrail();
     const addMetricSpy = jest.spyOn(metrics, 'addMetric');
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), auditTrail);
 
-    const result = await handler.handleRequest(undefined);
+    const identity = await requireSession(undefined, new DynamoDBClient({}), auditTrail);
 
-    expect(result).toEqual({ isAuthorized: false });
+    expect(identity).toBeUndefined();
     expect(dynamoMock.commandCalls(GetItemCommand)).toHaveLength(0);
     expect(auditTrail.events).toEqual([expect.objectContaining({ eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED' })]);
     expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AuthenticationDenied']);
@@ -29,11 +28,9 @@ describe('AuthorizerRequestHandler', () => {
     dynamoMock.on(GetItemCommand).resolves({});
     const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
+    const identity = await requireSession('session=unknown-token', new DynamoDBClient({}), new FakeAuditTrail());
 
-    const result = await handler.handleRequest('session=unknown-token');
-
-    expect(result).toEqual({ isAuthorized: false });
+    expect(identity).toBeUndefined();
     expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AuthenticationDenied', 'SessionExpired']);
   });
 
@@ -43,11 +40,9 @@ describe('AuthorizerRequestHandler', () => {
     });
     const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
+    const identity = await requireSession('session=pending-token', new DynamoDBClient({}), new FakeAuditTrail());
 
-    const result = await handler.handleRequest('session=pending-token');
-
-    expect(result).toEqual({ isAuthorized: false });
+    expect(identity).toBeUndefined();
     expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AuthenticationDenied', 'SessionExpired']);
   });
 
@@ -55,11 +50,9 @@ describe('AuthorizerRequestHandler', () => {
     dynamoMock.on(GetItemCommand).resolves({ Item: undefined });
     const addMetricSpy = jest.spyOn(metrics, 'addMetric');
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
+    const identity = await requireSession('session=expired-token', new DynamoDBClient({}), new FakeAuditTrail());
 
-    const result = await handler.handleRequest('session=expired-token');
-
-    expect(result).toEqual({ isAuthorized: false });
+    expect(identity).toBeUndefined();
     expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AuthenticationDenied', 'SessionExpired']);
   });
 
@@ -70,18 +63,17 @@ describe('AuthorizerRequestHandler', () => {
 
     const auditTrail = new FakeAuditTrail();
     const addMetricSpy = jest.spyOn(metrics, 'addMetric');
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), auditTrail);
 
-    const result = await handler.handleRequest('session=broken-token');
+    const identity = await requireSession('session=broken-token', new DynamoDBClient({}), auditTrail);
 
-    expect(result).toEqual({ isAuthorized: false });
+    expect(identity).toBeUndefined();
     expect(auditTrail.events).toEqual([expect.objectContaining({
       eventType: 'AUTHENTICATION_DENIED', outcome: 'DENIED', metadata: { reason: 'missing-principal-id' },
     })]);
     expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['AuthenticationDenied']);
   });
 
-  it('authorizes and returns a compact identity context for a valid session', async () => {
+  it('returns the identity for a valid session', async () => {
     dynamoMock.on(GetItemCommand).resolves({
       Item: {
         sessionid: { S: 'hash' },
@@ -90,15 +82,14 @@ describe('AuthorizerRequestHandler', () => {
     });
 
     const auditTrail = new FakeAuditTrail();
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), auditTrail);
 
-    const result = await handler.handleRequest('session=valid-token');
+    const identity = await requireSession('session=valid-token', new DynamoDBClient({}), auditTrail);
 
-    expect(result).toEqual({ isAuthorized: true, context: { principalId: 'employee-principal-id' } });
+    expect(identity).toEqual({ principalId: 'employee-principal-id' });
     expect(auditTrail.events).toEqual([]);
   });
 
-  it('includes email in the context when the session has one, for permission lookups keyed on email', async () => {
+  it('includes email in the identity when the session has one, for permission lookups keyed on email', async () => {
     dynamoMock.on(GetItemCommand).resolves({
       Item: {
         sessionid: { S: 'hash' },
@@ -112,13 +103,8 @@ describe('AuthorizerRequestHandler', () => {
       },
     });
 
-    const handler = new AuthorizerRequestHandler(new DynamoDBClient({}), new FakeAuditTrail());
+    const identity = await requireSession('session=valid-token', new DynamoDBClient({}), new FakeAuditTrail());
 
-    const result = await handler.handleRequest('session=valid-token');
-
-    expect(result).toEqual({
-      isAuthorized: true,
-      context: { principalId: 'employee-principal-id', email: 'medewerker@nijmegen.nl' },
-    });
+    expect(identity).toEqual({ principalId: 'employee-principal-id', email: 'medewerker@nijmegen.nl' });
   });
 });

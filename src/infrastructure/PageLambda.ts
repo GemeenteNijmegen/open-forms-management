@@ -3,6 +3,7 @@ import { Function } from 'aws-cdk-lib/aws-lambda';
 import { Construct } from 'constructs';
 import { AuditTrailTable } from './AuditTrailTable';
 import { PermissionsTable } from './PermissionsTable';
+import { SessionsTable } from './SessionsTable';
 import { Configuration } from '../Configuration';
 
 export interface PageLambdaDefaultsOptions {
@@ -29,6 +30,7 @@ export function applyPageLambdaDefaults(
   fn: Function,
   permissionsTable: PermissionsTable,
   auditTrailTable: AuditTrailTable,
+  sessionsTable: SessionsTable,
   configuration: Configuration,
   options: PageLambdaDefaultsOptions = {},
 ): void {
@@ -36,6 +38,8 @@ export function applyPageLambdaDefaults(
   fn.addEnvironment('PERMISSIONS_TABLE', permissionsTable.table.tableName);
   auditTrailTable.grantPut(fn);
   fn.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
+  sessionsTable.table.grantReadData(fn);
+  fn.addEnvironment('SESSION_TABLE', sessionsTable.table.tableName);
 
   if (options.alarm) {
     new ErrorMonitoringAlarm(scope, `${fn.node.id}-error-alarm`, { lambda: fn, criticality: configuration.criticality });

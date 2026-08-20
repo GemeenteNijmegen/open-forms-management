@@ -1,11 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { FakeAuditTrail } from '../../shared/audit/tests/FakeAuditTrail';
+import { requireSession } from '../../shared/auth/requireSession';
 import { FakeOidcClient } from '../../shared/auth/tests/FakeOidcClient';
 import { AuthorizationService } from '../../shared/authorization/AuthorizationService';
 import { FakePermissionRepository } from '../../shared/authorization/tests/FakePermissionRepository';
 import { createInMemorySessionTable } from '../../shared/tests/InMemorySessionTable';
 import { AuthRequestHandler } from '../auth/AuthRequestHandler';
-import { AuthorizerRequestHandler } from '../authorizer/AuthorizerRequestHandler';
 import { HomeRequestHandler } from '../home/HomeRequestHandler';
 import { LoginRequestHandler } from '../login/LoginRequestHandler';
 import { LogoutRequestHandler } from '../logout/LogoutRequestHandler';
@@ -59,15 +59,10 @@ describe('login -> home -> permission check -> logout', () => {
     }).handleRequest();
     const sessionCookie = toCookieHeader(callbackResponse);
 
-    // A missing Cookie header never reaches this Lambda: API Gateway returns 401 before invoking the
-    // authorizer (ADR-029). Whatever this authorizer itself denies becomes a 403 at the API, same as
-    // AuthorizationService.requireAuthorization below - this handler never produces or sees a 401.
-    const authorized = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
-    expect(authorized).toEqual({
-      isAuthorized: true,
-      context: { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
-    });
-    const identity = authorized.context!;
+    // A missing or invalid session always yields a 302 to /login from the page lambda itself, never a raw
+    // 401/403 (ADR-031) - there is no separate authorizer Lambda to produce one.
+    const identity = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
+    expect(identity).toEqual({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
 
     const homeResponse = await new HomeRequestHandler(authorizationService).handleRequest(identity, '/');
     expect(homeResponse.statusCode).toBe(200);

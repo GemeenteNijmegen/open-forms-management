@@ -76,9 +76,6 @@
           "spawn": "bundle:app/auth/auth.lambda"
         },
         {
-          "spawn": "bundle:app/authorizer/authorizer.lambda"
-        },
-        {
           "spawn": "bundle:app/home/home.lambda"
         },
         {
@@ -104,24 +101,6 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
-        }
-      ]
-    },
-    "bundle:app/authorizer/authorizer.lambda": {
-      "name": "bundle:app/authorizer/authorizer.lambda",
-      "description": "Create a JavaScript bundle from src/app/authorizer/authorizer.lambda.ts",
-      "steps": [
-        {
-          "exec": "esbuild --bundle src/app/authorizer/authorizer.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/authorizer/authorizer.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
-        }
-      ]
-    },
-    "bundle:app/authorizer/authorizer.lambda:watch": {
-      "name": "bundle:app/authorizer/authorizer.lambda:watch",
-      "description": "Continuously update the JavaScript bundle from src/app/authorizer/authorizer.lambda.ts",
-      "steps": [
-        {
-          "exec": "esbuild --bundle src/app/authorizer/authorizer.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/authorizer/authorizer.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

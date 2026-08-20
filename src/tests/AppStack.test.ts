@@ -4,7 +4,7 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import { AppStack } from '../AppStack';
 import { AppStage } from '../AppStage';
 
-describe('AppStack authorizer wiring', () => {
+describe('AppStack authentication and routing wiring', () => {
   const configuration = {
     branchName: 'test',
     buildEnvironment: { account: '123456789012', region: 'eu-central-1' },
@@ -17,30 +17,16 @@ describe('AppStack authorizer wiring', () => {
   const appStack = stage.node.findChild('app-stack') as AppStack;
   const template = Template.fromStack(appStack);
 
-  it('creates exactly one Lambda authorizer for the session cookie', () => {
-    template.resourceCountIs('AWS::ApiGatewayV2::Authorizer', 1);
-    template.hasResourceProperties('AWS::ApiGatewayV2::Authorizer', Match.objectLike({
-      AuthorizerType: 'REQUEST',
-      AuthorizerPayloadFormatVersion: '2.0',
-      EnableSimpleResponses: true,
-      IdentitySource: ['$request.header.Cookie'],
-      AuthorizerResultTtlInSeconds: 0,
-    }));
-  });
-
-  it('protects the default (home) route with the session authorizer', () => {
-    template.hasResourceProperties('AWS::ApiGatewayV2::Route', Match.objectLike({
-      RouteKey: '$default',
-      AuthorizationType: 'CUSTOM',
-      AuthorizerId: Match.anyValue(),
-    }));
+  it('creates no HTTP API authorizer - each page lambda validates its own session', () => {
+    template.resourceCountIs('AWS::ApiGatewayV2::Authorizer', 0);
   });
 
   it.each([
+    '$default',
     'GET /login',
     'GET /auth/callback',
     'GET /logout',
-  ])('leaves %s public', (routeKey) => {
+  ])('leaves %s public at the API - authentication happens inside the lambda', (routeKey) => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', Match.objectLike({
       RouteKey: routeKey,
       AuthorizationType: 'NONE',
@@ -51,7 +37,6 @@ describe('AppStack authorizer wiring', () => {
     'src/app/home/home.lambda.ts',
     'src/app/login/login.lambda.ts',
     'src/app/auth/auth.lambda.ts',
-    'src/app/authorizer/authorizer.lambda.ts',
     'src/app/logout/logout.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
@@ -64,18 +49,17 @@ describe('AppStack authorizer wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(5);
+    expect(Object.keys(logGroups)).toHaveLength(4);
   });
 
-  it('creates exactly 7 alarms: 4 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
-    template.resourceCountIs('AWS::CloudWatch::Alarm', 7);
+  it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
+    template.resourceCountIs('AWS::CloudWatch::Alarm', 6);
   });
 
   it.each([
     'login-function-error-alarm',
     'auth-function-error-alarm',
     'logout-function-error-alarm',
-    'authorizer-function-error-alarm',
   ])('creates an error-rate alarm for %s with the branch criticality suffix', (alarmId) => {
     template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
       AlarmName: `increased-error-rate-${alarmId}-low-lvl`,
@@ -168,6 +152,13 @@ describe('AppStack authorizer wiring', () => {
     }));
   });
 
+  it('gives home-function read access to the SessionsTable and the SESSION_TABLE env var', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/home/home.lambda.ts',
+      Environment: Match.objectLike({ Variables: Match.objectLike({ SESSION_TABLE: Match.anyValue() }) }),
+    }));
+  });
+
   it('serves a static fallback page for 500 responses, since a Lambda crash never reaches a handler that renders one', () => {
     template.hasResourceProperties('AWS::CloudFront::Distribution', Match.objectLike({
       DistributionConfig: Match.objectLike({
@@ -178,8 +169,8 @@ describe('AppStack authorizer wiring', () => {
     }));
   });
 
-  // 401 isn't a valid CloudFront CustomErrorResponses code, and the authorizer's actual denial code (403)
-  // would collide with AuthorizationService's own rendered 403 page. See ADR-028.
+  // 401/403 no longer come from an authorizer at all (ADR-031); this only guards AuthorizationService's own
+  // 403 "Geen toegang" page against being swallowed by a CustomErrorResponse.
   it('does not configure a custom error response for 401 or 403', () => {
     const distributions = template.findResources('AWS::CloudFront::Distribution');
     const [distribution]: any[] = Object.values(distributions);

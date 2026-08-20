@@ -1,6 +1,6 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
 import { AccessLogFormat } from 'aws-cdk-lib/aws-apigateway';
-import { CfnStage, HttpApi, IHttpRouteAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2';
+import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
@@ -11,11 +11,6 @@ export interface ManagementApiProps {
    * Lambda invoked for any route without a more specific integration.
    */
   defaultFunction: IFunction;
-  /**
-   * Authorizer applied to every route unless a route overrides it explicitly
-   * (e.g. the public login/auth-callback/logout routes use `HttpNoneAuthorizer`).
-   */
-  defaultAuthorizer: IHttpRouteAuthorizer;
 }
 
 // Method, path, status, ip, protocol and response size only. Headers and cookies aren't fields this format
@@ -40,7 +35,6 @@ export class ManagementApi extends Construct {
 
     this.api = new HttpApi(this, 'api', {
       defaultIntegration: new HttpLambdaIntegration('default-integration', props.defaultFunction),
-      defaultAuthorizer: props.defaultAuthorizer,
     });
 
     const accessLogGroup = new LogGroup(this, 'access-log-group', {

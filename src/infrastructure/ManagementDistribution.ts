@@ -1,13 +1,9 @@
-import * as path from 'path';
 import { Duration, Fn, RemovalPolicy } from 'aws-cdk-lib';
 import { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import {
   CachePolicy,
   Distribution,
-  Function as CloudFrontFunction,
-  FunctionCode,
-  FunctionEventType,
   HeadersFrameOption,
   HeadersReferrerPolicy,
   OriginRequestCookieBehavior,
@@ -71,10 +67,10 @@ export class ManagementDistribution extends Construct {
       logBucket: accessLogsBucket,
       logIncludesCookies: false,
       // No 401/403 CustomErrorResponse: CloudFront's ErrorCode allowlist excludes 401 entirely, and a
-      // CustomErrorResponse for 403 would also swallow AuthorizationService's own rendered "Geen toegang"
-      // page. 401 (no Cookie header at all, API Gateway denies before the authorizer runs) and 403 (an
-      // invalid session, or an authenticated medewerker without permission) are instead both rewritten to
-      // a login redirect by a CloudFront Function, see ADR-029.
+      // CustomErrorResponse for 403 would also swallow AuthorizationService's own rendered "Geen toegang" page.
+      // Every page lambda now validates its own session and redirects to /login itself (ADR-031), so there is no
+      // longer a raw 401/403 from an authorizer that needs rewriting here - only AuthorizationService's own,
+      // already-rendered 403 "Geen toegang" page for an authenticated medewerker without the right permission.
       errorResponses: [
         { httpStatus: 500, responseHttpStatus: 500, responsePagePath: '/static/http-errors/500.html', ttl: Duration.seconds(0) },
       ],
@@ -85,10 +81,6 @@ export class ManagementDistribution extends Construct {
         cachePolicy: CachePolicy.CACHING_DISABLED,
         originRequestPolicy: this.dynamicOriginRequestPolicy(),
         responseHeadersPolicy: securityHeadersPolicy,
-        functionAssociations: [{
-          function: this.redirectForbiddenToLoginFunction(),
-          eventType: FunctionEventType.VIEWER_RESPONSE,
-        }],
       },
       additionalBehaviors: {
         '/static/*': {
@@ -120,18 +112,6 @@ export class ManagementDistribution extends Construct {
       cookieBehavior: OriginRequestCookieBehavior.all(),
       queryStringBehavior: OriginRequestQueryStringBehavior.all(),
       headerBehavior: OriginRequestHeaderBehavior.allowList('Accept', 'Accept-Language'),
-    });
-  }
-
-  /**
-   * Rewrites a 401 (no Cookie header at all, API Gateway denies before the authorizer runs) or 403
-   * (session authorizer denial, or AuthorizationService's own "Geen toegang" page) from the origin into a
-   * 302 to /login. LoginRequestHandler already redirects an already-logged-in session onward, so the extra
-   * hop for a logged-in-but-unauthorized medewerker is harmless. See ADR-029.
-   */
-  private redirectForbiddenToLoginFunction() {
-    return new CloudFrontFunction(this, 'redirect-forbidden-to-login', {
-      code: FunctionCode.fromFile({ filePath: path.join(__dirname, 'cloudfront-functions/redirect-forbidden-to-login.js') }),
     });
   }
 
