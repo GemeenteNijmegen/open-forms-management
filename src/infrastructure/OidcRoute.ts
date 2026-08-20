@@ -37,7 +37,7 @@ export function addOidcRoute(
 
   const oidcClientSecret = Secret.fromSecretNameV2(scope, `oidc-client-secret-for-${fn.node.id}`, Statics.secretOidcClientSecret);
   oidcClientSecret.grantRead(fn);
-  fn.addEnvironment('OIDC_CLIENT_SECRET_ARN', oidcClientSecret.secretArn);
+  fn.addEnvironment('OIDC_CLIENT_SECRET_NAME', Statics.secretOidcClientSecret);
 
   managementApi.api.addRoutes({
     path,

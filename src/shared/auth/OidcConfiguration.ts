@@ -3,7 +3,7 @@ import { EntraOidcClientConfiguration } from './EntraOidcClient';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 
-const requiredEnvironmentVariables = ['OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET_ARN', 'MANAGEMENT_DOMAIN'] as const;
+const requiredEnvironmentVariables = ['OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET_NAME', 'MANAGEMENT_DOMAIN'] as const;
 
 const CALLBACK_PATH = '/auth/callback';
 
@@ -23,12 +23,12 @@ export async function loadOidcConfiguration(): Promise<EntraOidcClientConfigurat
     throw new Error(`OIDC configuration is incomplete: missing ${missing.join(', ')}`);
   }
 
-  const clientSecretArn = process.env.OIDC_CLIENT_SECRET_ARN!;
+  const clientSecretName = process.env.OIDC_CLIENT_SECRET_NAME!;
   let clientSecret: string;
   try {
-    clientSecret = await AWS.getSecret(clientSecretArn);
+    clientSecret = await AWS.getSecret(clientSecretName);
   } catch (error) {
-    logger.error('Failed to fetch OIDC client secret from Secrets Manager', { clientSecretArn, reason: errorReason(error) });
+    logger.error('Failed to fetch OIDC client secret from Secrets Manager', { clientSecretName, reason: errorReason(error) });
     throw error;
   }
 

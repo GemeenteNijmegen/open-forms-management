@@ -1,5 +1,6 @@
 import { AWS } from '@gemeentenijmegen/utils';
 import { logger } from '../../../observability/Logger';
+import { Statics } from '../../../Statics';
 import { loadOidcConfiguration } from '../OidcConfiguration';
 
 jest.mock('@gemeentenijmegen/utils', () => ({
@@ -18,7 +19,7 @@ describe('loadOidcConfiguration', () => {
       ...originalEnv,
       OIDC_ISSUER: 'https://login.microsoftonline.com/test-tenant/v2.0',
       OIDC_CLIENT_ID: 'test-client-id',
-      OIDC_CLIENT_SECRET_ARN: 'arn:aws:secretsmanager:eu-central-1:123456789012:secret:oidc-client-secret',
+      OIDC_CLIENT_SECRET_NAME: Statics.secretOidcClientSecret,
       MANAGEMENT_DOMAIN: 'management.example.nl',
     };
   });
@@ -32,7 +33,7 @@ describe('loadOidcConfiguration', () => {
 
     const configuration = await loadOidcConfiguration();
 
-    expect(AWS.getSecret).toHaveBeenCalledWith(process.env.OIDC_CLIENT_SECRET_ARN);
+    expect(AWS.getSecret).toHaveBeenCalledWith(process.env.OIDC_CLIENT_SECRET_NAME);
     expect(configuration).toEqual({
       issuer: 'https://login.microsoftonline.com/test-tenant/v2.0',
       clientId: 'test-client-id',
@@ -41,7 +42,7 @@ describe('loadOidcConfiguration', () => {
     });
   });
 
-  it.each(['OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET_ARN', 'MANAGEMENT_DOMAIN'])(
+  it.each(['OIDC_ISSUER', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET_NAME', 'MANAGEMENT_DOMAIN'])(
     'throws a clear error when %s is missing',
     async (missingVar) => {
       delete process.env[missingVar];
@@ -57,7 +58,7 @@ describe('loadOidcConfiguration', () => {
     await expect(loadOidcConfiguration()).rejects.toThrow('AccessDeniedException');
 
     expect(logger.error).toHaveBeenCalledWith('Failed to fetch OIDC client secret from Secrets Manager', {
-      clientSecretArn: process.env.OIDC_CLIENT_SECRET_ARN,
+      clientSecretName: process.env.OIDC_CLIENT_SECRET_NAME,
       reason: 'AccessDeniedException',
     });
   });
