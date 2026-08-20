@@ -1,7 +1,7 @@
-import { DynamoDBClient, GetItemCommand, PutItemCommand, UpdateItemCommand } from '@aws-sdk/client-dynamodb';
-import { mockClient } from 'aws-sdk-client-mock';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { FakeAuditTrail } from '../../shared/audit/tests/FakeAuditTrail';
 import { FakeOidcClient } from '../../shared/auth/tests/FakeOidcClient';
+import { createInMemorySessionTable } from '../../shared/tests/InMemorySessionTable';
 import { AuthRequestHandler } from '../auth/AuthRequestHandler';
 import { AuthorizerRequestHandler } from '../authorizer/AuthorizerRequestHandler';
 import { LoginRequestHandler } from '../login/LoginRequestHandler';
@@ -13,8 +13,7 @@ import { LogoutRequestHandler } from '../logout/LogoutRequestHandler';
  * OIDC provider and an in-memory DynamoDB double.
  */
 
-const dynamoMock = mockClient(DynamoDBClient);
-let store: Map<string, Record<string, any>>;
+const sessionTable = createInMemorySessionTable();
 
 function toCookieHeader(response: { cookies?: string[] }): string {
   const cookie = response.cookies?.[0];
@@ -25,32 +24,8 @@ function toCookieHeader(response: { cookies?: string[] }): string {
 }
 
 beforeEach(() => {
-  dynamoMock.reset();
+  sessionTable.reset();
   process.env.SESSION_TABLE = 'test-sessions-table';
-  store = new Map();
-
-  dynamoMock.on(PutItemCommand).callsFake((input) => {
-    const item = input.Item!;
-    store.set(item.sessionid!.S!, item);
-    return {};
-  });
-  dynamoMock.on(GetItemCommand).callsFake((input) => {
-    const item = store.get(input.Key!.sessionid!.S!);
-    return item ? { Item: item } : {};
-  });
-  dynamoMock.on(UpdateItemCommand).callsFake((input) => {
-    const key = input.Key!.sessionid!.S!;
-    const existing = store.get(key);
-    if (!existing) {
-      throw new Error('Cannot update a session that does not exist');
-    }
-    store.set(key, {
-      ...existing,
-      data: input.ExpressionAttributeValues![':data'],
-      ttl: input.ExpressionAttributeValues![':ttl'],
-    });
-    return {};
-  });
 });
 
 describe('full login -> protected route -> logout flow', () => {
@@ -66,7 +41,7 @@ describe('full login -> protected route -> logout flow', () => {
     const loginResponse = await new LoginRequestHandler(oidcClient, auditTrail).handleRequest(undefined, dynamoDBClient);
     expect(loginResponse.statusCode).toBe(302);
     const pendingCookie = toCookieHeader(loginResponse);
-    const pendingSessionData = Array.from(store.values())[0]!.data.M;
+    const pendingSessionData = Array.from(sessionTable.store.values())[0]!.data.M;
     expect(pendingSessionData.flowId.S).toEqual(expect.any(String));
 
     const callbackResponse = await new AuthRequestHandler({
@@ -119,7 +94,7 @@ describe('callback without a valid pending session', () => {
 
     expect(response.statusCode).toBe(302);
     expect(response.headers?.Location).toBe('/login');
-    expect(store.size).toBe(0);
+    expect(sessionTable.store.size).toBe(0);
   });
 });
 
@@ -173,7 +148,7 @@ describe('expired session', () => {
     }).handleRequest();
     const sessionCookie = toCookieHeader(callbackResponse);
 
-    store.clear(); // simulate the TTL removing the record
+    sessionTable.store.clear(); // simulate the TTL removing the record
 
     const denied = await new AuthorizerRequestHandler(dynamoDBClient, auditTrail).handleRequest(sessionCookie);
     expect(denied).toEqual({ isAuthorized: false });
