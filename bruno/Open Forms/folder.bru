@@ -1,0 +1,14 @@
+meta {
+  name: Open Forms
+  seq: 1
+}
+
+auth {
+  mode: apikey
+}
+
+auth:apikey {
+  key: Authorization
+  value: Token {{tokenAuth}}
+  placement: header
+}

@@ -14,7 +14,12 @@
   "parserOptions": {
     "ecmaVersion": 2018,
     "sourceType": "module",
-    "project": "./tsconfig.dev.json"
+    "projectService": {
+      "allowDefaultProject": [
+        ".projenrc.ts"
+      ],
+      "defaultProject": "./tsconfig.json"
+    }
   },
   "extends": [
     "plugin:import/typescript"
@@ -29,7 +34,7 @@
     "import/resolver": {
       "node": {},
       "typescript": {
-        "project": "./tsconfig.dev.json",
+        "project": "./tsconfig.json",
         "alwaysTryTypes": true
       }
     }
@@ -152,8 +157,11 @@
       {
         "devDependencies": [
           "**/test/**",
-          "**/build-tools/**",
-          "src/home/home.lambda.ts",
+          "**/tests/**",
+          "src/app/auth/auth.lambda.ts",
+          "src/app/home/home.lambda.ts",
+          "src/app/login/login.lambda.ts",
+          "src/app/logout/logout.lambda.ts",
           ".projenrc.ts",
           "projenrc/**/*.ts"
         ],
@@ -210,7 +218,9 @@
           "method"
         ]
       }
-    ]
+    ],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "error"
   },
   "overrides": [
     {

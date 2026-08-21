@@ -1,11 +1,13 @@
 import { PermissionsBoundaryAspect } from '@gemeentenijmegen/aws-constructs';
+import { getNodeVersion } from '@gemeentenijmegen/projen-project-type';
 import { Aspects, CfnParameter, Stack, StackProps, Tags, pipelines } from 'aws-cdk-lib';
+import { BuildSpec } from 'aws-cdk-lib/aws-codebuild';
 import { PipelineType } from 'aws-cdk-lib/aws-codepipeline';
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 import { AppStage } from './AppStage';
 import { Configurable } from './Configuration';
-import { ParameterStage } from './Parameters';
+import { ParameterStage } from './ParameterStack';
 import { Statics } from './Statics';
 
 export interface PipelineStackProps extends StackProps, Configurable { }
@@ -19,7 +21,7 @@ export class PipelineStack extends Stack {
 
   constructor(scope: Construct, id: string, private readonly props: PipelineStackProps) {
     super(scope, id, props);
-    Tags.of(this).add('cdkManaged', 'yes');
+    Tags.of(this).add('cdkManaged', 'no');
     Tags.of(this).add('Project', Statics.projectName);
     Aspects.of(this).add(new PermissionsBoundaryAspect());
 
@@ -62,8 +64,8 @@ export class PipelineStack extends Stack {
         BRANCH_NAME: this.props.configuration.branchName,
       },
       commands: [
-        'n lts',
-        'yarn install --frozen-lockfile',
+        'node -v',
+        'npm ci',
         'npx projen build',
       ],
     });
@@ -75,6 +77,17 @@ export class PipelineStack extends Stack {
       synth: synthStep,
       dockerCredentials: [pipelines.DockerCredential.dockerHub(dockerHub)],
       pipelineType: PipelineType.V1,
+      synthCodeBuildDefaults: {
+        partialBuildSpec: BuildSpec.fromObject({
+          phases: {
+            install: {
+              'runtime-versions': {
+                nodejs: getNodeVersion(),
+              },
+            },
+          },
+        }),
+      },
     });
     return pipeline;
   }

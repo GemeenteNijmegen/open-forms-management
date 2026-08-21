@@ -7,8 +7,6 @@ const branchToBuild = getBranchToBuild('acceptance');
 const configuration = getConfiguration(branchToBuild);
 console.info('Building branch:', branchToBuild);
 
-// TODO replace old main file with this file!
-
 const app = new App();
 
 const stackName = `${Statics.projectName}-pipeline-${configuration.branchName}`;

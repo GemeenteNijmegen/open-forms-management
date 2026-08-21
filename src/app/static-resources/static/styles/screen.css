@@ -1,0 +1,123 @@
+/* App-specific styles with no NLDS equivalent. Do not add rules targeting nijmegen-* or utrecht-* classes here. */
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-regular-latin-ext-400.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-regular-latin-400.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-regular-latin-ext-600.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-regular-latin-600.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-regular-latin-ext-700.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-regular-latin-700.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-italic-latin-ext-400.woff2) format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url(../fonts/sourcesanspro-italic-latin-400.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Brand link in the header: plain app text, not a design system component. */
+.brand {
+  color: var(--nijmegen-header-item-color, #000);
+  font-weight: 700;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
+
+.brand:focus-visible {
+  outline: 3px solid #f5a623;
+  outline-offset: 2px;
+}
+
+/*
+ * Sticky footer: on a short page, keeps the footer at the bottom of the viewport instead of right under
+ * the content with blank space below it.
+ *
+ * `<footer>` is a direct child of `<body>` (header.mustache closes every wrapper div before it), so
+ * `margin-top: auto` on the footer itself is enough. No need to grow `<main>`, which sits several levels
+ * deep inside `.utrecht-page-body`.
+ */
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+footer {
+  margin-top: auto;
+}
+
+/*
+ * Hide the sidenav below the same breakpoint at which the header itself switches from the desktop nav
+ * to the mobile hamburger menu (nijmegen-mobile-menu), which already lists the same nav items. Without
+ * this, the sidenav still renders as a cramped 2-column grid item on mobile, duplicating the hamburger
+ * menu's links.
+ *
+ * The breakpoint below is intentionally NOT one of the NDS grid breakpoints (--nijmegen-breakpoint-sm/
+ * md/lg/xl/xxl: 576/768/992/1200/1400px). The header component's own mobile/desktop switch is hardcoded
+ * in ds.css to `@media (width < 1024px)` (.nijmegen-header__content / .nijmegen-header__content--small),
+ * independent of those grid tokens, and the design system ships no responsive show/hide utility class
+ * we could use instead. Matching the grid's nearest breakpoint (lg, 992px) would leave a 32px range
+ * (992-1023px) where neither the sidenav nor the hamburger menu's links are shown.
+ */
+@media (width < 1024px) {
+  .sidenav-wrapper {
+    display: none;
+  }
+}

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="shortcut icon" href="/static/favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="/static/styles/ds.css">
+  <link rel="stylesheet" href="/static/styles/screen.css">
+  <title>{{title}} - Open Forms Management</title>
+</head>
+<body class="nijmegen-margin-block-0 nijmegen-margin-inline-0 utrecht-document nijmegen-theme">
+<a href="#main-content" class="nijmegen-skip-link">Direct naar inhoud</a>
+<nijmegen-header>
+  <div class="nijmegen-header__content--small">
+    <div class="nijmegen-header__content--small--inner">
+      {{#actorEmail}}
+      <button
+        class="nijmegen-toolbar-button nijmegen-toolbar-button--icon-menu"
+        type="button"
+        aria-expanded="false"
+        aria-controls="mobile-menu"
+        aria-label="Menu openen"
+      >Menu</button>
+      {{/actorEmail}}
+      <div><a class="brand" href="/">Open Forms Management</a></div>
+      {{#actorEmail}}<span>{{actorEmail}}</span>{{/actorEmail}}
+    </div>
+    {{#actorEmail}}
+    <div id="mobile-menu" class="nijmegen-header__mobile-menu">
+      <nijmegen-mobile-menu>
+        {{#hasSidenav}}
+        <ul class="nijmegen-mobile-menu__list">
+          {{#nav}}
+          <li>
+            <a
+              href="{{{route}}}"
+              {{#current}}aria-current="page"{{/current}}
+              class="nijmegen-mobile-menu__link nijmegen-mobile-menu__link--strong {{#current}}nijmegen-mobile-menu__link--current{{/current}}"
+            >
+              <span>{{label}}</span>
+            </a>
+          </li>
+          {{/nav}}
+        </ul>
+        <div class="nijmegen-mobile-menu__separator"><hr class="utrecht-separator"></div>
+        {{/hasSidenav}}
+        <ul class="nijmegen-mobile-menu__list">
+          <li><a href="/logout" class="nijmegen-mobile-menu__link nijmegen-mobile-menu__link--strong">Uitloggen</a></li>
+        </ul>
+      </nijmegen-mobile-menu>
+    </div>
+    {{/actorEmail}}
+  </div>
+  <div class="nijmegen-header__content">
+    <div class="nijmegen-header__content--inner">
+      <div><a class="brand" href="/">Open Forms Management</a></div>
+      <nav></nav>
+      {{#actorEmail}}
+      <ul class="nijmegen-header__actions">
+        <li class="nijmegen-header-action nijmegen-header-action--relative">
+          <button
+            class="nijmegen-header-item"
+            aria-expanded="false"
+            aria-controls="account-panel"
+            aria-label="{{actorEmail}}, accountmenu"
+          >{{actorEmail}}</button>
+          <div id="account-panel" class="nijmegen-header__panel nijmegen-header__panel--small">
+            <div class="nijmegen-dropdown-menu">
+              <ul class="nijmegen-dropdown-menu__list" role="list">
+                <li><a href="/logout" class="nijmegen-dropdown-menu__item">Uitloggen</a></li>
+              </ul>
+            </div>
+          </div>
+        </li>
+      </ul>
+      {{/actorEmail}}
+    </div>
+  </div>
+  <div class="nijmegen-header__backdrop"></div>
+</nijmegen-header>
+<div class="utrecht-page-body nijmegen-padding-block-start-200 nijmegen-padding-block-end-400">
+  <div class="utrecht-page-body__content nijmegen-container-xxl">
+    <div class="nijmegen-grid">
+    {{#hasSidenav}}
+      <div class="sidenav-wrapper nijmegen-g-col-lg-2 nijmegen-g-start-lg-0 nijmegen-g-col-2">
+      {{>sidenav}}
+      </div>
+      <div class="nijmegen-g-col-lg-9 nijmegen-g-start-lg-4 nijmegen-g-col-12">
+    {{/hasSidenav}}
+    {{^hasSidenav}}
+      <div class="nijmegen-g-col-lg-8 nijmegen-g-start-lg-3 nijmegen-g-col-12">
+    {{/hasSidenav}}

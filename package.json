@@ -5,59 +5,114 @@
     "url": "https://github.com/GemeenteNijmegen/open-forms-management"
   },
   "scripts": {
-    "build": "npx projen build",
-    "bump": "npx projen bump",
-    "bundle": "npx projen bundle",
-    "bundle:home/home.lambda": "npx projen bundle:home/home.lambda",
-    "bundle:home/home.lambda:watch": "npx projen bundle:home/home.lambda:watch",
-    "clobber": "npx projen clobber",
-    "compile": "npx projen compile",
-    "default": "npx projen default",
-    "deploy": "npx projen deploy",
-    "destroy": "npx projen destroy",
-    "diff": "npx projen diff",
-    "eject": "npx projen eject",
-    "eslint": "npx projen eslint",
-    "lint": "npx projen lint",
-    "package": "npx projen package",
-    "post-compile": "npx projen post-compile",
-    "post-upgrade": "npx projen post-upgrade",
-    "pre-compile": "npx projen pre-compile",
-    "release": "npx projen release",
-    "synth": "npx projen synth",
-    "synth:silent": "npx projen synth:silent",
-    "test": "npx projen test",
-    "test:watch": "npx projen test:watch",
-    "unbump": "npx projen unbump",
-    "upgrade": "npx projen upgrade",
-    "watch": "npx projen watch",
-    "projen": "npx projen"
+    "build": "projen build",
+    "bump": "projen bump",
+    "bump:releasable-commits": "projen bump:releasable-commits",
+    "bundle": "projen bundle",
+    "bundle:app/auth/auth.lambda": "projen bundle:app/auth/auth.lambda",
+    "bundle:app/auth/auth.lambda:watch": "projen bundle:app/auth/auth.lambda:watch",
+    "bundle:app/home/home.lambda": "projen bundle:app/home/home.lambda",
+    "bundle:app/home/home.lambda:watch": "projen bundle:app/home/home.lambda:watch",
+    "bundle:app/login/login.lambda": "projen bundle:app/login/login.lambda",
+    "bundle:app/login/login.lambda:watch": "projen bundle:app/login/login.lambda:watch",
+    "bundle:app/logout/logout.lambda": "projen bundle:app/logout/logout.lambda",
+    "bundle:app/logout/logout.lambda:watch": "projen bundle:app/logout/logout.lambda:watch",
+    "bundle:copy-web-components": "projen bundle:copy-web-components",
+    "bundle:css-bundle": "projen bundle:css-bundle",
+    "cfn-lint": "projen cfn-lint",
+    "clobber": "projen clobber",
+    "compile": "projen compile",
+    "default": "projen default",
+    "deploy": "projen deploy",
+    "destroy": "projen destroy",
+    "diff": "projen diff",
+    "eject": "projen eject",
+    "eslint": "projen eslint",
+    "package": "projen package",
+    "post-compile": "projen post-compile",
+    "post-upgrade": "projen post-upgrade",
+    "pre-compile": "projen pre-compile",
+    "preview": "projen preview",
+    "preview:watch": "projen preview:watch",
+    "release": "projen release",
+    "synth": "projen synth",
+    "synth:silent": "projen synth:silent",
+    "test": "projen test",
+    "test:watch": "projen test:watch",
+    "unbump": "projen unbump",
+    "upgrade": "projen upgrade",
+    "watch": "projen watch",
+    "projen": "projen"
   },
   "devDependencies": {
-    "@gemeentenijmegen/projen-project-type": "1.11.10",
+    "@gemeentenijmegen/components-css": "^0.1.9",
+    "@gemeentenijmegen/design-tokens": "^0.1.9",
+    "@gemeentenijmegen/layout-css": "^0.1.9",
+    "@gemeentenijmegen/semantic-html": "^0.1.9",
+    "@gemeentenijmegen/web-components": "^0.1.9",
     "@stylistic/eslint-plugin": "^2",
+    "@types/aws-lambda": "^8.10.162",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.3",
+    "@types/mustache": "^4.2.6",
+    "@types/node": "^25.9.5",
     "@typescript-eslint/eslint-plugin": "^8",
     "@typescript-eslint/parser": "^8",
+    "@utrecht/alert-css": "4.0.2",
+    "@utrecht/button-css": "2.3.0",
+    "@utrecht/button-group-css": "1.4.0",
+    "@utrecht/document-css": "1.5.0",
+    "@utrecht/form-field-css": "3.0.1",
+    "@utrecht/form-field-description-css": "3.0.1",
+    "@utrecht/form-field-error-message-css": "3.0.1",
+    "@utrecht/form-label-css": "3.0.1",
+    "@utrecht/heading-1-css": "1.5.0",
+    "@utrecht/heading-2-css": "1.5.0",
+    "@utrecht/heading-3-css": "1.5.0",
+    "@utrecht/heading-4-css": "1.5.0",
+    "@utrecht/heading-5-css": "1.5.0",
+    "@utrecht/heading-6-css": "1.5.0",
+    "@utrecht/link-css": "1.6.0",
+    "@utrecht/page-body-css": "^2.1.1",
+    "@utrecht/paragraph-css": "2.3.1",
+    "@utrecht/pre-heading-css": "^3.0.1",
+    "@utrecht/rich-text-css": "^3.0.1",
+    "@utrecht/textbox-css": "4.0.1",
     "aws-cdk": "^2",
+    "aws-sdk-client-mock": "^4.1.0",
     "commit-and-tag-version": "^12",
-    "esbuild": "^0.27.2",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
-    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
-    "jest": "^30.2.0",
-    "jest-junit": "^16",
-    "projen": "0.98.29",
-    "ts-jest": "^29.4.6",
+    "jest": "^30.4.2",
+    "jest-junit": "^17",
+    "projen": "^0.101.32",
+    "ts-jest": "^29.4.12",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@gemeentenijmegen/aws-constructs": "^0.0.47",
-    "@gemeentenijmegen/config": "^0.0.9",
+    "@aws-lambda-powertools/logger": "^2.35.0",
+    "@aws-lambda-powertools/metrics": "^2.35.0",
+    "@aws-sdk/client-dynamodb": "^3.1113.0",
+    "@aws-sdk/lib-dynamodb": "^3.1113.0",
+    "@gemeentenijmegen/apigateway-http": "^0.0.40",
+    "@gemeentenijmegen/aws-constructs": "^0.0.54",
+    "@gemeentenijmegen/cross-region-parameters": "^0.0.9",
+    "@gemeentenijmegen/projen-project-type": "^1.15.0",
+    "@gemeentenijmegen/session": "^0.0.37",
+    "@gemeentenijmegen/utils": "^0.0.38",
     "aws-cdk-lib": "^2.1.0",
-    "constructs": "^10.0.5"
+    "chokidar": "^5.0.0",
+    "constructs": "^10.5.1",
+    "mustache": "^4.2.0",
+    "openid-client": "^6.8.6"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "npm",
+      "onFail": "ignore"
+    }
   },
   "license": "EUPL-1.2",
   "publishConfig": {
@@ -66,6 +121,27 @@
   "version": "0.0.0",
   "jest": {
     "coverageProvider": "v8",
+    "setupFiles": [
+      "<rootDir>/test/jest.setup.ts"
+    ],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "jsx",
+      "ts",
+      "tsx",
+      "node",
+      "mustache"
+    ],
+    "transform": {
+      "^.+\\.[t]sx?$": [
+        "ts-jest",
+        {
+          "tsconfig": "test/tsconfig.json"
+        }
+      ],
+      "^.+\\.mustache$": "<rootDir>/test/mustache-transform.js"
+    },
     "testMatch": [
       "<rootDir>/@(src|test)/**/*(*.)@(spec|test).ts?(x)",
       "<rootDir>/@(src|test)/**/__tests__/**/*.ts?(x)",
@@ -99,15 +175,7 @@
           "outputDirectory": "test-reports"
         }
       ]
-    ],
-    "transform": {
-      "^.+\\.[t]sx?$": [
-        "ts-jest",
-        {
-          "tsconfig": "tsconfig.dev.json"
-        }
-      ]
-    }
+    ]
   },
   "//": "~~ Generated by projen. To modify, edit .projenrc.ts and run \"npx projen\"."
 }
