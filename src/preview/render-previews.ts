@@ -4,17 +4,23 @@ import { forbiddenData } from './fixtures/forbidden';
 import { homeEmpty, homeWithFeatures, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
 import { logoutData } from './fixtures/logout';
+import { sportAllDistricts, sportDukenburg, sportEmpty, sportPartialError } from './fixtures/sport';
 import homeTemplate from '../app/home/templates/home.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
 import loginTemplate from '../app/login/templates/login.mustache';
 import logoutTemplate from '../app/logout/templates/logout.mustache';
+import sportTemplate from '../app/sport/templates/sport.mustache';
 import { render } from '../shared/rendering/Renderer';
 import forbiddenTemplate from '../shared/rendering/templates/forbidden.mustache';
 
 // Path from preview/<page>.html back to src/app/static-resources/static
 const STATIC_REL = '../src/app/static-resources/static';
-const OUT_DIR = path.join(process.cwd(), 'preview');
 const ROUTE_PATTERN = /href="(\/[a-zA-Z0-9-]*)"/g;
+
+// Read at call time, not module load time, so tests can chdir into a temp directory before calling renderAll().
+function outDir(): string {
+  return path.join(process.cwd(), 'preview');
+}
 
 function rewriteStatic(html: string): string {
   return html
@@ -30,8 +36,9 @@ function rewriteRoutes(html: string, routeToFile: Record<string, string>): strin
 }
 
 async function writeHtml(name: string, html: string, routeToFile: Record<string, string>): Promise<void> {
-  fs.mkdirSync(OUT_DIR, { recursive: true });
-  fs.writeFileSync(path.join(OUT_DIR, `${name}.html`), rewriteRoutes(rewriteStatic(html), routeToFile));
+  const dir = outDir();
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${name}.html`), rewriteRoutes(rewriteStatic(html), routeToFile));
   console.log(`  preview/${name}.html`);
 }
 
@@ -43,6 +50,7 @@ const ROUTE_TO_PREVIEW_FILE: Record<string, string> = {
   '/': 'home',
   '/login': 'login',
   '/logout': 'logout',
+  '/sport': 'sport-all-districts',
 };
 
 function stubFileName(route: string): string {
@@ -80,6 +88,10 @@ export async function renderAll(): Promise<void> {
     'logout': render(logoutTemplate, logoutData),
     '403': render(forbiddenTemplate, forbiddenData),
     '404': render(notFoundTemplate, notFoundData),
+    'sport-all-districts': render(sportTemplate, sportAllDistricts.page, sportAllDistricts.data),
+    'sport-dukenburg': render(sportTemplate, sportDukenburg.page, sportDukenburg.data),
+    'sport-empty': render(sportTemplate, sportEmpty.page, sportEmpty.data),
+    'sport-partial-error': render(sportTemplate, sportPartialError.page, sportPartialError.data),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));

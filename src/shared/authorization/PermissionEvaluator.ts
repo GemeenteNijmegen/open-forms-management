@@ -39,7 +39,9 @@ export class PermissionEvaluator {
     }
 
     if (!check.scope) {
-      return false;
+      // An unscoped check asks whether the grant exists at all, e.g. for feature visibility;
+      // the precise scope only matters once the caller checks a concrete scope value.
+      return true;
     }
 
     return Object.entries(grant.scopes).every(([key, allowedValues]) => {

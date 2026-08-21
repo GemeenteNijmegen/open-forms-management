@@ -17,6 +17,8 @@
     "bundle:app/login/login.lambda:watch": "projen bundle:app/login/login.lambda:watch",
     "bundle:app/logout/logout.lambda": "projen bundle:app/logout/logout.lambda",
     "bundle:app/logout/logout.lambda:watch": "projen bundle:app/logout/logout.lambda:watch",
+    "bundle:app/sport/sport.lambda": "projen bundle:app/sport/sport.lambda",
+    "bundle:app/sport/sport.lambda:watch": "projen bundle:app/sport/sport.lambda:watch",
     "bundle:copy-web-components": "projen bundle:copy-web-components",
     "bundle:css-bundle": "projen bundle:css-bundle",
     "cfn-lint": "projen cfn-lint",
@@ -105,6 +107,7 @@
     "aws-cdk-lib": "^2.1.0",
     "chokidar": "^5.0.0",
     "constructs": "^10.5.1",
+    "csv-parse": "^7.0.2",
     "mustache": "^4.2.0",
     "openid-client": "^6.8.6",
     "zod": "^4.4.3"

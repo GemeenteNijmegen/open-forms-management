@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
+import { SportFunction } from './app/sport/sport-function';
 import { Configurable } from './Configuration';
 import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
 import { addApplicationAlarms } from './infrastructure/ApplicationAlarms';
@@ -16,6 +17,7 @@ import { addOidcRoute } from './infrastructure/OidcRoute';
 import { applyPageLambdaDefaults } from './infrastructure/PageLambda';
 import { PermissionsTable } from './infrastructure/PermissionsTable';
 import { SessionsTable } from './infrastructure/SessionsTable';
+import { addSportRoute } from './infrastructure/SportRoute';
 import { resolveUsEastOutputs } from './infrastructure/UsEastOutputs';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from './observability/LambdaLogging';
 import { Statics } from './Statics';
@@ -81,6 +83,17 @@ export class AppStack extends Stack {
     new ErrorMonitoringAlarm(this, 'auth-function-error-alarm', { lambda: authFunction, criticality: this.props.configuration.criticality });
 
     addLogoutRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration);
+
+    const sportFunction = new SportFunction(this, 'sport-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'sport-function'),
+      // Fetches Sportinzendingen from Objects and their CSV documents from Open Zaak within one request; the default 3s
+      // timeout is too tight for that. 29s, not 30s: HttpApi's Lambda integration itself has a hard 29s timeout, so a
+      // 30th second on the Lambda would never be reached, the gateway already returns its own 504 a second earlier.
+      timeout: Duration.seconds(29),
+    });
+    addSportRoute(this, managementApi, sportFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable, this.props.configuration);
+
     addApplicationAlarms(this, managementApi.api, this.props.configuration);
 
     /**

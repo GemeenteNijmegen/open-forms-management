@@ -58,10 +58,10 @@ const cases: Case[] = [
     expected: 'DENY',
   },
   {
-    name: 'scoped grant denies a check with no scope at all',
+    name: 'scoped grant allows an unscoped check, e.g. for feature visibility',
     grants: [{ resource: 'testresource', actions: ['view'], scopes: { districts: ['dukenburg'] } }],
     check: { resource: 'testresource', action: 'view' },
-    expected: 'DENY',
+    expected: 'ALLOW',
   },
   {
     name: 'scoped grant requires every scoped key to match',
@@ -86,10 +86,10 @@ const cases: Case[] = [
     expected: 'ALLOW',
   },
   {
-    name: 'a wildcard scope value still requires the check to supply that scope key',
+    name: 'a wildcard-scoped grant also allows an unscoped check, e.g. for feature visibility',
     grants: [{ resource: 'testresource', actions: ['view'], scopes: { districts: ['*'] } }],
     check: { resource: 'testresource', action: 'view' },
-    expected: 'DENY',
+    expected: 'ALLOW',
   },
   {
     name: 'a wildcard on one scope key does not bypass a concrete requirement on another key',

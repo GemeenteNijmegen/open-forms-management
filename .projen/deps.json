@@ -259,6 +259,10 @@
       "type": "runtime"
     },
     {
+      "name": "csv-parse",
+      "type": "runtime"
+    },
+    {
       "name": "mustache",
       "type": "runtime"
     },

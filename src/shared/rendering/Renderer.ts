@@ -14,9 +14,10 @@ export interface PageViewModel {
   actorEmail?: string;
 }
 
-export function render(pageTemplate: string, viewModel: PageViewModel): string {
+export function render(pageTemplate: string, viewModel: PageViewModel, pageData: Record<string, unknown> = {}): string {
   const nav = new Navigation(viewModel.features, viewModel.currentPath).items;
   const data = {
+    ...pageData,
     title: viewModel.title,
     actorEmail: viewModel.actorEmail,
     currentYear: new Date().getFullYear(),

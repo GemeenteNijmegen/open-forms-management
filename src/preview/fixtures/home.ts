@@ -2,6 +2,7 @@ import { Feature } from '../../shared/navigation/Feature';
 import { PageViewModel } from '../../shared/rendering/Renderer';
 
 const exampleFeatures: Feature[] = [
+  { id: 'sport', label: 'Sport', route: '/sport', resource: 'sport', action: 'view' },
   { id: 'formulieren', label: 'Formulieren beheren', route: '/formulieren', resource: 'formulieren', action: 'view' },
   { id: 'permissies', label: 'Permissies beheren', route: '/permissies', resource: 'permissies', action: 'view' },
   { id: 'auditlog', label: 'Audit log bekijken', route: '/auditlog', resource: 'auditlog', action: 'view' },

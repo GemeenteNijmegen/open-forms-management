@@ -121,3 +121,60 @@ footer {
     display: none;
   }
 }
+
+/*
+ * `table-layout: fixed` (sport.mustache) sizes columns from the `<colgroup>` widths, not their content,
+ * but a single long unbroken token (an e-mail address, an activiteit label) still doesn't wrap on its
+ * own: CSS only wraps at spaces/hyphens by default, so that token overflows past its column into the
+ * next one instead of shrinking to fit. This forces a break inside such a token when needed, in both
+ * the fixed desktop layout and the stacked layout below.
+ */
+.sport-table .nijmegen-table__data-cell {
+  overflow-wrap: anywhere;
+}
+
+/*
+ * .nijmegen-table (ds.css) switches to its stacked mobile layout at its own fixed `@media (width <
+ * 576px)`, independent of this app's layout. On a page with a sidenav, the content column is already
+ * meaningfully narrower than the raw viewport well before 576px, once the sidenav switches to the
+ * hamburger menu above (`width < 1024px`), so a wide table stays cramped in its desktop grid long after
+ * there's actually room for it. This reproduces the design system's own mobile-table rules (same
+ * property values, same custom properties) at that 1024px breakpoint instead, scoped to `.sport-table`
+ * (see sport.mustache) so other pages are unaffected. The design system ships no override for its own
+ * breakpoint.
+ */
+@media (width < 1024px) {
+  .sport-table .nijmegen-table__header {
+    display: none;
+  }
+
+  .sport-table .nijmegen-table__data-cell {
+    display: block;
+    padding-block-end: var(--nijmegen-table-data-cell-padding-block-end);
+    padding-block-start: var(--nijmegen-table-header-cell-padding-block-start);
+    padding-inline-end: var(--nijmegen-table-data-cell-padding-inline-end);
+    padding-inline-start: var(--nijmegen-table-data-cell-padding-inline-start);
+  }
+
+  .sport-table .nijmegen-table__data-cell:before {
+    content: attr(data-label);
+    display: block;
+    font-weight: var(--nijmegen-table-header-cell-font-weight, 600);
+    padding-block-end: calc(var(--nijmegen-table-data-cell-padding-block-start) + var(--nijmegen-table-header-cell-padding-block-end));
+  }
+
+  /*
+   * Confirmed in DevTools: even once a cell is `display: block`, its `<colgroup>` `<col>` still
+   * constrains it to that fixed-layout column width (e.g. a "Kenmerk" cell stuck at ~147px wide
+   * instead of the full stacked-row width), which is exactly why the stacked layout looked so
+   * cramped. `!important` is needed because the inline `style="width: ..."` on each `<col>`
+   * (sport.mustache) otherwise outranks a plain override here.
+   */
+  .sport-table {
+    table-layout: auto !important;
+  }
+
+  .sport-table col {
+    width: auto !important;
+  }
+}

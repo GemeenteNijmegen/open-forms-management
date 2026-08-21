@@ -86,6 +86,13 @@ describe('render', () => {
     expect(html).toContain('<a href="#main-content" class="nijmegen-skip-link">Direct naar inhoud</a>');
   });
 
+  it('makes page-specific data available to the template, without letting it override title/nav', () => {
+    const html = render('{{>header}}<p>{{count}}</p>{{>footer}}', { title: 'Home', features: [], currentPath: '/' }, { count: 3, title: 'Overridden' });
+
+    expect(html).toContain('<p>3</p>');
+    expect(html).toContain('<title>Home - Open Forms Management</title>');
+  });
+
   it('logs an ERROR and rethrows when the template fails to render', () => {
     expect(() => render('{{#unclosed}}', { title: 'Home', features: [], currentPath: '/' })).toThrow();
 
