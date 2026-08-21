@@ -1,0 +1,31 @@
+meta {
+  name: List sport aanmeldingen page 2
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrlObjects}}objects?data_attr=formName__exact__Aanmelden%20sportactiviteit&pageSize=10&page=2
+  body: none
+  auth: inherit
+}
+
+params:query {
+  data_attr: formName__exact__Aanmelden sportactiviteit
+  pageSize: 10
+  page: 2
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("returns page 2 respecting pageSize", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body.results.length).to.be.lessThan(11);
+    expect(body.previous).to.not.equal(null);
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Document metadata (sample CSV)
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrlOpenZaakDocuments}}enkelvoudiginformatieobjecten/{{csvSampleDocumentUuid}}
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("returns 200 metadata for the known ACCP sport CSV sample", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().formaat).to.contain("csv");
+  });
+}

@@ -28,10 +28,3 @@ link ergens naartoe blijft gaan (`src/preview/render-previews.ts`).
 Fixtures voor de preview-data staan in `src/preview/fixtures/`. Een nieuwe pagina toevoegen: render 'm met een
 fixture in `renderAll()` (`src/preview/render-previews.ts`), en zet 'm in `ROUTE_TO_PREVIEW_FILE` als de route
 ook vanuit een andere pagina gelinkt wordt.
-
-
-## Open Forms API verkennen
-
-`bruno/` bevat een Bruno-collectie om de Open Forms API zelf te bevragen tijdens ontwikkeling (bijvoorbeeld
-formulierdefinities ophalen), niet deze applicatie. Vul een token in via de secret-variabele `tokenAuth` in de
-gewenste environment (`acceptance`/`development`/`production`).

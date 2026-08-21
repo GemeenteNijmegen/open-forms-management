@@ -1,0 +1,23 @@
+meta {
+  name: Document download (sample PDF)
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrlOpenZaakDocuments}}enkelvoudiginformatieobjecten/{{pdfSampleDocumentUuid}}/download
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("downloads a non-empty PDF sample", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.not.equal(undefined);
+  });
+}

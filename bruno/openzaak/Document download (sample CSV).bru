@@ -1,0 +1,23 @@
+meta {
+  name: Document download (sample CSV)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrlOpenZaakDocuments}}enkelvoudiginformatieobjecten/{{csvSampleDocumentUuid}}/download
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("downloads a non-empty CSV sample", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody()).to.not.equal(undefined);
+  });
+}

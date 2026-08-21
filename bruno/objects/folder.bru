@@ -1,0 +1,14 @@
+meta {
+  name: objects
+  seq: 2
+}
+
+auth {
+  mode: apikey
+}
+
+auth:apikey {
+  key: Authorization
+  value: Token {{objectsApiToken}}
+  placement: header
+}

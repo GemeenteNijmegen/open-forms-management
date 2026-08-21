@@ -1,0 +1,29 @@
+meta {
+  name: List sport aanmeldingen multiple data_attr
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrlObjects}}objects?data_attr=formName__exact__Aanmelden%20sportactiviteit&data_attr=formName__icontains__sportactiviteit
+  body: none
+  auth: inherit
+}
+
+params:query {
+  data_attr: formName__exact__Aanmelden sportactiviteit
+  data_attr: formName__icontains__sportactiviteit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("returns 200 when combining two data_attr filters on the same confirmed field", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body).to.have.property("results");
+  });
+}

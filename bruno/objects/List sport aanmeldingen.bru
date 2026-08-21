@@ -1,0 +1,37 @@
+meta {
+  name: List sport aanmeldingen
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrlObjects}}objects?data_attr=formName__exact__Aanmelden%20sportactiviteit
+  body: none
+  auth: inherit
+}
+
+params:query {
+  data_attr: formName__exact__Aanmelden sportactiviteit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("returns 200 with a paginated envelope", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body).to.have.property("count");
+    expect(body).to.have.property("results");
+    expect(Array.isArray(body.results)).to.equal(true);
+  });
+
+  test("every result is a sport aanmelding", function () {
+    const body = res.getBody();
+    body.results.forEach(function (object) {
+      expect(object.record.data.formName).to.equal("Aanmelden sportactiviteit");
+    });
+  });
+}

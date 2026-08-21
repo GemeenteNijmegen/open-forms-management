@@ -1,0 +1,38 @@
+meta {
+  name: Get sport aanmelding
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrlObjects}}objects/{{sportObjectUuid}}
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+script:post-response {
+  const object = res.getBody();
+  if (object && object.record && object.record.data) {
+    if (object.record.data.csv) {
+      bru.setVar("csvDocumentUuid", object.record.data.csv.split("/").filter(Boolean).pop());
+    }
+    if (object.record.data.pdf) {
+      bru.setVar("pdfDocumentUuid", object.record.data.pdf.split("/").filter(Boolean).pop());
+    }
+  }
+}
+
+tests {
+  test("returns the known sample sport aanmelding with csv/pdf document references", function () {
+    expect(res.getStatus()).to.equal(200);
+    const object = res.getBody();
+    expect(object.record.data.formName).to.equal("Aanmelden sportactiviteit");
+    expect(object.record.data.csv).to.be.a("string");
+    expect(object.record.data.pdf).to.be.a("string");
+  });
+}

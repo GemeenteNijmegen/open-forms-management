@@ -1,5 +1,13 @@
 {
   "version": "1",
   "name": "Open Forms Management",
-  "type": "collection"
+  "type": "collection",
+  "scripts": {
+    "moduleWhitelist": [
+      "jsonwebtoken"
+    ],
+    "filesystemAccess": {
+      "allow": true
+    }
+  }
 }

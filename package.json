@@ -106,7 +106,8 @@
     "chokidar": "^5.0.0",
     "constructs": "^10.5.1",
     "mustache": "^4.2.0",
-    "openid-client": "^6.8.6"
+    "openid-client": "^6.8.6",
+    "zod": "^4.4.3"
   },
   "devEngines": {
     "packageManager": {
