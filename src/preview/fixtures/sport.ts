@@ -57,9 +57,61 @@ const childNoord: SportSubmission = {
   child: { name: 'Lars Willemsen', birthDate: '2011-01-20', school: 'Basisschool Het Kompas' },
 };
 
+const childLindenholt: SportSubmission = {
+  reference: 'OF-2026-00061',
+  submittedAt: new Date('2026-08-17T11:20:00Z'),
+  district: 'lindenholt',
+  aanmeldType: 'kind',
+  contactName: 'Sofia Bakker',
+  phone: '0645678901',
+  email: 'sofia.bakker@example.invalid',
+  activities: ['Niet van toepassing'],
+  child: { name: 'Milan Bakker', birthDate: '2013-06-15', school: 'Basisschool De Sterrenkijker' },
+};
+
+const childOost: SportSubmission = {
+  reference: 'OF-2026-00050',
+  submittedAt: new Date('2026-08-16T13:45:00Z'),
+  district: 'nijmegenOost',
+  aanmeldType: 'kind',
+  contactName: 'Anna van Dijk',
+  phone: '0656789012',
+  email: 'anna.vandijk@example.invalid',
+  activities: ['Niet van toepassing'],
+  child: { name: 'Noa van Dijk', birthDate: '2014-11-03', school: 'Basisschool De Wijngaard' },
+};
+
+const childMiddenZuid: SportSubmission = {
+  reference: 'OF-2026-00044',
+  submittedAt: new Date('2026-08-15T15:10:00Z'),
+  district: 'nijmegenMiddenZuid',
+  aanmeldType: 'kind',
+  contactName: 'Youssef Amrani',
+  phone: '0667890123',
+  email: 'youssef.amrani@example.invalid',
+  activities: ['Niet van toepassing'],
+  child: { name: 'Amir Amrani', birthDate: '2012-02-28', school: 'Basisschool De Meridiaan' },
+};
+
+const childOudNieuwWest: SportSubmission = {
+  reference: 'OF-2026-00033',
+  submittedAt: new Date('2026-08-14T16:30:00Z'),
+  district: 'nijmegenOudNieuwWest',
+  aanmeldType: 'kind',
+  contactName: 'Els Hermans',
+  phone: '0678901234',
+  email: 'els.hermans@example.invalid',
+  activities: ['Niet van toepassing'],
+  child: { name: 'Fenna Hermans', birthDate: '2015-09-19', school: 'Basisschool De Regenboog' },
+};
+
 export const sportAllDistricts = {
   page: sportPage('admin@nijmegen.nl'),
-  data: buildSportViewModel(['dukenburg', 'nijmegenCentrum', 'nijmegenNoord'], [childDukenburg, adultDukenburg, childCentrum, childNoord], 0),
+  data: buildSportViewModel(
+    ['nijmegenCentrum', 'nijmegenOost', 'nijmegenMiddenZuid', 'nijmegenOudNieuwWest', 'dukenburg', 'lindenholt', 'nijmegenNoord'],
+    [childDukenburg, adultDukenburg, childCentrum, childNoord, childLindenholt, childOost, childMiddenZuid, childOudNieuwWest],
+    0,
+  ),
 };
 
 export const sportDukenburg = {

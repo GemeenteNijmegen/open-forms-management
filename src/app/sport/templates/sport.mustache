@@ -15,18 +15,18 @@
   {{#hasSubmissions}}
   <table class="nijmegen-table nijmegen-table-full-width sport-table" style="table-layout: fixed;">
     <colgroup>
-      <col style="width: 16%;">
-      <col style="width: 10%;">
-      <col style="width: 24%;">
-      <col style="width: 16%;">
-      <col style="width: 20%;">
+      <col style="width: 15%;">
+      <col style="width: 11%;">
+      <col style="width: 30%;">
       <col style="width: 14%;">
+      <col style="width: 17%;">
+      <col style="width: 13%;">
     </colgroup>
     <thead class="nijmegen-table__header">
       <tr class="nijmegen-table__row">
         <th class="nijmegen-table__header-cell">Kenmerk</th>
         <th class="nijmegen-table__header-cell">Ingediend</th>
-        <th class="nijmegen-table__header-cell">Naam</th>
+        <th class="nijmegen-table__header-cell">Naam / kind</th>
         <th class="nijmegen-table__header-cell">Telefoon/e-mail</th>
         <th class="nijmegen-table__header-cell">Activiteiten</th>
         <th class="nijmegen-table__header-cell">Opmerkingen</th>
@@ -37,7 +37,7 @@
       <tr class="nijmegen-table__row">
         <td class="nijmegen-table__data-cell" data-label="Kenmerk">{{reference}}<br>{{districtLabel}}<br>{{aanmeldTypeLabel}}</td>
         <td class="nijmegen-table__data-cell" data-label="Ingediend">{{#submittedAtLines}}{{.}}<br>{{/submittedAtLines}}</td>
-        <td class="nijmegen-table__data-cell" data-label="Naam">{{#nameLines}}{{.}}<br>{{/nameLines}}</td>
+        <td class="nijmegen-table__data-cell" data-label="Naam / kind">{{#nameLines}}{{.}}<br>{{/nameLines}}</td>
         <td class="nijmegen-table__data-cell" data-label="Telefoon/e-mail">{{phone}}<br>{{email}}</td>
         <td class="nijmegen-table__data-cell" data-label="Activiteiten">{{activitiesLabel}}</td>
         <td class="nijmegen-table__data-cell" data-label="Opmerkingen">{{remark}}</td>

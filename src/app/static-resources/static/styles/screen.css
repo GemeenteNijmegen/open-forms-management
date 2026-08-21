@@ -129,7 +129,8 @@ footer {
  * next one instead of shrinking to fit. This forces a break inside such a token when needed, in both
  * the fixed desktop layout and the stacked layout below.
  */
-.sport-table .nijmegen-table__data-cell {
+.sport-table .nijmegen-table__data-cell,
+.sport-table .nijmegen-table__header-cell {
   overflow-wrap: anywhere;
 }
 
