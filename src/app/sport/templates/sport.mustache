@@ -2,7 +2,44 @@
 <main id="main-content">
   <h1>Sport</h1>
   <p class="utrecht-paragraph">Sportaanmeldingen van het huidige sportseizoen, voor de wijken waar je toegang toe hebt.</p>
-  <p class="utrecht-paragraph">Wijken: {{allowedDistrictsLabel}}</p>
+
+  {{#hasAccessToAllDistricts}}
+  <p class="utrecht-paragraph">Je ziet aanmeldingen uit alle wijken.</p>
+  {{/hasAccessToAllDistricts}}
+  {{^hasAccessToAllDistricts}}
+  <p class="utrecht-paragraph">Je ziet aanmeldingen uit:</p>
+  <ul class="nijmegen-metadata nijmegen-metadata__horizontal">
+    {{#allowedDistrictLabels}}
+    <li class="nijmegen-metadata__item">{{.}}</li>
+    {{/allowedDistrictLabels}}
+  </ul>
+  {{/hasAccessToAllDistricts}}
+
+  <details class="sport-filter">
+    <summary class="utrecht-form-label">Filteren op wijk en type</summary>
+    <form method="get" action="/sport">
+      <input type="hidden" name="filterSubmitted" value="1">
+      <fieldset>
+        <legend class="utrecht-form-label">Wijken</legend>
+        {{#districtOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input" id="district-{{value}}" name="district" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="district-{{value}}">{{label}}</label>
+        </div>
+        {{/districtOptions}}
+      </fieldset>
+      <fieldset>
+        <legend class="utrecht-form-label">Type</legend>
+        {{#typeOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input" id="type-{{value}}" name="type" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="type-{{value}}">{{label}}</label>
+        </div>
+        {{/typeOptions}}
+      </fieldset>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action sport-filter__submit">Filteren</button>
+    </form>
+  </details>
 
   {{#hasPartialError}}
   <div class="utrecht-alert utrecht-alert--warning" role="status">
@@ -13,43 +50,51 @@
   {{/hasPartialError}}
 
   {{#hasSubmissions}}
-  <table class="nijmegen-table nijmegen-table-full-width sport-table" style="table-layout: fixed;">
-    <colgroup>
-      <col style="width: 15%;">
-      <col style="width: 11%;">
-      <col style="width: 30%;">
-      <col style="width: 14%;">
-      <col style="width: 17%;">
-      <col style="width: 13%;">
-    </colgroup>
-    <thead class="nijmegen-table__header">
-      <tr class="nijmegen-table__row">
-        <th class="nijmegen-table__header-cell">Kenmerk</th>
-        <th class="nijmegen-table__header-cell">Ingediend</th>
-        <th class="nijmegen-table__header-cell">Naam / kind</th>
-        <th class="nijmegen-table__header-cell">Telefoon/e-mail</th>
-        <th class="nijmegen-table__header-cell">Activiteiten</th>
-        <th class="nijmegen-table__header-cell">Opmerkingen</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#submissions}}
-      <tr class="nijmegen-table__row">
-        <td class="nijmegen-table__data-cell" data-label="Kenmerk">{{reference}}<br>{{districtLabel}}<br>{{aanmeldTypeLabel}}</td>
-        <td class="nijmegen-table__data-cell" data-label="Ingediend">{{#submittedAtLines}}{{.}}<br>{{/submittedAtLines}}</td>
-        <td class="nijmegen-table__data-cell" data-label="Naam / kind">{{#nameLines}}{{.}}<br>{{/nameLines}}</td>
-        <td class="nijmegen-table__data-cell" data-label="Telefoon/e-mail">{{phone}}<br>{{email}}</td>
-        <td class="nijmegen-table__data-cell" data-label="Activiteiten">{{activitiesLabel}}</td>
-        <td class="nijmegen-table__data-cell" data-label="Opmerkingen">{{remark}}</td>
-      </tr>
-      {{/submissions}}
-    </tbody>
-  </table>
+  <div>
+    {{#submissions}}
+    <article class="nijmegen-search-results sport-record">
+      <div class="nijmegen-search-results__content">
+        <div class="sport-record__summary">
+          <div class="sport-record__field sport-record__field--submitted">
+            <span class="sport-record__field-label">Ingediend</span>
+            <span>{{#submittedAtLines}}{{.}}<br>{{/submittedAtLines}}</span>
+          </div>
+          <div class="sport-record__field sport-record__field--participant">
+            <span class="sport-record__field-label">Sporter</span>
+            <strong>{{participantName}}</strong>
+            <span class="sport-record__type">{{typeLabel}}</span>
+          </div>
+          <div class="sport-record__field sport-record__field--district">
+            <span class="sport-record__field-label">Wijk</span>
+            <span>{{districtLabel}}</span>
+          </div>
+          <div class="sport-record__field sport-record__field--reference">
+            <span class="sport-record__field-label">Kenmerk</span>
+            <span>{{reference}}</span>
+          </div>
+        </div>
+        <ul class="nijmegen-metadata">
+          {{#birthDateLabel}}
+          <li class="nijmegen-metadata__item">Geboren: {{birthDateLabel}}</li>
+          {{/birthDateLabel}}
+          {{#schoolLabel}}
+          <li class="nijmegen-metadata__item">School: {{schoolLabel}}</li>
+          {{/schoolLabel}}
+          <li class="nijmegen-metadata__item">{{contactRoleLabel}}: {{contactValue}}</li>
+          <li class="nijmegen-metadata__item">Activiteit: {{activitiesLabel}}</li>
+          {{#remark}}
+          <li class="nijmegen-metadata__item">Opmerking: {{remark}}</li>
+          {{/remark}}
+        </ul>
+      </div>
+    </article>
+    {{/submissions}}
+  </div>
   {{/hasSubmissions}}
   {{^hasSubmissions}}
   <div class="nijmegen-action-card">
     <div class="nijmegen-action-card__content">
-      <p class="utrecht-paragraph">Er zijn geen Sportaanmeldingen in het huidige seizoen voor je wijken.</p>
+      <p class="utrecht-paragraph">Er zijn geen Sportaanmeldingen die aan het huidige filter voldoen.</p>
     </div>
   </div>
   {{/hasSubmissions}}

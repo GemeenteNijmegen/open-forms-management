@@ -23,6 +23,14 @@ describe('renderAll', () => {
       expect(partialError).toContain('utrecht-alert--warning');
 
       expect(fs.existsSync(path.join(outDir, 'preview', 'sport-dukenburg.html'))).toBe(true);
+
+      const filtered = fs.readFileSync(path.join(outDir, 'preview', 'sport-filtered.html'), 'utf-8');
+      expect(filtered).toContain('name="district"');
+      expect(filtered).toContain('name="type"');
+
+      const contentVariety = fs.readFileSync(path.join(outDir, 'preview', 'sport-content-variety.html'), 'utf-8');
+      expect(contentVariety).toContain('nijmegen-search-results');
+      expect(contentVariety).toContain('Bram de Wit-Vermeulen');
     } finally {
       process.chdir(previousCwd);
       fs.rmSync(outDir, { recursive: true, force: true });

@@ -4,7 +4,7 @@ import { forbiddenData } from './fixtures/forbidden';
 import { homeEmpty, homeWithFeatures, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
 import { logoutData } from './fixtures/logout';
-import { sportAllDistricts, sportDukenburg, sportEmpty, sportPartialError } from './fixtures/sport';
+import { sportAllDistricts, sportContentVariety, sportDukenburg, sportEmpty, sportFiltered, sportPartialError } from './fixtures/sport';
 import homeTemplate from '../app/home/templates/home.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
 import loginTemplate from '../app/login/templates/login.mustache';
@@ -92,6 +92,8 @@ export async function renderAll(): Promise<void> {
     'sport-dukenburg': render(sportTemplate, sportDukenburg.page, sportDukenburg.data),
     'sport-empty': render(sportTemplate, sportEmpty.page, sportEmpty.data),
     'sport-partial-error': render(sportTemplate, sportPartialError.page, sportPartialError.data),
+    'sport-filtered': render(sportTemplate, sportFiltered.page, sportFiltered.data),
+    'sport-content-variety': render(sportTemplate, sportContentVariety.page, sportContentVariety.data),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));

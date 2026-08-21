@@ -1,29 +1,67 @@
-import { SPORT_DISTRICT_LABELS, SportDistrict } from './SportDistrictAuthorization';
-import { SportSubmission, SportSubmissionChild } from './SportSubmission';
+import { SPORT_DISTRICT_LABELS, SPORT_DISTRICTS, SportDistrict } from './SportDistrictAuthorization';
+import { SportFilter } from './SportFilter';
+import { SportAanmeldType, SportSubmission } from './SportSubmission';
 
+const AANMELD_TYPE_LABELS: Record<SportAanmeldType, string> = {
+  kind: 'Kind',
+  volwassene: 'Volwassene',
+};
+
+const DUTCH_MONTHS = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+
+export interface SportFilterOption {
+  value: string;
+  label: string;
+  checked: boolean;
+}
+
+// One row is one record, not one table row: reference/districtLabel/submittedAtLines/participantName/
+// typeLabel vormen de vaste scanregel (zie de sport-record__summary-grid in sport.mustache), de rest is
+// de detailregel eronder.
 export interface SportSubmissionRow {
   reference: string;
   districtLabel: string;
   submittedAtLines: string[];
-  aanmeldTypeLabel: string;
-  nameLines: string[];
-  phone: string;
-  email: string;
+  participantName: string;
+  typeLabel: string;
+  birthDateLabel?: string;
+  schoolLabel?: string;
+  contactRoleLabel: string;
+  contactValue: string;
   activitiesLabel: string;
   remark?: string;
 }
 
 export interface SportViewModel {
-  allowedDistrictsLabel: string;
+  hasAccessToAllDistricts: boolean;
+  allowedDistrictLabels: string[];
+  districtOptions: SportFilterOption[];
+  typeOptions: SportFilterOption[];
   hasSubmissions: boolean;
   submissions: SportSubmissionRow[];
   hasPartialError: boolean;
   failedCount: number;
 }
 
-export function buildSportViewModel(allowedDistricts: SportDistrict[], submissions: SportSubmission[], failedCount: number): SportViewModel {
+export function buildSportViewModel(
+  allowedDistricts: SportDistrict[],
+  filter: SportFilter,
+  submissions: SportSubmission[],
+  failedCount: number,
+): SportViewModel {
   return {
-    allowedDistrictsLabel: allowedDistricts.map((district) => SPORT_DISTRICT_LABELS[district]).join(', '),
+    hasAccessToAllDistricts: allowedDistricts.length === SPORT_DISTRICTS.length,
+    allowedDistrictLabels: allowedDistricts.map((district) => SPORT_DISTRICT_LABELS[district]),
+    districtOptions: allowedDistricts.map((district) => ({
+      value: district,
+      label: SPORT_DISTRICT_LABELS[district],
+      checked: filter.districts.includes(district),
+    })),
+    typeOptions: (['kind', 'volwassene'] as const).map((type) => ({
+      value: type,
+      label: AANMELD_TYPE_LABELS[type],
+      checked: filter.types.includes(type),
+    })),
     hasSubmissions: submissions.length > 0,
     submissions: submissions.map(toSportSubmissionRow),
     hasPartialError: failedCount > 0,
@@ -36,38 +74,38 @@ function toSportSubmissionRow(submission: SportSubmission): SportSubmissionRow {
     reference: submission.reference,
     districtLabel: SPORT_DISTRICT_LABELS[submission.district as SportDistrict] ?? submission.district,
     submittedAtLines: formatSubmittedAt(submission.submittedAt),
-    aanmeldTypeLabel: submission.aanmeldType === 'kind' ? 'Kind' : 'Volwassene',
-    nameLines: [submission.contactName, ...buildChildLines(submission.child)],
-    phone: submission.phone,
-    email: submission.email,
+    // Bij een kind-aanmelding is het kind de sporter, niet de ouder/verzorger die het formulier invult.
+    participantName: submission.child?.name ?? submission.contactName,
+    typeLabel: AANMELD_TYPE_LABELS[submission.aanmeldType],
+    ...(submission.child?.birthDate ? { birthDateLabel: formatDutchDate(submission.child.birthDate) } : {}),
+    ...(submission.child?.school ? { schoolLabel: submission.child.school } : {}),
+    contactRoleLabel: submission.aanmeldType === 'kind' ? 'Ouder/verzorger' : 'Contact',
+    contactValue: buildContactValue(submission),
     activitiesLabel: submission.activities.join(', '),
     ...(submission.remark ? { remark: submission.remark } : {}),
   };
 }
 
-/** Prefixed with "Kind:" so the child's name doesn't read as a second contactpersoon under nameLines. */
-function buildChildLines(child?: SportSubmissionChild): string[] {
-  if (!child) {
-    return [];
-  }
-  const lines = [`Kind: ${child.name}`];
-  if (child.birthDate) {
-    lines.push(`Geboren: ${child.birthDate}`);
-  }
-  if (child.school) {
-    lines.push(`School: ${child.school}`);
-  }
-  return lines;
+// Bij een kind staat de naam van de ouder/verzorger er nog bij, want die is niet de sporter zelf; bij
+// een volwassene is de sporter zelf al de contactpersoon, dus die naam zou dubbelop zijn.
+function buildContactValue(submission: SportSubmission): string {
+  const parts = submission.aanmeldType === 'kind'
+    ? [submission.contactName, submission.phone, submission.email]
+    : [submission.phone, submission.email];
+  return parts.join(' · ');
 }
 
-/**
- * Date and time as two separate lines, not one string: the date has no space for the browser to wrap
- * on, so a narrow column would otherwise break it at an arbitrary character instead. `submittedAt` is
- * normalized to UTC, so both are formatted with UTC getters instead of the runtime's local timezone.
- */
+function formatDutchDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-');
+  return `${day}-${month}-${year}`;
+}
+
+// Datum en tijd als twee losse regels, niet één string: een datum heeft geen spatie om op af te breken,
+// dus een smalle kolom zou hem anders op een willekeurig teken afbreken in plaats van netjes ertussenin.
+// submittedAt is genormaliseerd naar UTC, dus beide met UTC-getters geformatteerd, niet de lokale tijdzone.
 function formatSubmittedAt(date: Date): string[] {
-  const pad = (value: number) => String(value).padStart(2, '0');
-  const day = `${pad(date.getUTCDate())}-${pad(date.getUTCMonth() + 1)}-${date.getUTCFullYear()}`;
-  const time = `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
-  return [day, time];
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const month = DUTCH_MONTHS[date.getUTCMonth()];
+  const time = `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
+  return [`${day} ${month} ${date.getUTCFullYear()}`, time];
 }

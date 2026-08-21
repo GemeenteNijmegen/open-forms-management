@@ -2,6 +2,7 @@ import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-htt
 import { buildSportSubmissions } from './buildSportSubmissions';
 import { fetchSportCsvDocuments } from './fetchSportCsvDocuments';
 import { resolveAllowedDistricts } from './SportDistrictAuthorization';
+import { resolveSportFilter } from './SportFilter';
 import { collectSportObjects } from './SportObjectsQuery';
 import { buildSportViewModel } from './SportViewModel';
 import sportTemplate from './templates/sport.mustache';
@@ -23,7 +24,7 @@ export class SportRequestHandler {
     private readonly openZaakClient: OpenZaakClient,
   ) { }
 
-  async handleRequest(identity: EmployeeIdentity): Promise<ApiGatewayV2Response> {
+  async handleRequest(identity: EmployeeIdentity, queryStringParameters?: Record<string, string | undefined>): Promise<ApiGatewayV2Response> {
     const requestStartedAt = Date.now();
     const context = await this.authorizationService.loadContext(identity);
     const denied = await this.authorizationService.requireAuthorization(context, { resource: 'sport', action: 'view' });
@@ -32,7 +33,12 @@ export class SportRequestHandler {
     }
 
     const allowedDistricts = resolveAllowedDistricts(context.evaluator);
-    logger.debug('Sport allowed districts resolved', { districtCount: allowedDistricts.length });
+    const filter = resolveSportFilter(queryStringParameters, allowedDistricts);
+    logger.debug('Sport allowed districts resolved', {
+      districtCount: allowedDistricts.length,
+      filteredDistrictCount: filter.districts.length,
+      filteredTypeCount: filter.types.length,
+    });
 
     let objects: ObjectResource[];
     try {
@@ -45,10 +51,10 @@ export class SportRequestHandler {
     const fetchResult = await fetchSportCsvDocuments(this.openZaakClient, objects, identity);
 
     const mappingStartedAt = Date.now();
-    const { submissions, failedCount: mappingFailedCount } = buildSportSubmissions(fetchResult.documents, allowedDistricts);
+    const { submissions, failedCount: mappingFailedCount } = buildSportSubmissions(fetchResult.documents, filter.districts, filter.types);
     logger.debug('Sport mapping/filtering finished', { submissionCount: submissions.length, durationMs: Date.now() - mappingStartedAt });
 
-    const viewModel = buildSportViewModel(allowedDistricts, submissions, fetchResult.failedCount + mappingFailedCount);
+    const viewModel = buildSportViewModel(allowedDistricts, filter, submissions, fetchResult.failedCount + mappingFailedCount);
     const features = visibleFeatures(REGISTERED_FEATURES, context.evaluator);
 
     const renderStartedAt = Date.now();

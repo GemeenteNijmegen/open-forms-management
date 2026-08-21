@@ -1,6 +1,6 @@
 import { FetchedSportCsvDocument } from './fetchSportCsvDocuments';
 import { parseSportSubmission } from './parseSportSubmission';
-import { SportSubmission } from './SportSubmission';
+import { SportAanmeldType, SportSubmission } from './SportSubmission';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
 
@@ -9,20 +9,22 @@ export interface SportSubmissionsResult {
   failedCount: number;
 }
 
-/**
- * Parses every fetched CSV into a SportSubmission, keeps only the districts the medewerker may see,
- * and sorts newest-first on the actual `Inzendingdatum`. A CSV that fails to parse is skipped and
- * counted, the same way `fetchSportCsvDocuments` counts a document that failed to download.
- */
-export function buildSportSubmissions(documents: FetchedSportCsvDocument[], allowedDistricts: string[]): SportSubmissionsResult {
+// A CSV that fails to parse is skipped and counted, the same way fetchSportCsvDocuments counts a
+// document that failed to download.
+export function buildSportSubmissions(
+  documents: FetchedSportCsvDocument[],
+  allowedDistricts: string[],
+  allowedTypes: SportAanmeldType[],
+): SportSubmissionsResult {
   const allowed = new Set(allowedDistricts);
+  const allowedAanmeldTypes = new Set(allowedTypes);
   const submissions: SportSubmission[] = [];
   let failedCount = 0;
 
   for (const document of documents) {
     try {
       const submission = parseSportSubmission(document.csvText, document.reference);
-      if (allowed.has(submission.district)) {
+      if (allowed.has(submission.district) && allowedAanmeldTypes.has(submission.aanmeldType)) {
         submissions.push(submission);
       }
     } catch (error) {

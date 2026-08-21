@@ -50,19 +50,115 @@ describe('SportRequestHandler', () => {
     const body = response.body ?? '';
 
     expect(response.statusCode).toBe(200);
+    expect(body).toContain('sport-record__summary');
     expect(body).toContain('Dukenburg');
-    expect(body).toContain('Kind: Testkind Dukenburg');
+    expect(body).toContain('ref-child');
+    expect(body).toContain('ref-adult');
+    // Het kind, niet de ouder/verzorger, is de sporter die in de summary-grid staat.
+    expect(body).toContain('Testkind Dukenburg');
     expect(body).toContain('Testvolwassene Dukenburg');
-    // Kenmerk holds reference, district and aanmeldType stacked as three lines in one cell.
-    expect(body).toContain('ref-child<br>Dukenburg<br>Kind');
-    expect(body).toContain('ref-adult<br>Dukenburg<br>Volwassene');
-    // Mustache HTML-escapes "/" to "&#x2F;" by default, so check either side instead of the literal slash.
+    expect(body).toContain('Geboren: 01-01-2010');
+    expect(body).toContain('School: Testschool Dukenburg');
+    // Mustache HTML-escapes "/" to "&#x2F;" by default, so check either side of every slash instead of the literal character.
+    expect(body).toContain('Ouder&#x2F;verzorger: Testouder Dukenburg · 0241234567 · ouder-dukenburg@example.invalid');
+    expect(body).toContain('Contact: 0241234567 · volwassene-dukenburg@example.invalid');
+    expect(body).toContain('>Volwassene<');
     expect(body).toContain('bewegen op muziek voor dames');
     expect(body).toContain('vrouwen (wijkcentrum Dukenburg)');
     expect(body).not.toMatch(/Excel|PDF/);
 
     // The adult submission (23:05:37) was submitted after the child submission (23:05:15), so it sorts first.
     expect(body.indexOf('Testvolwassene Dukenburg')).toBeLessThan(body.indexOf('Testkind Dukenburg'));
+
+    // A single-district grant shows the wrapping district summary, not the "alle wijken" sentence.
+    expect(body).toContain('Je ziet aanmeldingen uit:');
+    expect(body).not.toContain('Je ziet aanmeldingen uit alle wijken.');
+  });
+
+  it('shows the "alle wijken" summary for a global admin instead of listing every district', async () => {
+    const repository = new FakePermissionRepository();
+    repository.seedGrants('admin@nijmegen.nl', [{ resource: '*', actions: ['*'] }]);
+    const service = new AuthorizationService(repository, new FakeAuditTrail());
+
+    const objectsClient = { collectObjects: jest.fn().mockResolvedValue([]) } as unknown as ObjectsClient;
+    const openZaakClient = { getDocumentText: jest.fn() } as unknown as OpenZaakClient;
+
+    const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
+    const response = await handler.handleRequest({ principalId: 'admin-1', email: 'admin@nijmegen.nl' });
+    const body = response.body ?? '';
+
+    expect(body).toContain('Je ziet aanmeldingen uit alle wijken.');
+  });
+
+  it('applies an explicit filter: only the requested district and type make it into the response', async () => {
+    const repository = new FakePermissionRepository();
+    repository.seedGrants('medewerker@nijmegen.nl', [{ resource: 'sport', actions: ['view'], scopes: { districts: ['dukenburg'] } }]);
+    const service = new AuthorizationService(repository, new FakeAuditTrail());
+
+    const objects = [
+      buildObject('ref-child', 'https://open-zaak.test/csv/child'),
+      buildObject('ref-adult', 'https://open-zaak.test/csv/adult'),
+    ];
+    const objectsClient = { collectObjects: jest.fn().mockResolvedValue(objects) } as unknown as ObjectsClient;
+    const getDocumentText = jest.fn()
+      .mockResolvedValueOnce(readFixture('sport-submission-child-dukenburg.csv'))
+      .mockResolvedValueOnce(readFixture('sport-submission-adult-dukenburg-music.csv'));
+    const openZaakClient = { getDocumentText } as unknown as OpenZaakClient;
+
+    const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
+    const response = await handler.handleRequest(
+      { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
+      { filterSubmitted: '1', district: 'dukenburg', type: 'kind' },
+    );
+    const body = response.body ?? '';
+
+    expect(response.statusCode).toBe(200);
+    expect(body).toContain('Testkind Dukenburg');
+    expect(body).not.toContain('Testvolwassene Dukenburg');
+  });
+
+  it('shows nothing, not the default, when the filter explicitly selects zero districts', async () => {
+    const repository = new FakePermissionRepository();
+    repository.seedGrants('medewerker@nijmegen.nl', [{ resource: 'sport', actions: ['view'], scopes: { districts: ['dukenburg'] } }]);
+    const service = new AuthorizationService(repository, new FakeAuditTrail());
+
+    const objects = [buildObject('ref-child', 'https://open-zaak.test/csv/child')];
+    const objectsClient = { collectObjects: jest.fn().mockResolvedValue(objects) } as unknown as ObjectsClient;
+    const getDocumentText = jest.fn().mockResolvedValueOnce(readFixture('sport-submission-child-dukenburg.csv'));
+    const openZaakClient = { getDocumentText } as unknown as OpenZaakClient;
+
+    const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
+    const response = await handler.handleRequest(
+      { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
+      { filterSubmitted: '1', type: 'kind' }, // filterSubmitted but no district checked
+    );
+    const body = response.body ?? '';
+
+    expect(response.statusCode).toBe(200);
+    expect(body).not.toContain('Testkind Dukenburg');
+    expect(body).toContain('Er zijn geen Sportaanmeldingen');
+  });
+
+  it('ignores a district in the querystring the medewerker is not allowed to see', async () => {
+    const repository = new FakePermissionRepository();
+    repository.seedGrants('medewerker@nijmegen.nl', [{ resource: 'sport', actions: ['view'], scopes: { districts: ['dukenburg'] } }]);
+    const service = new AuthorizationService(repository, new FakeAuditTrail());
+
+    const objects = [buildObject('ref-child', 'https://open-zaak.test/csv/child')];
+    const objectsClient = { collectObjects: jest.fn().mockResolvedValue(objects) } as unknown as ObjectsClient;
+    const getDocumentText = jest.fn().mockResolvedValueOnce(readFixture('sport-submission-child-dukenburg.csv'));
+    const openZaakClient = { getDocumentText } as unknown as OpenZaakClient;
+
+    const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
+    const response = await handler.handleRequest(
+      { principalId: 'employee-1', email: 'medewerker@nijmegen.nl' },
+      { filterSubmitted: '1', district: 'nijmegenNoord', type: 'kind' }, // not an allowed district for this medewerker
+    );
+    const body = response.body ?? '';
+
+    expect(response.statusCode).toBe(200);
+    expect(body).not.toContain('Testkind Dukenburg');
+    expect(body).toContain('Er zijn geen Sportaanmeldingen');
   });
 
   it('shows a normal empty state, not an error page, when there are no submissions', async () => {

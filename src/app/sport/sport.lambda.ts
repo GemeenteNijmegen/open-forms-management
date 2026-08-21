@@ -27,7 +27,7 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
 
     const [objectsClient, openZaakClient] = await Promise.all([getObjectsClient(), getOpenZaakClient()]);
     const requestHandler = new SportRequestHandler(authorizationService, objectsClient, openZaakClient);
-    return await requestHandler.handleRequest(identity);
+    return await requestHandler.handleRequest(identity, event.queryStringParameters);
   } catch (error) {
     logger.error('Unhandled error in sport', { reason: errorReason(error) });
     countMetric('UnhandledError');
