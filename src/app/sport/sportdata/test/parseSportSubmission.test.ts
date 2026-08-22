@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseSportSubmission } from '../parseSportSubmission';
 
-const samplesDir = path.join(__dirname, '../test/samples');
+const samplesDir = path.join(__dirname, 'samples');
 const fixtureFiles = fs.readdirSync(samplesDir).filter((file) => file.endsWith('.csv'));
 
 function readFixture(fileName: string): string {

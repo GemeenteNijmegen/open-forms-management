@@ -1,7 +1,7 @@
 import { parse } from 'csv-parse/sync';
 import { z } from 'zod';
 import { SportSubmission, SportSubmissionChild } from './SportSubmission';
-import { logger } from '../../observability/Logger';
+import { logger } from '../../../observability/Logger';
 
 // Also carries the reporter-only columns (data contract columns not needed by the Sportpagina itself), so the
 // reporter can build its own richer row on top of this same validated parse instead of a second CSV interpretation.

@@ -1,4 +1,4 @@
-import { PermissionEvaluator } from '../../shared/authorization/PermissionEvaluator';
+import { PermissionEvaluator } from '../../../shared/authorization/PermissionEvaluator';
 
 export const SPORT_DISTRICTS = [
   'nijmegenCentrum',

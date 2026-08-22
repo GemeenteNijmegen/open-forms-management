@@ -1,9 +1,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { logger } from '../../../observability/Logger';
+import { logger } from '../../../../observability/Logger';
 import { buildSportSubmissions } from '../buildSportSubmissions';
 
-const samplesDir = path.join(__dirname, '../test/samples');
+const samplesDir = path.join(__dirname, '../../sportdata/test/samples');
 const BOTH_TYPES = ['kind', 'volwassene'] as const;
 
 function readFixture(fileName: string): string {

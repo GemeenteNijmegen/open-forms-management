@@ -1,6 +1,6 @@
 import writeXlsxFile from 'write-excel-file/node';
 import type { Cell, Row } from 'write-excel-file/node';
-import { SPORT_DISTRICT_LABELS, SportDistrict } from '../../SportDistrictAuthorization';
+import { SPORT_DISTRICT_LABELS, SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 import { SportReportRow } from '../reportbuilder/SportReportRow';
 
 const TEXT_FORMAT = '@';
@@ -108,7 +108,7 @@ function buildSportReportColumns(rows: SportReportRow[]): { width: number }[] {
   return [...FIXED_COLUMNS.map((column) => ({ width: column.width })), ...activityLabels.map(() => ({ width: 14 }))];
 }
 
-/** Writes the full Sport report as an XLSX Buffer. Never touches S3; that's the worker's job (SPORT-RPT-005). */
+/** Writes the full Sport report as an XLSX Buffer. Never touches S3; that's the caller's job. */
 export async function writeSportReportExcel(rows: SportReportRow[]): Promise<Buffer> {
   const data = buildSportReportSheetData(rows);
   const columns = buildSportReportColumns(rows);

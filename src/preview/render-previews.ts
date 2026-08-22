@@ -10,7 +10,7 @@ import homeTemplate from '../app/home/templates/home.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
 import loginTemplate from '../app/login/templates/login.mustache';
 import logoutTemplate from '../app/logout/templates/logout.mustache';
-import sportReportsTemplate from '../app/sport/reporter/ui-request-handlers/templates/sport-reports.mustache';
+import sportReportsTemplate from '../app/sport/templates/sport-reports.mustache';
 import sportTemplate from '../app/sport/templates/sport.mustache';
 import { render } from '../shared/rendering/Renderer';
 import forbiddenTemplate from '../shared/rendering/templates/forbidden.mustache';

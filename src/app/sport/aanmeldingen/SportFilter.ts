@@ -1,5 +1,5 @@
-import { SportDistrict } from './SportDistrictAuthorization';
-import { SportAanmeldType } from './SportSubmission';
+import { SportDistrict } from '../sportdata/SportDistrictAuthorization';
+import { SportAanmeldType } from '../sportdata/SportSubmission';
 
 const SPORT_AANMELD_TYPES: SportAanmeldType[] = ['kind', 'volwassene'];
 

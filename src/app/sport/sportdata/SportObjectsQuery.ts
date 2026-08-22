@@ -1,7 +1,7 @@
 import { currentSportSeasonStart } from './SportSeason';
-import { logger } from '../../observability/Logger';
-import { ObjectsClient } from '../../shared/clients/objects/ObjectsClient';
-import { ObjectResource } from '../../shared/clients/objects/ObjectsResponse';
+import { logger } from '../../../observability/Logger';
+import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
+import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
 
 export const SPORT_FORM_NAME = 'Aanmelden sportactiviteit';
 

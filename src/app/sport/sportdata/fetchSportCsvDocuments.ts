@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { errorReason } from '../../observability/errorReason';
-import { logger } from '../../observability/Logger';
-import { EmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
-import { ObjectResource } from '../../shared/clients/objects/ObjectsResponse';
-import { OpenZaakClient } from '../../shared/clients/open-zaak/OpenZaakClient';
+import { errorReason } from '../../../observability/errorReason';
+import { logger } from '../../../observability/Logger';
+import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
+import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
+import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
 
 const CONCURRENCY = 4;
 

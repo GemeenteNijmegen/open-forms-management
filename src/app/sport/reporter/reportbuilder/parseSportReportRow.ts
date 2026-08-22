@@ -1,5 +1,5 @@
 import { SportReportRow } from './SportReportRow';
-import { parseActivities, parseSportCsvRow, parseSubmittedAt } from '../../parseSportSubmission';
+import { parseActivities, parseSportCsvRow, parseSubmittedAt } from '../../sportdata/parseSportSubmission';
 
 /** Builds the reporter's full row on top of the same validated CSV parse `parseSportSubmission` uses. */
 export function parseSportReportRow(csvText: string, reference: string): SportReportRow {

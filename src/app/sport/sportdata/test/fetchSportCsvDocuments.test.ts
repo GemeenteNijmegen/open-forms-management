@@ -1,6 +1,6 @@
-import { logger } from '../../../observability/Logger';
-import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
-import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { logger } from '../../../../observability/Logger';
+import { ObjectResource } from '../../../../shared/clients/objects/ObjectsResponse';
+import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
 import { fetchSportCsvDocuments } from '../fetchSportCsvDocuments';
 
 function buildObject(reference: string, csv: string, uuid?: string, pdf?: string): ObjectResource {

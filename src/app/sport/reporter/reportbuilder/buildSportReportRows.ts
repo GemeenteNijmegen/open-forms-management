@@ -2,8 +2,8 @@ import { parseSportReportRow } from './parseSportReportRow';
 import { SportReportRow } from './SportReportRow';
 import { errorReason } from '../../../../observability/errorReason';
 import { logger } from '../../../../observability/Logger';
-import { FetchedSportCsvDocument } from '../../fetchSportCsvDocuments';
-import { SportDistrict } from '../../SportDistrictAuthorization';
+import { FetchedSportCsvDocument } from '../../sportdata/fetchSportCsvDocuments';
+import { SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 
 /**
  * Maps every fetched CSV document to a full report row and keeps only the requested districts. A CSV

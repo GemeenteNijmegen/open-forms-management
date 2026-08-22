@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
-import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
-import { FakePermissionRepository } from '../../../shared/authorization/tests/FakePermissionRepository';
-import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
-import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
-import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { FakeAuditTrail } from '../../../../shared/audit/tests/FakeAuditTrail';
+import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
+import { FakePermissionRepository } from '../../../../shared/authorization/tests/FakePermissionRepository';
+import { ObjectsClient } from '../../../../shared/clients/objects/ObjectsClient';
+import { ObjectResource } from '../../../../shared/clients/objects/ObjectsResponse';
+import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
 import { SportPdfDownloadHandler } from '../SportPdfDownloadHandler';
 
-const samplesDir = path.join(__dirname, '../test/samples');
+const samplesDir = path.join(__dirname, '../../sportdata/test/samples');
 const OBJECT_UUID = '11111111-1111-1111-1111-111111111111';
 const DOCUMENT_UUID = '22222222-2222-2222-2222-222222222222';
 const PDF_URL = `https://open-zaak.test/documenten/api/v1/enkelvoudiginformatieobjecten/${DOCUMENT_UUID}`;

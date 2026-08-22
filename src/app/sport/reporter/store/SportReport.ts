@@ -1,4 +1,4 @@
-import { SPORT_DISTRICTS, SportDistrict } from '../../SportDistrictAuthorization';
+import { SPORT_DISTRICTS, SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 
 export const SPORT_REPORT_STATUSES = ['QUEUED', 'BUILDING', 'READY', 'TOO_LARGE', 'FAILED', 'DELETED'] as const;
 export type SportReportStatus = typeof SPORT_REPORT_STATUSES[number];

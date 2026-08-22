@@ -1,8 +1,8 @@
-import { FailedSportDocument, FetchedSportCsvDocument } from './fetchSportCsvDocuments';
-import { parseSportSubmission } from './parseSportSubmission';
-import { SportAanmeldType, SportSubmission } from './SportSubmission';
-import { errorReason } from '../../observability/errorReason';
-import { logger } from '../../observability/Logger';
+import { errorReason } from '../../../observability/errorReason';
+import { logger } from '../../../observability/Logger';
+import { FailedSportDocument, FetchedSportCsvDocument } from '../sportdata/fetchSportCsvDocuments';
+import { parseSportSubmission } from '../sportdata/parseSportSubmission';
+import { SportAanmeldType, SportSubmission } from '../sportdata/SportSubmission';
 
 export interface SportSubmissionsResult {
   submissions: SportSubmission[];

@@ -1,4 +1,4 @@
-import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
+import { ObjectsClient } from '../../../../shared/clients/objects/ObjectsClient';
 import { collectSportObjects } from '../SportObjectsQuery';
 
 describe('collectSportObjects', () => {

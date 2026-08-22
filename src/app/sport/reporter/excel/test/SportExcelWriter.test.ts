@@ -5,7 +5,7 @@ import { parseSportReportRow } from '../../reportbuilder/parseSportReportRow';
 import { SportReportRow } from '../../reportbuilder/SportReportRow';
 import { buildSportReportSheetData, writeSportReportExcel } from '../SportExcelWriter';
 
-const samplesDir = path.join(__dirname, '../../../test/samples');
+const samplesDir = path.join(__dirname, '../../../sportdata/test/samples');
 
 function parseFixture(fileName: string, reference: string): SportReportRow {
   return parseSportReportRow(fs.readFileSync(path.join(samplesDir, fileName), 'utf-8'), reference);

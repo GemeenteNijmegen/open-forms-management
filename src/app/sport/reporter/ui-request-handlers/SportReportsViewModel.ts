@@ -1,4 +1,4 @@
-import { SPORT_DISTRICT_LABELS, SportDistrict } from '../../SportDistrictAuthorization';
+import { SPORT_DISTRICT_LABELS, SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 import { isReportAvailable, SportReport, SportReportStatus } from '../store/SportReport';
 
 export interface SportReportDistrictOption {

@@ -1,13 +1,13 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { buildSportReportsViewModel } from './SportReportsViewModel';
-import sportReportsTemplate from './templates/sport-reports.mustache';
 import { EmployeeIdentity } from '../../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { visibleFeatures } from '../../../../shared/navigation/FeatureRegistry';
 import { REGISTERED_FEATURES } from '../../../../shared/navigation/RegisteredFeatures';
 import { render } from '../../../../shared/rendering/Renderer';
-import { resolveAllowedDistricts } from '../../SportDistrictAuthorization';
-import { currentSportSeasonStart } from '../../SportSeason';
+import { resolveAllowedDistricts } from '../../sportdata/SportDistrictAuthorization';
+import { currentSportSeasonStart } from '../../sportdata/SportSeason';
+import sportReportsTemplate from '../../templates/sport-reports.mustache';
 import { SportReportStore } from '../store/SportReportStore';
 
 const FLASH_MESSAGES: Record<string, string> = {

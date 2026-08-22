@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, ScanCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { canonicalDistricts, isReportAvailable, SPORT_REPORT_ACTIVE_STATUSES, SportReport, SportReportStatus } from './SportReport';
 import { logger } from '../../../../observability/Logger';
-import { SportDistrict } from '../../SportDistrictAuthorization';
+import { SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 
 const RETENTION_SECONDS = 30 * 24 * 60 * 60;
 

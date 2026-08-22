@@ -11,7 +11,7 @@ import { recordAudit } from '../../../shared/audit/recordAudit';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
-import { fetchSportCsvDocuments } from '../fetchSportCsvDocuments';
+import { fetchSportCsvDocuments } from '../sportdata/fetchSportCsvDocuments';
 
 export interface SportExcelWorkerDependencies {
   objectsClient: ObjectsClient;

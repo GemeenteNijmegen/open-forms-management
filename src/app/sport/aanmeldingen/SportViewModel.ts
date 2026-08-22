@@ -1,7 +1,7 @@
-import { FailedSportDocument } from './fetchSportCsvDocuments';
-import { SPORT_DISTRICT_LABELS, SPORT_DISTRICTS, SportDistrict } from './SportDistrictAuthorization';
 import { SportFilter } from './SportFilter';
-import { SportAanmeldType, SportSubmission } from './SportSubmission';
+import { FailedSportDocument } from '../sportdata/fetchSportCsvDocuments';
+import { SPORT_DISTRICT_LABELS, SPORT_DISTRICTS, SportDistrict } from '../sportdata/SportDistrictAuthorization';
+import { SportAanmeldType, SportSubmission } from '../sportdata/SportSubmission';
 
 const AANMELD_TYPE_LABELS: Record<SportAanmeldType, string> = {
   kind: 'Kind',

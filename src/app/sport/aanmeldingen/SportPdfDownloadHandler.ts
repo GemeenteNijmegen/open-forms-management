@@ -1,18 +1,18 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { z } from 'zod';
-import { parseSportSubmission } from './parseSportSubmission';
-import { SPORT_FORM_NAME } from './SportObjectsQuery';
-import { errorReason } from '../../observability/errorReason';
-import { logger } from '../../observability/Logger';
-import { xRayTraceId } from '../../observability/xRayTraceId';
-import { AuditTrail } from '../../shared/audit/AuditTrail';
-import { recordAudit } from '../../shared/audit/recordAudit';
-import { EmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
-import { AuthorizationService } from '../../shared/authorization/AuthorizationService';
-import { ObjectsClient } from '../../shared/clients/objects/ObjectsClient';
-import { OpenZaakClient } from '../../shared/clients/open-zaak/OpenZaakClient';
-import { OpenZaakDocumentContent } from '../../shared/clients/open-zaak/OpenZaakResponse';
-import { isValidUuid } from '../../shared/clients/utils/format';
+import { errorReason } from '../../../observability/errorReason';
+import { logger } from '../../../observability/Logger';
+import { xRayTraceId } from '../../../observability/xRayTraceId';
+import { AuditTrail } from '../../../shared/audit/AuditTrail';
+import { recordAudit } from '../../../shared/audit/recordAudit';
+import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
+import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
+import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
+import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { OpenZaakDocumentContent } from '../../../shared/clients/open-zaak/OpenZaakResponse';
+import { isValidUuid } from '../../../shared/clients/utils/format';
+import { parseSportSubmission } from '../sportdata/parseSportSubmission';
+import { SPORT_FORM_NAME } from '../sportdata/SportObjectsQuery';
 
 const sportPdfObjectDataSchema = z.looseObject({
   formName: z.string(),

@@ -1,7 +1,7 @@
 import { logger } from '../../../../observability/Logger';
 import { ObjectsClient } from '../../../../shared/clients/objects/ObjectsClient';
 import { ObjectResource } from '../../../../shared/clients/objects/ObjectsResponse';
-import { SPORT_FORM_NAME } from '../../SportObjectsQuery';
+import { SPORT_FORM_NAME } from '../../sportdata/SportObjectsQuery';
 
 /**
  * Collects every Sportinzending Object registered in the requested range, newest first. Unlike

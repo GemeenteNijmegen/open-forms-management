@@ -6,7 +6,7 @@ import { AuditTrail } from '../../../../shared/audit/AuditTrail';
 import { recordAudit } from '../../../../shared/audit/recordAudit';
 import { EmployeeIdentity } from '../../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
-import { resolveAllowedDistricts } from '../../SportDistrictAuthorization';
+import { resolveAllowedDistricts } from '../../sportdata/SportDistrictAuthorization';
 import { isReportAvailable } from '../store/SportReport';
 import { SportReportStore } from '../store/SportReportStore';
 

@@ -9,7 +9,7 @@ import { runSportExcelReport, SportExcelWorkerDependencies } from '../SportExcel
 import { SportReport } from '../store/SportReport';
 import { SportReportStore } from '../store/SportReportStore';
 
-const samplesDir = path.join(__dirname, '../../test/samples');
+const samplesDir = path.join(__dirname, '../../sportdata/test/samples');
 
 function fixture(name: string): string {
   return fs.readFileSync(path.join(samplesDir, name), 'utf-8');

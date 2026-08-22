@@ -1,4 +1,4 @@
-import { SportAanmeldType } from '../../SportSubmission';
+import { SportAanmeldType } from '../../sportdata/SportSubmission';
 
 /**
  * One Sport submission mapped to every business field the Excel export needs (`references/sport-excel-data-contract.md`),

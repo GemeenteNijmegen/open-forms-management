@@ -1,4 +1,4 @@
-import { PermissionEvaluator } from '../../../shared/authorization/PermissionEvaluator';
+import { PermissionEvaluator } from '../../../../shared/authorization/PermissionEvaluator';
 import { resolveAllowedDistricts } from '../SportDistrictAuthorization';
 
 describe('resolveAllowedDistricts', () => {

@@ -1,5 +1,5 @@
 import { isValidIsoDate } from '../../../../shared/clients/utils/format';
-import { SportDistrict } from '../../SportDistrictAuthorization';
+import { SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 import { canonicalDistricts } from '../store/SportReport';
 
 /**

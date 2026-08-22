@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
-import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
-import { FakePermissionRepository } from '../../../shared/authorization/tests/FakePermissionRepository';
-import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
-import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
-import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { FakeAuditTrail } from '../../../../shared/audit/tests/FakeAuditTrail';
+import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
+import { FakePermissionRepository } from '../../../../shared/authorization/tests/FakePermissionRepository';
+import { ObjectsClient } from '../../../../shared/clients/objects/ObjectsClient';
+import { ObjectResource } from '../../../../shared/clients/objects/ObjectsResponse';
+import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
 import { SportRequestHandler } from '../SportRequestHandler';
 
-const samplesDir = path.join(__dirname, '../test/samples');
+const samplesDir = path.join(__dirname, '../../sportdata/test/samples');
 
 function readFixture(fileName: string): string {
   return fs.readFileSync(path.join(samplesDir, fileName), 'utf-8');

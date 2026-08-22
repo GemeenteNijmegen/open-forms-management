@@ -1,21 +1,21 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { buildSportSubmissions } from './buildSportSubmissions';
-import { fetchSportCsvDocuments } from './fetchSportCsvDocuments';
-import { resolveAllowedDistricts } from './SportDistrictAuthorization';
 import { resolveSportFilter } from './SportFilter';
-import { collectSportObjects } from './SportObjectsQuery';
 import { buildSportViewModel } from './SportViewModel';
-import sportTemplate from './templates/sport.mustache';
-import { errorReason } from '../../observability/errorReason';
-import { logger } from '../../observability/Logger';
-import { EmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
-import { AuthorizationService } from '../../shared/authorization/AuthorizationService';
-import { ObjectsClient } from '../../shared/clients/objects/ObjectsClient';
-import { ObjectResource } from '../../shared/clients/objects/ObjectsResponse';
-import { OpenZaakClient } from '../../shared/clients/open-zaak/OpenZaakClient';
-import { visibleFeatures } from '../../shared/navigation/FeatureRegistry';
-import { REGISTERED_FEATURES } from '../../shared/navigation/RegisteredFeatures';
-import { render } from '../../shared/rendering/Renderer';
+import { errorReason } from '../../../observability/errorReason';
+import { logger } from '../../../observability/Logger';
+import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
+import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
+import { ObjectsClient } from '../../../shared/clients/objects/ObjectsClient';
+import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
+import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { visibleFeatures } from '../../../shared/navigation/FeatureRegistry';
+import { REGISTERED_FEATURES } from '../../../shared/navigation/RegisteredFeatures';
+import { render } from '../../../shared/rendering/Renderer';
+import { fetchSportCsvDocuments } from '../sportdata/fetchSportCsvDocuments';
+import { resolveAllowedDistricts } from '../sportdata/SportDistrictAuthorization';
+import { collectSportObjects } from '../sportdata/SportObjectsQuery';
+import sportTemplate from '../templates/sport.mustache';
 
 export class SportRequestHandler {
   constructor(

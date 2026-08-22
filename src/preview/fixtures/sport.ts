@@ -1,7 +1,7 @@
-import { SportDistrict } from '../../app/sport/SportDistrictAuthorization';
-import { SportFilter } from '../../app/sport/SportFilter';
-import { SportSubmission } from '../../app/sport/SportSubmission';
-import { buildSportViewModel } from '../../app/sport/SportViewModel';
+import { SportFilter } from '../../app/sport/aanmeldingen/SportFilter';
+import { buildSportViewModel } from '../../app/sport/aanmeldingen/SportViewModel';
+import { SportDistrict } from '../../app/sport/sportdata/SportDistrictAuthorization';
+import { SportSubmission } from '../../app/sport/sportdata/SportSubmission';
 import { Feature } from '../../shared/navigation/Feature';
 import { PageViewModel } from '../../shared/rendering/Renderer';
 

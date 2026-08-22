@@ -1,10 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../../../../../observability/Logger';
-import { FetchedSportCsvDocument } from '../../../fetchSportCsvDocuments';
+import { FetchedSportCsvDocument } from '../../../sportdata/fetchSportCsvDocuments';
 import { buildSportReportRows } from '../buildSportReportRows';
 
-const samplesDir = path.join(__dirname, '../../../test/samples');
+const samplesDir = path.join(__dirname, '../../../sportdata/test/samples');
 
 function fixtureDocument(fileName: string, reference: string): FetchedSportCsvDocument {
   return {

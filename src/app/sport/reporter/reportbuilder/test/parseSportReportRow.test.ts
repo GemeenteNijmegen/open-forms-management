@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseSportReportRow } from '../parseSportReportRow';
 
-const samplesDir = path.join(__dirname, '../../../test/samples');
+const samplesDir = path.join(__dirname, '../../../sportdata/test/samples');
 
 function readFixture(fileName: string): string {
   return fs.readFileSync(path.join(samplesDir, fileName), 'utf-8');
