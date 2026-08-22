@@ -5,6 +5,7 @@ import { SportReportsBucket } from './SportReportsBucket';
 import { SportReportsTable } from './SportReportsTable';
 import { Configuration } from '../../Configuration';
 import { applyLambdaLoggingDefaults } from '../../observability/LambdaLogging';
+import { AuditTrailTable } from '../AuditTrailTable';
 
 /**
  * Wires the SportExcelWorker Lambda: read/update access to the report it's asked to build, write-only
@@ -15,6 +16,7 @@ export function configureSportExcelWorker(
   fn: Function,
   sportReportsTable: SportReportsTable,
   sportReportsBucket: SportReportsBucket,
+  auditTrailTable: AuditTrailTable,
   configuration: Configuration,
 ): void {
   applyLambdaLoggingDefaults(fn, configuration);
@@ -24,4 +26,6 @@ export function configureSportExcelWorker(
   fn.addEnvironment('SPORT_REPORTS_TABLE', sportReportsTable.table.tableName);
   sportReportsBucket.grantWorkerAccess(fn);
   fn.addEnvironment('SPORT_REPORTS_BUCKET', sportReportsBucket.bucket.bucketName);
+  auditTrailTable.grantPut(fn);
+  fn.addEnvironment('AUDIT_TRAIL_TABLE', auditTrailTable.table.tableName);
 }

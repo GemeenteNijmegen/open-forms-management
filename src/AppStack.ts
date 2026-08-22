@@ -97,7 +97,7 @@ export class AppStack extends Stack {
       // AWS Lambda's absolute maximum timeout.
       timeout: Duration.minutes(15),
     });
-    configureSportExcelWorker(this, sportExcelWorkerFunction, sportReportsTable, sportReportsBucket, this.props.configuration);
+    configureSportExcelWorker(this, sportExcelWorkerFunction, sportReportsTable, sportReportsBucket, this.auditTrailTable, this.props.configuration);
 
     const sportFunction = new SportFunction(this, 'sport-function', {
       tracing: Tracing.ACTIVE,
