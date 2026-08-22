@@ -88,6 +88,7 @@ export async function renderAll(): Promise<void> {
     'home': render(homeTemplate, homeWithFeatures),
     'home-empty': render(homeTemplate, homeEmpty),
     'login': render(loginTemplate, loginData),
+    'login-failed': render(loginTemplate, loginData, { failed: true }),
     'logout': render(logoutTemplate, logoutData),
     '403': render(forbiddenTemplate, forbiddenData),
     '404': render(notFoundTemplate, notFoundData),

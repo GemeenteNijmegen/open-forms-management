@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { LoginPageRequestHandler } from './LoginPageRequestHandler';
 import { LoginRequestHandler } from './LoginRequestHandler';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
@@ -12,21 +13,25 @@ import { loadOidcConfiguration } from '../../shared/auth/OidcConfiguration';
 
 const dynamoDBClient = new DynamoDBClient({});
 const auditTrail = createAuditTrail(dynamoDBClient);
+const pageRequestHandler = new LoginPageRequestHandler();
 
-let requestHandler: LoginRequestHandler | undefined;
-async function initialize(): Promise<LoginRequestHandler> {
-  if (!requestHandler) {
+let startRequestHandler: LoginRequestHandler | undefined;
+async function initializeStartRequestHandler(): Promise<LoginRequestHandler> {
+  if (!startRequestHandler) {
     const configuration = await loadOidcConfiguration();
-    requestHandler = new LoginRequestHandler(new EntraOidcClient(configuration), auditTrail);
+    startRequestHandler = new LoginRequestHandler(new EntraOidcClient(configuration), auditTrail);
   }
-  return requestHandler;
+  return startRequestHandler;
 }
 
 export async function handler(event: APIGatewayProxyEventV2, context: Context): Promise<ApiGatewayV2Response> {
   bindRequestLogging(context);
   try {
-    const handlerInstance = await initialize();
-    return await handlerInstance.handleRequest(event.cookies?.join(';'), dynamoDBClient);
+    if (event.rawPath.endsWith('/start')) {
+      const requestHandler = await initializeStartRequestHandler();
+      return await requestHandler.handleRequest(event.cookies?.join(';'), dynamoDBClient);
+    }
+    return await pageRequestHandler.handleRequest(event.cookies?.join(';'), dynamoDBClient, event.queryStringParameters?.failed === '1');
   } catch (error) {
     logger.error('Unhandled error in login', { reason: errorReason(error) });
     countMetric('UnhandledError');

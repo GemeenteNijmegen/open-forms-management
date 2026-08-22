@@ -25,6 +25,7 @@ describe('AppStack authentication and routing wiring', () => {
     deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' },
     criticality: new Criticality('low'),
     logLevel: 'DEBUG' as const,
+    loginHealthCheckEnabled: true,
   };
 
   const stage = new AppStage(new App(), 'TestAppStage', { configuration });
@@ -38,6 +39,7 @@ describe('AppStack authentication and routing wiring', () => {
   it.each([
     '$default',
     'GET /login',
+    'GET /login/start',
     'GET /auth/callback',
     'GET /logout',
   ])('leaves %s public at the API - authentication happens inside the lambda', (routeKey) => {

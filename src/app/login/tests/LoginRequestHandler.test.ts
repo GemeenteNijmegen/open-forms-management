@@ -1,5 +1,6 @@
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from '@aws-sdk/client-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { metrics } from '../../../observability/Metrics';
 import { FakeAuditTrail } from '../../../shared/audit/tests/FakeAuditTrail';
 import { FakeOidcClient } from '../../../shared/auth/tests/FakeOidcClient';
 import { LoginRequestHandler } from '../LoginRequestHandler';
@@ -65,5 +66,22 @@ describe('LoginRequestHandler', () => {
 
     expect(auditTrail.events).toHaveLength(1);
     expect(auditTrail.events[0]).toMatchObject({ eventType: 'LOGIN_STARTED', outcome: 'SUCCESS', flowId: expect.any(String) });
+  });
+
+  it('records LOGIN_FAILED and leaves no pending session when building the authorization url fails, without recording LOGIN_STARTED', async () => {
+    const oidcClient = new FakeOidcClient();
+    jest.spyOn(oidcClient, 'getAuthorizationUrl').mockRejectedValue(new Error('discovery unavailable'));
+    const auditTrail = new FakeAuditTrail();
+    const addMetricSpy = jest.spyOn(metrics, 'addMetric');
+
+    const handler = new LoginRequestHandler(oidcClient, auditTrail);
+    const response = await handler.handleRequest(undefined, new DynamoDBClient({}));
+
+    expect(response.statusCode).toBe(500);
+    expect(dynamoMock.commandCalls(PutItemCommand)).toHaveLength(0);
+    expect(auditTrail.events).toEqual([expect.objectContaining({
+      eventType: 'LOGIN_FAILED', outcome: 'FAILURE', flowId: expect.any(String), metadata: { reason: 'discovery unavailable' },
+    })]);
+    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginFailure']);
   });
 });

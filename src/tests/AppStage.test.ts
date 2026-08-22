@@ -12,6 +12,7 @@ describe('AppStage', () => {
     deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' },
     criticality: new Criticality('low'),
     logLevel: 'DEBUG' as const,
+    loginHealthCheckEnabled: true,
   };
 
   const stage = new AppStage(new App(), 'TestAppStage', { configuration });

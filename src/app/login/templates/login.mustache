@@ -1,7 +1,12 @@
 {{>header}}
 <main id="main-content">
   <h1>Inloggen</h1>
+  {{#failed}}
   <p class="utrecht-paragraph">Het inloggen is niet gelukt. Probeer het opnieuw.</p>
-  <p><a class="utrecht-button utrecht-button--primary-action" href="/login">Opnieuw inloggen</a></p>
+  {{/failed}}
+  {{^failed}}
+  <p class="utrecht-paragraph">Log in met uw medewerkersaccount.</p>
+  {{/failed}}
+  <p><a class="utrecht-button utrecht-button--primary-action" href="/login/start">{{#failed}}Opnieuw inloggen{{/failed}}{{^failed}}Inloggen{{/failed}}</a></p>
 </main>
 {{>footer}}

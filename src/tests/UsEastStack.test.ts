@@ -4,18 +4,21 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import { Statics } from '../Statics';
 import { UsEastStack } from '../UsEastStack';
 
-describe('UsEastStack', () => {
-  const configuration = {
+function configurationWithHealthCheck(loginHealthCheckEnabled: boolean) {
+  return {
     branchName: 'test',
     buildEnvironment: { account: '123456789012', region: 'eu-central-1' },
     deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' },
     criticality: new Criticality('low'),
     logLevel: 'DEBUG' as const,
+    loginHealthCheckEnabled,
   };
+}
 
+describe('UsEastStack', () => {
   const stack = new UsEastStack(new App(), 'TestUsEastStack', {
     env: { account: '123456789012', region: 'us-east-1' },
-    configuration,
+    configuration: configurationWithHealthCheck(true),
   });
   const template = Template.fromStack(stack);
 
@@ -54,8 +57,15 @@ describe('UsEastStack', () => {
       Name: Statics.ssmManagementWafWebAclArn,
     });
   });
+});
 
-  it('creates an HTTPS healthcheck on /login, since a plain 2xx/3xx status is a stable enough signal', () => {
+describe('UsEastStack login healthcheck', () => {
+  it('creates the healthcheck and alarm when enabled', () => {
+    const template = Template.fromStack(new UsEastStack(new App(), 'TestUsEastStackEnabled', {
+      env: { account: '123456789012', region: 'us-east-1' },
+      configuration: configurationWithHealthCheck(true),
+    }));
+
     template.resourceCountIs('AWS::Route53::HealthCheck', 1);
     template.hasResourceProperties('AWS::Route53::HealthCheck', {
       HealthCheckConfig: Match.objectLike({
@@ -65,9 +75,8 @@ describe('UsEastStack', () => {
         EnableSNI: true,
       }),
     });
-  });
 
-  it('alarms when the login healthcheck reports unhealthy', () => {
+    template.resourceCountIs('AWS::CloudWatch::Alarm', 1);
     template.hasResourceProperties('AWS::CloudWatch::Alarm', Match.objectLike({
       AlarmName: 'login-healthcheck-failed-low-lvl',
       Namespace: 'AWS/Route53',
@@ -75,5 +84,15 @@ describe('UsEastStack', () => {
       ComparisonOperator: 'LessThanThreshold',
       Threshold: 1,
     }));
+  });
+
+  it('creates neither the healthcheck nor the alarm when disabled', () => {
+    const template = Template.fromStack(new UsEastStack(new App(), 'TestUsEastStackDisabled', {
+      env: { account: '123456789012', region: 'us-east-1' },
+      configuration: configurationWithHealthCheck(false),
+    }));
+
+    template.resourceCountIs('AWS::Route53::HealthCheck', 0);
+    template.resourceCountIs('AWS::CloudWatch::Alarm', 0);
   });
 });

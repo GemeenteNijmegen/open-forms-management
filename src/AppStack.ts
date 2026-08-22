@@ -74,7 +74,9 @@ export class AppStack extends Stack {
       // Calls out to the OIDC provider's discovery endpoint; the default 3s timeout is too tight for that.
       timeout: Duration.seconds(30),
     });
-    addOidcRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, loginFunction, domainName, '/login');
+    addOidcRoute(
+      this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration, loginFunction, domainName, ['/login', '/login/start'],
+    );
     new ErrorMonitoringAlarm(this, 'login-function-error-alarm', { lambda: loginFunction, criticality: this.props.configuration.criticality });
 
     const authFunction = new AuthFunction(this, 'auth-function', {

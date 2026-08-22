@@ -20,6 +20,7 @@ describe('applyLambdaLoggingDefaults', () => {
       deploymentEnvironment: { account: '123456789012', region: 'eu-central-1' },
       criticality: new Criticality('low'),
       logLevel: 'DEBUG',
+      loginHealthCheckEnabled: true,
     });
 
     const template = Template.fromStack(stack);

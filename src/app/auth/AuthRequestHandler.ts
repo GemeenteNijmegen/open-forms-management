@@ -15,7 +15,7 @@ export interface AuthRequestHandlerProps {
   fullUrl: URL;
   queryStringParamError?: string;
   dynamoDBClient: DynamoDBClient;
-  oidcClient: OidcClient;
+  getOidcClient: () => Promise<OidcClient>;
   auditTrail: AuditTrail;
 }
 
@@ -23,33 +23,36 @@ export class AuthRequestHandler {
   constructor(private readonly props: AuthRequestHandlerProps) { }
 
   async handleRequest(): Promise<ApiGatewayV2Response> {
-    if (this.props.queryStringParamError) {
-      logger.info('Authentication cancelled or failed at idp', { reason: this.props.queryStringParamError });
-      return Response.redirect('/login');
-    }
-
     const session = new Session(this.props.cookies ?? '', this.props.dynamoDBClient);
     await session.init();
     if (session.sessionId === false) {
       logger.info('OIDC callback received without a pending login session');
-      return Response.redirect('/login');
+      return Response.redirect('/login?failed=1');
     }
 
     const expectedState = session.getValue('state');
     const expectedNonce = session.getValue('nonce');
     const flowId = session.getValue('flowId');
+    const correlationId = xRayTraceId();
+
+    if (this.props.queryStringParamError) {
+      logger.info('Authentication cancelled or failed at idp', { flowId, reason: this.props.queryStringParamError });
+      await this.recordKnownFlowFailure(flowId, correlationId, this.props.queryStringParamError);
+      return Response.redirect('/login?failed=1');
+    }
+
     if (!expectedState || !expectedNonce) {
-      logger.info('OIDC callback received without a matching pending state');
-      return Response.redirect('/login');
+      logger.info('OIDC callback received without a matching pending state', { flowId });
+      await this.recordKnownFlowFailure(flowId, correlationId, 'missing pending state or nonce');
+      return Response.redirect('/login?failed=1');
     }
 
     logger.debug('OIDC callback received', { flowId });
 
-    const correlationId = xRayTraceId();
-
     let identity;
     try {
-      const result = await this.props.oidcClient.exchangeAuthorizationCode(this.props.fullUrl, expectedState, expectedNonce);
+      const oidcClient = await this.props.getOidcClient();
+      const result = await oidcClient.exchangeAuthorizationCode(this.props.fullUrl, expectedState, expectedNonce);
       identity = mapToEmployeeIdentity(result.claims);
     } catch (error) {
       const reason = errorReason(error);
@@ -58,13 +61,8 @@ export class AuthRequestHandler {
       await recordAudit(this.props.auditTrail, {
         eventType: 'LOGIN_FAILED', outcome: 'FAILURE', correlationId, flowId, metadata: { reason },
       });
-      return Response.redirect('/login');
+      return Response.redirect('/login?failed=1');
     }
-
-    countMetric('LoginSuccess');
-    await recordAudit(this.props.auditTrail, {
-      eventType: 'LOGIN_SUCCEEDED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
-    });
 
     try {
       // A fresh session (new token) is created here rather than updating the
@@ -89,6 +87,11 @@ export class AuthRequestHandler {
       return Response.error(500);
     }
 
+    countMetric('LoginSuccess');
+    await recordAudit(this.props.auditTrail, {
+      eventType: 'LOGIN_SUCCEEDED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
+    });
+
     countMetric('SessionCreated');
     await recordAudit(this.props.auditTrail, {
       eventType: 'SESSION_CREATED', outcome: 'SUCCESS', correlationId, flowId, ...(identity.email ? { actorEmail: identity.email } : {}),
@@ -97,5 +100,17 @@ export class AuthRequestHandler {
     logger.info('Login completed', { flowId });
 
     return Response.redirect('/', 302, session.getCookie());
+  }
+
+  // Only a recognizable flowId proves a real login attempt; a callback that reaches this point without one
+  // is an unrecognized or incomplete pending session and must not pollute the audit trail as LOGIN_FAILED.
+  private async recordKnownFlowFailure(flowId: string | undefined, correlationId: string, reason: string): Promise<void> {
+    if (!flowId) {
+      return;
+    }
+    countMetric('LoginFailure');
+    await recordAudit(this.props.auditTrail, {
+      eventType: 'LOGIN_FAILED', outcome: 'FAILURE', correlationId, flowId, metadata: { reason },
+    });
   }
 }

@@ -54,7 +54,7 @@ describe('login -> home -> permission check -> logout', () => {
       cookies: pendingCookie,
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail,
     }).handleRequest();
     const sessionCookie = toCookieHeader(callbackResponse);
