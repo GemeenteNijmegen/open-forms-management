@@ -27,7 +27,7 @@ export function buildSportSubmissions(
     try {
       const submission = parseSportSubmission(document.csvText, document.reference);
       if (allowed.has(submission.district) && allowedAanmeldTypes.has(submission.aanmeldType)) {
-        submissions.push(submission);
+        submissions.push({ ...submission, objectUuid: document.objectUuid, hasPdf: document.hasPdf });
       }
     } catch (error) {
       failedCount += 1;

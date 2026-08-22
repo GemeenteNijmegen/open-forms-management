@@ -3,7 +3,7 @@ import { logger } from '../../observability/Logger';
 import { ObjectsClient } from '../../shared/clients/objects/ObjectsClient';
 import { ObjectResource } from '../../shared/clients/objects/ObjectsResponse';
 
-const SPORT_FORM_NAME = 'Aanmelden sportactiviteit';
+export const SPORT_FORM_NAME = 'Aanmelden sportactiviteit';
 
 /**
  * Collects every Sportinzending Object from the start of the current sportseizoen, newest first.

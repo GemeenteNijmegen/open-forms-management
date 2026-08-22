@@ -6,7 +6,7 @@ export interface SportSubmissionChild {
   school?: string;
 }
 
-/** `reference` comes from the Object; every other field comes from its CSV document. */
+/** `reference`/`objectUuid`/`hasPdf` come from the Object; every other field comes from its CSV document. */
 export interface SportSubmission {
   reference: string;
   submittedAt: Date;
@@ -18,4 +18,6 @@ export interface SportSubmission {
   activities: string[];
   remark?: string;
   child?: SportSubmissionChild;
+  objectUuid?: string;
+  hasPdf: boolean;
 }

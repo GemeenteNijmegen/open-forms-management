@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { SportPdfDownloadHandler } from './SportPdfDownloadHandler';
 import { SportRequestHandler } from './SportRequestHandler';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
@@ -26,6 +27,13 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     }
 
     const [objectsClient, openZaakClient] = await Promise.all([getObjectsClient(), getOpenZaakClient()]);
+
+    const objectUuid = event.pathParameters?.objectUuid;
+    if (objectUuid !== undefined) {
+      const pdfHandler = new SportPdfDownloadHandler(authorizationService, objectsClient, openZaakClient, auditTrail);
+      return await pdfHandler.handleRequest(identity, objectUuid);
+    }
+
     const requestHandler = new SportRequestHandler(authorizationService, objectsClient, openZaakClient);
     return await requestHandler.handleRequest(identity, event.queryStringParameters);
   } catch (error) {

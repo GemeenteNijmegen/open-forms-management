@@ -26,6 +26,8 @@ const childDukenburg: SportSubmission = {
   email: 'marieke.jansen@example.invalid',
   activities: ['zwemles voor kinderen (zwembad Dukenburg)', 'gymnastiek voor kinderen (sporthal Meijhorst)'],
   child: { name: 'Sanne Jansen', birthDate: '2015-04-02', school: 'De Windroos' },
+  objectUuid: 'preview-child-dukenburg',
+  hasPdf: true,
 };
 
 const adultDukenburg: SportSubmission = {
@@ -38,6 +40,8 @@ const adultDukenburg: SportSubmission = {
   email: 'peter.degroot@example.invalid',
   activities: ['bewegen op muziek voor dames/vrouwen (wijkcentrum Dukenburg)'],
   remark: 'Graag in de ochtend.',
+  objectUuid: 'preview-adult-dukenburg',
+  hasPdf: true,
 };
 
 const childCentrum: SportSubmission = {
@@ -51,6 +55,8 @@ const childCentrum: SportSubmission = {
   activities: ['voetbaltraining voor kinderen (sportpark Staddijk)', 'behendigheidstraining voor kinderen (sporthal Wedren)'],
   remark: 'Ons kind vindt het spannend om nieuwe kinderen te ontmoeten, graag extra aandacht van de begeleiding in het begin.',
   child: { name: 'Yusuf El Idrissi', birthDate: '2012-09-10', school: 'Basisschool De Vuurvogel' },
+  objectUuid: 'preview-child-centrum',
+  hasPdf: true,
 };
 
 const childNoord: SportSubmission = {
@@ -63,6 +69,8 @@ const childNoord: SportSubmission = {
   email: 'tom.willemsen@example.invalid',
   activities: ['zwemles voor kinderen (zwembad Aquireno)', 'atletiek voor kinderen (atletiekbaan Nijmegen-Noord)'],
   child: { name: 'Lars Willemsen', birthDate: '2011-01-20', school: 'Basisschool Het Kompas' },
+  objectUuid: 'preview-child-noord',
+  hasPdf: true,
 };
 
 const childLindenholt: SportSubmission = {
@@ -75,8 +83,11 @@ const childLindenholt: SportSubmission = {
   email: 'sofia.bakker@example.invalid',
   activities: ['gymnastiek voor kinderen (sporthal Lindenholt)', 'dansles voor kinderen (wijkcentrum Meijhorst)'],
   child: { name: 'Milan Bakker', birthDate: '2013-06-15', school: 'Basisschool De Sterrenkijker' },
+  objectUuid: 'preview-child-lindenholt',
+  hasPdf: true,
 };
 
+// No pdf reference: shows that a record without one gets no active downloadlink.
 const childOost: SportSubmission = {
   reference: 'OF-2026-00050',
   submittedAt: new Date('2026-08-16T13:45:00Z'),
@@ -88,6 +99,7 @@ const childOost: SportSubmission = {
   activities: ['voetbaltraining voor kinderen (sportpark Ooijse Bandijk)', 'behendigheidstraining voor kinderen (sporthal Grootstal)'],
   remark: 'Onze dochter kan alleen op woensdagmiddag, de rest van de week zit de agenda vol met schoolzwemmen en andere naschoolse activiteiten. Graag zo veel mogelijk rekening houden met die ene beschikbare middag.',
   child: { name: 'Noa van Dijk', birthDate: '2014-11-03', school: 'Basisschool De Wijngaard' },
+  hasPdf: false,
 };
 
 const childMiddenZuid: SportSubmission = {
@@ -100,6 +112,8 @@ const childMiddenZuid: SportSubmission = {
   email: 'youssef.amrani@example.invalid',
   activities: ['zwemles voor kinderen (zwembad Erica)', 'turnen voor kinderen (sporthal Hatertseveld)'],
   child: { name: 'Amir Amrani', birthDate: '2012-02-28', school: 'Basisschool De Meridiaan' },
+  objectUuid: 'preview-child-midden-zuid',
+  hasPdf: true,
 };
 
 const childOudNieuwWest: SportSubmission = {
@@ -112,6 +126,8 @@ const childOudNieuwWest: SportSubmission = {
   email: 'els.hermans@example.invalid',
   activities: ['gymnastiek voor kinderen (sporthal B-Fit)', 'voetbaltraining voor kinderen (sportpark Wolfskuil)'],
   child: { name: 'Fenna Hermans', birthDate: '2015-09-19', school: 'Basisschool De Regenboog' },
+  objectUuid: 'preview-child-oud-nieuw-west',
+  hasPdf: true,
 };
 
 // A kind-aanmelding with everything filled in, including a long school name and multiple long
@@ -130,6 +146,8 @@ const childRichData: SportSubmission = {
   ],
   remark: 'Ons kind heeft een lichte beperking en kan het beste vooraan bij de instructeur staan, graag rekening houden met de indeling van de groep.',
   child: { name: 'Bram de Wit-Vermeulen', birthDate: '2016-03-11', school: 'Basisschool Sint Jozef aan de Nieuwe Ubbergseweg' },
+  objectUuid: 'preview-child-rich-data',
+  hasPdf: true,
 };
 
 // A volwassene-aanmelding with one long activity label and no remark.
@@ -142,6 +160,8 @@ const adultLongActivity: SportSubmission = {
   phone: '0622334455',
   email: 'willem.overbeek@example.invalid',
   activities: ['onbeperkt wijksporten: sport- en spelactiviteiten voor volwassenen (sporthal Meijhorst)'],
+  objectUuid: 'preview-adult-long-activity',
+  hasPdf: true,
 };
 
 // A kind-aanmelding missing every optional field (no birthDate, no school, no remark).
@@ -155,6 +175,8 @@ const childMinimalData: SportSubmission = {
   email: 'petra.jansen@example.invalid',
   activities: ['Niet van toepassing'],
   child: { name: 'Noor Jansen' },
+  objectUuid: 'preview-child-minimal-data',
+  hasPdf: true,
 };
 
 const allDistricts: SportDistrict[] = [

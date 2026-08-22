@@ -31,6 +31,7 @@ export interface SportSubmissionRow {
   contactValue: string;
   activitiesLabel: string;
   remark?: string;
+  pdfDownloadHref?: string;
 }
 
 export interface SportViewModel {
@@ -107,6 +108,7 @@ function toSportSubmissionRow(submission: SportSubmission): SportSubmissionRow {
     contactValue: buildContactValue(submission),
     activitiesLabel: submission.activities.join(', '),
     ...(submission.remark ? { remark: submission.remark } : {}),
+    ...(submission.hasPdf && submission.objectUuid ? { pdfDownloadHref: `/sport/submissions/${submission.objectUuid}/pdf` } : {}),
   };
 }
 

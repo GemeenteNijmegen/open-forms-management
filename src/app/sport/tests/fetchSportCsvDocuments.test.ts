@@ -3,8 +3,8 @@ import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse'
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
 import { fetchSportCsvDocuments } from '../fetchSportCsvDocuments';
 
-function buildObject(reference: string, csv: string, uuid?: string): ObjectResource {
-  return { uuid, record: { data: { reference, csv } } } as ObjectResource;
+function buildObject(reference: string, csv: string, uuid?: string, pdf?: string): ObjectResource {
+  return { uuid, record: { data: { reference, csv, ...(pdf ? { pdf } : {}) } } } as ObjectResource;
 }
 
 const actor = { principalId: 'employee-1' };
@@ -41,7 +41,7 @@ describe('fetchSportCsvDocuments', () => {
 
     const result = await fetchSportCsvDocuments(client, objects, actor);
 
-    expect(result.documents).toEqual([{ reference: 'ref-ok', csvText: 'csv-text', documentUrl: 'csv-ok' }]);
+    expect(result.documents).toEqual([{ reference: 'ref-ok', csvText: 'csv-text', documentUrl: 'csv-ok', hasPdf: false }]);
     expect(result.failedCount).toBe(1);
     expect(result.failedDocuments).toEqual([{ reference: 'ref-fail', objectUuid: 'object-uuid-fail' }]);
     // OF-nummer, objectnummer en de csv-url moeten in de log staan, zodat een mislukte download snel is op te zoeken.
@@ -64,5 +64,19 @@ describe('fetchSportCsvDocuments', () => {
     expect(result.failedCount).toBe(1);
     // Geen reference bekend (dat is precies wat hier mislukte), maar het objectnummer wel: nog steeds op te zoeken.
     expect(result.failedDocuments).toEqual([{ objectUuid: 'object-uuid-invalid' }]);
+  });
+
+  it('marks a document as having a PDF only when the object actually has a pdf reference', async () => {
+    const objects = [
+      buildObject('ref-with-pdf', 'csv-a', 'object-uuid-a', 'https://open-zaak.test/pdf/a'),
+      buildObject('ref-without-pdf', 'csv-b'),
+    ];
+    const getDocumentText = jest.fn().mockResolvedValue('csv-text');
+    const client = { getDocumentText } as unknown as OpenZaakClient;
+
+    const result = await fetchSportCsvDocuments(client, objects, actor);
+
+    expect(result.documents.find((document) => document.reference === 'ref-with-pdf')?.hasPdf).toBe(true);
+    expect(result.documents.find((document) => document.reference === 'ref-without-pdf')?.hasPdf).toBe(false);
   });
 });

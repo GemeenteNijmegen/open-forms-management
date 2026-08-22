@@ -14,8 +14,8 @@ function readFixture(fileName: string): string {
   return fs.readFileSync(path.join(samplesDir, fileName), 'utf-8');
 }
 
-function buildObject(reference: string, csv: string, uuid?: string): ObjectResource {
-  return { uuid, record: { data: { reference, csv } } } as ObjectResource;
+function buildObject(reference: string, csv: string, uuid?: string, pdf?: string): ObjectResource {
+  return { uuid, record: { data: { reference, csv, ...(pdf ? { pdf } : {}) } } } as ObjectResource;
 }
 
 describe('SportRequestHandler', () => {
@@ -89,7 +89,7 @@ describe('SportRequestHandler', () => {
     expect(body).toContain('>Volwassene<');
     expect(body).toContain('bewegen op muziek voor dames');
     expect(body).toContain('vrouwen (wijkcentrum Dukenburg)');
-    expect(body).not.toMatch(/Excel|PDF/);
+    expect(body).not.toMatch(/Excel/);
 
     // The adult submission (23:05:37) was submitted after the child submission (23:05:15), so it sorts first.
     expect(body.indexOf('Testvolwassene Dukenburg')).toBeLessThan(body.indexOf('Testkind Dukenburg'));
@@ -97,6 +97,31 @@ describe('SportRequestHandler', () => {
     // A single-district grant shows the wrapping district summary, not the "alle wijken" sentence.
     expect(body).toContain('Je ziet aanmeldingen uit:');
     expect(body).not.toContain('Je ziet aanmeldingen uit alle wijken.');
+  });
+
+  it('shows a PDF downloadlink only for a submission whose Object actually has a pdf reference', async () => {
+    const repository = new FakePermissionRepository();
+    repository.seedGrants('medewerker@nijmegen.nl', [{ resource: 'sport', actions: ['view'], scopes: { districts: ['dukenburg'] } }]);
+    const service = new AuthorizationService(repository, new FakeAuditTrail());
+
+    const objects = [
+      buildObject('ref-with-pdf', 'https://open-zaak.test/csv/a', 'object-uuid-a', 'https://open-zaak.test/pdf/a'),
+      buildObject('ref-without-pdf', 'https://open-zaak.test/csv/b', 'object-uuid-b'),
+    ];
+    const objectsClient = { collectObjects: jest.fn().mockResolvedValue(objects) } as unknown as ObjectsClient;
+    const getDocumentText = jest.fn()
+      .mockResolvedValueOnce(readFixture('sport-submission-child-dukenburg.csv'))
+      .mockResolvedValueOnce(readFixture('sport-submission-adult-dukenburg-music.csv'));
+    const openZaakClient = { getDocumentText } as unknown as OpenZaakClient;
+
+    const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
+    const response = await handler.handleRequest({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
+    const body = response.body ?? '';
+
+    // Mustache HTML-escapes "/" to "&#x2F;" by default, so check the href on either side of every slash.
+    expect(body).toContain('sport&#x2F;submissions&#x2F;object-uuid-a&#x2F;pdf');
+    expect(body).not.toContain('object-uuid-b&#x2F;pdf');
+    expect(body.match(/PDF downloaden/g)).toHaveLength(1);
   });
 
   it('shows the "alle wijken" summary for a global admin instead of listing every district', async () => {

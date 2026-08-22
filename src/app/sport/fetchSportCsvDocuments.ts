@@ -7,13 +7,15 @@ import { OpenZaakClient } from '../../shared/clients/open-zaak/OpenZaakClient';
 
 const CONCURRENCY = 4;
 
-const sportObjectDataSchema = z.object({ reference: z.string(), csv: z.string() }).passthrough();
+const sportObjectDataSchema = z.looseObject({ reference: z.string(), csv: z.string(), pdf: z.string().optional() });
 
 export interface FetchedSportCsvDocument {
   reference: string;
   csvText: string;
   objectUuid?: string;
   documentUrl?: string;
+  /** Whether the Object had a `pdf` reference; the URL itself never leaves this fetch step. */
+  hasPdf: boolean;
 }
 
 // Wat we van een mislukt document nog wél weten, voor de kleine waarschuwing op de Sportpagina: het
@@ -68,6 +70,7 @@ export async function fetchSportCsvDocuments(
         csvText,
         objectUuid: object.uuid,
         documentUrl: parsedData.data.csv,
+        hasPdf: Boolean(parsedData.data.pdf),
       });
       logger.debug('Sport CSV document fetched', {
         documentIndex, durationMs: Date.now() - startedDocumentAt, outcome: 'success',

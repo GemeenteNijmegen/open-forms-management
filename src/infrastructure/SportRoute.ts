@@ -15,7 +15,8 @@ import { Statics } from '../Statics';
 
 /**
  * Wires the standard page-lambda session/permission/audit access onto the Sport Lambda, plus read
- * access to the Objects and Open Zaak credentials it needs to fetch Sportinzendingen, and adds its route.
+ * access to the Objects and Open Zaak credentials it needs to fetch Sportinzendingen, and adds its
+ * routes: the overview and the PDF download, both handled by the same Lambda.
  */
 export function addSportRoute(
   scope: Construct,
@@ -43,5 +44,11 @@ export function addSportRoute(
     path: '/sport',
     methods: [HttpMethod.GET],
     integration: new HttpLambdaIntegration('integration-sport-function', fn),
+  });
+
+  managementApi.api.addRoutes({
+    path: '/sport/submissions/{objectUuid}/pdf',
+    methods: [HttpMethod.GET],
+    integration: new HttpLambdaIntegration('integration-sport-function-pdf', fn),
   });
 }

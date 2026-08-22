@@ -78,6 +78,9 @@
           <div class="sport-record__field sport-record__field--reference">
             <span class="sport-record__field-label">Kenmerk</span>
             <span>{{reference}}</span>
+            {{#pdfDownloadHref}}
+            <a class="utrecht-link" href="{{pdfDownloadHref}}">PDF downloaden</a>
+            {{/pdfDownloadHref}}
           </div>
         </div>
         <ul class="nijmegen-metadata">
