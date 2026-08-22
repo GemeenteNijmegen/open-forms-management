@@ -21,6 +21,7 @@ describe('renderAll', () => {
 
       const partialError = fs.readFileSync(path.join(outDir, 'preview', 'sport-partial-error.html'), 'utf-8');
       expect(partialError).toContain('utrecht-alert--warning');
+      expect(partialError).toContain('OF-2026-00120 (document 3f9c9e2a-1b4d-4e9a-8f2b-6a7d5c8e9f10)');
 
       expect(fs.existsSync(path.join(outDir, 'preview', 'sport-dukenburg.html'))).toBe(true);
 

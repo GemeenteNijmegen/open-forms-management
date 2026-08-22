@@ -12,11 +12,22 @@ const sportObjectDataSchema = z.object({ reference: z.string(), csv: z.string() 
 export interface FetchedSportCsvDocument {
   reference: string;
   csvText: string;
+  objectUuid?: string;
+  documentUrl?: string;
+}
+
+// Wat we van een mislukt document nog wél weten, voor de kleine waarschuwing op de Sportpagina: het
+// OF-nummer (kenmerk) staat er alleen bij als het object zelf tenminste geldig genoeg was om te
+// weten welke inzending het is; het objectnummer is er vrijwel altijd, ook als de rest onbruikbaar was.
+export interface FailedSportDocument {
+  reference?: string;
+  objectUuid?: string;
 }
 
 export interface SportCsvBatchResult {
   documents: FetchedSportCsvDocument[];
   failedCount: number;
+  failedDocuments: FailedSportDocument[];
 }
 
 /**
@@ -34,6 +45,7 @@ export async function fetchSportCsvDocuments(
   logger.debug('Sport CSV batch started', { documentCount: objects.length, concurrency: CONCURRENCY });
 
   const documents: FetchedSportCsvDocument[] = [];
+  const failedDocuments: FailedSportDocument[] = [];
   let failedCount = 0;
   let nextIndex = 0;
 
@@ -44,20 +56,32 @@ export async function fetchSportCsvDocuments(
     const parsedData = sportObjectDataSchema.safeParse(object.record.data);
     if (!parsedData.success) {
       failedCount += 1;
-      logger.warn('Sport object is missing reference/csv, skipping', { documentIndex });
+      failedDocuments.push({ objectUuid: object.uuid });
+      logger.warn('Sport object is missing reference/csv, skipping', { documentIndex, objectUuid: object.uuid });
       return;
     }
 
     try {
       const csvText = await client.getDocumentText(parsedData.data.csv, actor);
-      documents.push({ reference: parsedData.data.reference, csvText });
+      documents.push({
+        reference: parsedData.data.reference,
+        csvText,
+        objectUuid: object.uuid,
+        documentUrl: parsedData.data.csv,
+      });
       logger.debug('Sport CSV document fetched', {
         documentIndex, durationMs: Date.now() - startedDocumentAt, outcome: 'success',
       });
     } catch (error) {
       failedCount += 1;
+      failedDocuments.push({ reference: parsedData.data.reference, objectUuid: object.uuid });
       logger.warn('Sport CSV document fetch failed', {
-        documentIndex, durationMs: Date.now() - startedDocumentAt, outcome: 'failure', reason: errorReason(error),
+        reference: parsedData.data.reference,
+        objectUuid: object.uuid,
+        documentUrl: parsedData.data.csv,
+        durationMs: Date.now() - startedDocumentAt,
+        outcome: 'failure',
+        reason: errorReason(error),
       });
     }
   }
@@ -80,5 +104,5 @@ export async function fetchSportCsvDocuments(
     durationMs: Date.now() - startedAt,
   });
 
-  return { documents, failedCount };
+  return { documents, failedCount, failedDocuments };
 }

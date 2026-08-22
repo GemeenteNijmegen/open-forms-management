@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { logger } from '../../../observability/Logger';
 import { buildSportSubmissions } from '../buildSportSubmissions';
 
 const samplesDir = path.join(__dirname, '../test/samples');
@@ -58,13 +59,21 @@ describe('buildSportSubmissions', () => {
 
   it('skips a document with unparsable CSV text and counts it as failed', () => {
     const documents = [
-      { reference: 'ref-broken', csvText: 'not,a,valid\nsport,csv' },
+      { reference: 'ref-broken', csvText: 'not,a,valid\nsport,csv', objectUuid: 'object-uuid-broken', documentUrl: 'https://open-zaak.test/csv/broken' },
       { reference: 'ref-dukenburg', csvText: readFixture('sport-submission-child-dukenburg.csv') },
     ];
+    jest.spyOn(logger, 'warn').mockImplementation(() => { });
 
     const result = buildSportSubmissions(documents, ['dukenburg'], [...BOTH_TYPES]);
 
     expect(result.submissions).toHaveLength(1);
     expect(result.failedCount).toBe(1);
+    expect(result.failedDocuments).toEqual([{ reference: 'ref-broken', objectUuid: 'object-uuid-broken' }]);
+    // OF-nummer, objectnummer en de csv-url moeten in de log staan, zodat een kapotte CSV snel is op te zoeken zonder PII.
+    expect(logger.warn).toHaveBeenCalledWith('Sport submission skipped after a CSV parsing failure', expect.objectContaining({
+      reference: 'ref-broken',
+      objectUuid: 'object-uuid-broken',
+      documentUrl: 'https://open-zaak.test/csv/broken',
+    }));
   });
 });

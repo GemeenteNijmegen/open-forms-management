@@ -14,13 +14,14 @@ function readFixture(fileName: string): string {
   return fs.readFileSync(path.join(samplesDir, fileName), 'utf-8');
 }
 
-function buildObject(reference: string, csv: string): ObjectResource {
-  return { record: { data: { reference, csv } } } as ObjectResource;
+function buildObject(reference: string, csv: string, uuid?: string): ObjectResource {
+  return { uuid, record: { data: { reference, csv } } } as ObjectResource;
 }
 
 describe('SportRequestHandler', () => {
   it('denies a medewerker without any Sport grant', async () => {
-    const service = new AuthorizationService(new FakePermissionRepository(), new FakeAuditTrail());
+    const auditTrail = new FakeAuditTrail();
+    const service = new AuthorizationService(new FakePermissionRepository(), auditTrail);
     const objectsClient = { collectObjects: jest.fn() } as unknown as ObjectsClient;
     const openZaakClient = { getDocumentText: jest.fn() } as unknown as OpenZaakClient;
     const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
@@ -28,6 +29,29 @@ describe('SportRequestHandler', () => {
     const response = await handler.handleRequest({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
 
     expect(response.statusCode).toBe(403);
+    expect(auditTrail.events.map((event) => event.eventType)).not.toContain('ACCESS_GRANTED');
+  });
+
+  it('records an ACCESS_GRANTED audit event when a medewerker actually views the Sport page', async () => {
+    const auditTrail = new FakeAuditTrail();
+    const repository = new FakePermissionRepository();
+    repository.seedGrants('medewerker@nijmegen.nl', [{ resource: 'sport', actions: ['view'], scopes: { districts: ['dukenburg'] } }]);
+    const service = new AuthorizationService(repository, auditTrail);
+
+    const objectsClient = { collectObjects: jest.fn().mockResolvedValue([]) } as unknown as ObjectsClient;
+    const openZaakClient = { getDocumentText: jest.fn() } as unknown as OpenZaakClient;
+    const handler = new SportRequestHandler(service, objectsClient, openZaakClient);
+
+    const response = await handler.handleRequest({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
+
+    expect(response.statusCode).toBe(200);
+    expect(auditTrail.events).toContainEqual(expect.objectContaining({
+      eventType: 'ACCESS_GRANTED',
+      outcome: 'SUCCESS',
+      resource: 'sport',
+      action: 'view',
+      actorEmail: 'medewerker@nijmegen.nl',
+    }));
   });
 
   it('renders mixed kind/volwassene submissions, newest first, for a scoped medewerker', async () => {
@@ -185,7 +209,7 @@ describe('SportRequestHandler', () => {
 
     const objects = [
       buildObject('ref-ok', 'https://open-zaak.test/csv/ok'),
-      buildObject('ref-broken', 'https://open-zaak.test/csv/broken'),
+      buildObject('ref-broken', 'https://open-zaak.test/csv/broken', 'object-uuid-broken'),
     ];
     const objectsClient = { collectObjects: jest.fn().mockResolvedValue(objects) } as unknown as ObjectsClient;
     const getDocumentText = jest.fn()
@@ -201,6 +225,8 @@ describe('SportRequestHandler', () => {
     expect(body).toContain('Testkind Dukenburg');
     expect(body.match(/utrecht-alert--warning/g)).toHaveLength(1);
     expect(body).toContain('1 overgeslagen');
+    // OF-nummer én objectnummer moeten in de waarschuwing staan, zodat een medewerker het snel kan opzoeken.
+    expect(body).toContain('ref-broken (document object-uuid-broken)');
   });
 
   it('returns a 500 without a stack trace in the response when the Objects query itself fails', async () => {

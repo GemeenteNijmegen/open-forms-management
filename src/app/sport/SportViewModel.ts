@@ -1,3 +1,4 @@
+import { FailedSportDocument } from './fetchSportCsvDocuments';
 import { SPORT_DISTRICT_LABELS, SPORT_DISTRICTS, SportDistrict } from './SportDistrictAuthorization';
 import { SportFilter } from './SportFilter';
 import { SportAanmeldType, SportSubmission } from './SportSubmission';
@@ -41,6 +42,8 @@ export interface SportViewModel {
   submissions: SportSubmissionRow[];
   hasPartialError: boolean;
   failedCount: number;
+  hasFailedDocumentLabels: boolean;
+  failedDocumentLabels: string[];
 }
 
 export function buildSportViewModel(
@@ -48,7 +51,10 @@ export function buildSportViewModel(
   filter: SportFilter,
   submissions: SportSubmission[],
   failedCount: number,
+  failedDocuments: FailedSportDocument[] = [],
 ): SportViewModel {
+  const failedDocumentLabels = failedDocuments.map(formatFailedDocumentLabel).filter((label): label is string => label !== undefined);
+
   return {
     hasAccessToAllDistricts: allowedDistricts.length === SPORT_DISTRICTS.length,
     allowedDistrictLabels: allowedDistricts.map((district) => SPORT_DISTRICT_LABELS[district]),
@@ -66,7 +72,25 @@ export function buildSportViewModel(
     submissions: submissions.map(toSportSubmissionRow),
     hasPartialError: failedCount > 0,
     failedCount,
+    hasFailedDocumentLabels: failedDocumentLabels.length > 0,
+    failedDocumentLabels,
   };
+}
+
+// Kenmerk (OF-nummer) staat er alleen bij als het object nog genoeg te herkennen was; het objectnummer
+// is er vrijwel altijd, ook als de rest van het object onbruikbaar was. Zonder allebei is er niets
+// zinnigs te tonen, zo'n entry laten we dan ook gewoon weg in plaats van een lege regel te tonen.
+function formatFailedDocumentLabel(failedDocument: FailedSportDocument): string | undefined {
+  if (failedDocument.reference && failedDocument.objectUuid) {
+    return `${failedDocument.reference} (document ${failedDocument.objectUuid})`;
+  }
+  if (failedDocument.reference) {
+    return failedDocument.reference;
+  }
+  if (failedDocument.objectUuid) {
+    return `document ${failedDocument.objectUuid}`;
+  }
+  return undefined;
 }
 
 function toSportSubmissionRow(submission: SportSubmission): SportSubmissionRow {

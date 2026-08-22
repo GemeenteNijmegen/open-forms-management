@@ -27,10 +27,12 @@ export class SportRequestHandler {
   async handleRequest(identity: EmployeeIdentity, queryStringParameters?: Record<string, string | undefined>): Promise<ApiGatewayV2Response> {
     const requestStartedAt = Date.now();
     const context = await this.authorizationService.loadContext(identity);
-    const denied = await this.authorizationService.requireAuthorization(context, { resource: 'sport', action: 'view' });
+    const permissionCheck = { resource: 'sport', action: 'view' } as const;
+    const denied = await this.authorizationService.requireAuthorization(context, permissionCheck);
     if (denied) {
       return denied;
     }
+    await this.authorizationService.recordAccessGranted(context, permissionCheck);
 
     const allowedDistricts = resolveAllowedDistricts(context.evaluator);
     const filter = resolveSportFilter(queryStringParameters, allowedDistricts);
@@ -51,10 +53,14 @@ export class SportRequestHandler {
     const fetchResult = await fetchSportCsvDocuments(this.openZaakClient, objects, identity);
 
     const mappingStartedAt = Date.now();
-    const { submissions, failedCount: mappingFailedCount } = buildSportSubmissions(fetchResult.documents, filter.districts, filter.types);
+    const mappingResult = buildSportSubmissions(fetchResult.documents, filter.districts, filter.types);
+    const { submissions } = mappingResult;
     logger.debug('Sport mapping/filtering finished', { submissionCount: submissions.length, durationMs: Date.now() - mappingStartedAt });
 
-    const viewModel = buildSportViewModel(allowedDistricts, filter, submissions, fetchResult.failedCount + mappingFailedCount);
+    const failedDocuments = [...fetchResult.failedDocuments, ...mappingResult.failedDocuments];
+    const viewModel = buildSportViewModel(
+      allowedDistricts, filter, submissions, fetchResult.failedCount + mappingResult.failedCount, failedDocuments,
+    );
     const features = visibleFeatures(REGISTERED_FEATURES, context.evaluator);
 
     const renderStartedAt = Date.now();

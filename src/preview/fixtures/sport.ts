@@ -183,7 +183,13 @@ export const sportEmpty = {
 
 export const sportPartialError = {
   page: sportPage('medewerker@nijmegen.nl'),
-  data: buildSportViewModel(['dukenburg', 'nijmegenCentrum'], unfiltered(['dukenburg', 'nijmegenCentrum']), [childDukenburg, childCentrum], 1),
+  data: buildSportViewModel(
+    ['dukenburg', 'nijmegenCentrum'],
+    unfiltered(['dukenburg', 'nijmegenCentrum']),
+    [childDukenburg, childCentrum],
+    1,
+    [{ reference: 'OF-2026-00120', objectUuid: '3f9c9e2a-1b4d-4e9a-8f2b-6a7d5c8e9f10' }],
+  ),
 };
 
 export const sportFiltered = {

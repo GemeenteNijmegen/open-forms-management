@@ -1,9 +1,10 @@
+import { logger } from '../../../observability/Logger';
 import { ObjectResource } from '../../../shared/clients/objects/ObjectsResponse';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
 import { fetchSportCsvDocuments } from '../fetchSportCsvDocuments';
 
-function buildObject(reference: string, csv: string): ObjectResource {
-  return { record: { data: { reference, csv } } } as ObjectResource;
+function buildObject(reference: string, csv: string, uuid?: string): ObjectResource {
+  return { uuid, record: { data: { reference, csv } } } as ObjectResource;
 }
 
 const actor = { principalId: 'employee-1' };
@@ -31,20 +32,28 @@ describe('fetchSportCsvDocuments', () => {
   });
 
   it('skips a document that fails to download and counts it, without failing the others', async () => {
-    const objects = [buildObject('ref-ok', 'csv-ok'), buildObject('ref-fail', 'csv-fail')];
+    const objects = [buildObject('ref-ok', 'csv-ok'), buildObject('ref-fail', 'csv-fail', 'object-uuid-fail')];
     const getDocumentText = jest.fn()
       .mockResolvedValueOnce('csv-text')
       .mockRejectedValueOnce(new Error('download failed'));
     const client = { getDocumentText } as unknown as OpenZaakClient;
+    jest.spyOn(logger, 'warn').mockImplementation(() => { });
 
     const result = await fetchSportCsvDocuments(client, objects, actor);
 
-    expect(result.documents).toEqual([{ reference: 'ref-ok', csvText: 'csv-text' }]);
+    expect(result.documents).toEqual([{ reference: 'ref-ok', csvText: 'csv-text', documentUrl: 'csv-ok' }]);
     expect(result.failedCount).toBe(1);
+    expect(result.failedDocuments).toEqual([{ reference: 'ref-fail', objectUuid: 'object-uuid-fail' }]);
+    // OF-nummer, objectnummer en de csv-url moeten in de log staan, zodat een mislukte download snel is op te zoeken.
+    expect(logger.warn).toHaveBeenCalledWith('Sport CSV document fetch failed', expect.objectContaining({
+      reference: 'ref-fail',
+      objectUuid: 'object-uuid-fail',
+      documentUrl: 'csv-fail',
+    }));
   });
 
   it('skips an object whose record.data is missing reference/csv, without calling Open Zaak', async () => {
-    const objects = [{ record: { data: { foo: 'bar' } } } as ObjectResource];
+    const objects = [{ uuid: 'object-uuid-invalid', record: { data: { foo: 'bar' } } } as ObjectResource];
     const getDocumentText = jest.fn();
     const client = { getDocumentText } as unknown as OpenZaakClient;
 
@@ -53,5 +62,7 @@ describe('fetchSportCsvDocuments', () => {
     expect(getDocumentText).not.toHaveBeenCalled();
     expect(result.documents).toEqual([]);
     expect(result.failedCount).toBe(1);
+    // Geen reference bekend (dat is precies wat hier mislukte), maar het objectnummer wel: nog steeds op te zoeken.
+    expect(result.failedDocuments).toEqual([{ objectUuid: 'object-uuid-invalid' }]);
   });
 });

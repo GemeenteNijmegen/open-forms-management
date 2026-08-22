@@ -45,6 +45,13 @@
   <div class="utrecht-alert utrecht-alert--warning" role="status">
     <div class="utrecht-alert__content">
       <p class="utrecht-alert__message">Niet alle inzendingen konden worden geladen ({{failedCount}} overgeslagen).</p>
+      {{#hasFailedDocumentLabels}}
+      <ul class="nijmegen-metadata">
+        {{#failedDocumentLabels}}
+        <li class="nijmegen-metadata__item">{{.}}</li>
+        {{/failedDocumentLabels}}
+      </ul>
+      {{/hasFailedDocumentLabels}}
     </div>
   </div>
   {{/hasPartialError}}

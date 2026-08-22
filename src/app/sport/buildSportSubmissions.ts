@@ -1,4 +1,4 @@
-import { FetchedSportCsvDocument } from './fetchSportCsvDocuments';
+import { FailedSportDocument, FetchedSportCsvDocument } from './fetchSportCsvDocuments';
 import { parseSportSubmission } from './parseSportSubmission';
 import { SportAanmeldType, SportSubmission } from './SportSubmission';
 import { errorReason } from '../../observability/errorReason';
@@ -7,6 +7,7 @@ import { logger } from '../../observability/Logger';
 export interface SportSubmissionsResult {
   submissions: SportSubmission[];
   failedCount: number;
+  failedDocuments: FailedSportDocument[];
 }
 
 // A CSV that fails to parse is skipped and counted, the same way fetchSportCsvDocuments counts a
@@ -19,6 +20,7 @@ export function buildSportSubmissions(
   const allowed = new Set(allowedDistricts);
   const allowedAanmeldTypes = new Set(allowedTypes);
   const submissions: SportSubmission[] = [];
+  const failedDocuments: FailedSportDocument[] = [];
   let failedCount = 0;
 
   for (const document of documents) {
@@ -29,10 +31,16 @@ export function buildSportSubmissions(
       }
     } catch (error) {
       failedCount += 1;
-      logger.warn('Sport submission skipped after a CSV parsing failure', { reason: errorReason(error) });
+      failedDocuments.push({ reference: document.reference, objectUuid: document.objectUuid });
+      logger.warn('Sport submission skipped after a CSV parsing failure', {
+        reference: document.reference,
+        objectUuid: document.objectUuid,
+        documentUrl: document.documentUrl,
+        reason: errorReason(error),
+      });
     }
   }
 
   submissions.sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime());
-  return { submissions, failedCount };
+  return { submissions, failedCount, failedDocuments };
 }
