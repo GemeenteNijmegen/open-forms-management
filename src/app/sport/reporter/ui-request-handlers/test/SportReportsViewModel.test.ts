@@ -30,15 +30,25 @@ describe('buildSportReportsViewModel', () => {
     expect(viewModel.reports).toHaveLength(0);
   });
 
-  it('only allows download/delete when the current medewerker still sees every district in the report', () => {
+  it('hides a report entirely once the medewerker no longer sees every district in it, not just its actions', () => {
     const viewModel = buildSportReportsViewModel(
       [report({ districts: ['dukenburg', 'lindenholt'] })],
       ['dukenburg'],
       { from: '2026-01-01', to: '2026-01-31' },
     );
 
-    expect(viewModel.reports[0].canDownload).toBe(false);
-    expect(viewModel.reports[0].canDelete).toBe(false);
+    expect(viewModel.reports).toHaveLength(0);
+  });
+
+  it('shows a report with download/delete enabled once the medewerker sees every district in it', () => {
+    const viewModel = buildSportReportsViewModel(
+      [report({ districts: ['dukenburg', 'lindenholt'] })],
+      ['dukenburg', 'lindenholt', 'nijmegenNoord'],
+      { from: '2026-01-01', to: '2026-01-31' },
+    );
+
+    expect(viewModel.reports[0].canDownload).toBe(true);
+    expect(viewModel.reports[0].canDelete).toBe(true);
   });
 
   it('allows download only when READY, even with full district access', () => {

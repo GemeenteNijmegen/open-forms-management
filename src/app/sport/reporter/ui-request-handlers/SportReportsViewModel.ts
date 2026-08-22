@@ -55,21 +55,22 @@ export function buildSportReportsViewModel(
   message?: string,
 ): SportReportsViewModel {
   const allowedSet = new Set<string>(allowedDistricts);
-  const visible = reports.filter((report) => isReportAvailable(report));
+  // Same full-coverage rule as canDownload/canDelete, but here it also gates visibility.
+  const visible = reports.filter(
+    (report) => isReportAvailable(report) && report.districts.every((district) => allowedSet.has(district)),
+  );
 
   return {
     districtOptions: allowedDistricts.map((district) => ({ value: district, label: SPORT_DISTRICT_LABELS[district] })),
     defaultFrom: defaults.from,
     defaultTo: defaults.to,
     hasReports: visible.length > 0,
-    reports: visible.map((report) => toListItem(report, allowedSet)),
+    reports: visible.map(toListItem),
     ...(message ? { message } : {}),
   };
 }
 
-function toListItem(report: SportReport, allowedDistricts: Set<string>): SportReportListItem {
-  const canManage = report.districts.every((district) => allowedDistricts.has(district));
-
+function toListItem(report: SportReport): SportReportListItem {
   return {
     reportId: report.reportId,
     statusLabel: STATUS_LABELS[report.status],
@@ -80,8 +81,8 @@ function toListItem(report: SportReport, allowedDistricts: Set<string>): SportRe
     requestedAtLabel: formatDutchDateTime(report.requestedAt),
     ...(report.submissionCount !== undefined ? { submissionCountLabel: String(report.submissionCount) } : {}),
     ...(report.status === 'READY' ? { expiresAtLabel: formatDutchDateTime(new Date(report.expiresAt * 1000).toISOString()) } : {}),
-    canDownload: canManage && report.status === 'READY',
-    canDelete: canManage,
+    canDownload: report.status === 'READY',
+    canDelete: true,
   };
 }
 
