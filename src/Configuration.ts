@@ -46,6 +46,11 @@ export interface Configuration {
    */
   logLevel: LogLevel;
 
+  /**
+   * Whether the Route53 healthcheck on /login is created for this branch.
+   */
+  loginHealthCheckEnabled: boolean;
+
 }
 
 const configurations: Configuration[] = [
@@ -55,6 +60,7 @@ const configurations: Configuration[] = [
     deploymentEnvironment: Statics.gnOpenFormsAccp,
     criticality: new Criticality('medium'),
     logLevel: 'DEBUG',
+    loginHealthCheckEnabled: true,
   },
   {
     branchName: 'main',
@@ -62,6 +68,7 @@ const configurations: Configuration[] = [
     deploymentEnvironment: Statics.gnOpenFormsProd,
     criticality: new Criticality('high'),
     logLevel: 'INFO',
+    loginHealthCheckEnabled: true,
   },
 ];
 

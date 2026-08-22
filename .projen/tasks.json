@@ -83,6 +83,12 @@
         },
         {
           "spawn": "bundle:app/logout/logout.lambda"
+        },
+        {
+          "spawn": "bundle:app/sport/sport.lambda"
+        },
+        {
+          "spawn": "bundle:app/sport/reporter/sportExcelWorker.lambda"
         }
       ]
     },
@@ -155,6 +161,42 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/sport/reporter/sportExcelWorker.lambda": {
+      "name": "bundle:app/sport/reporter/sportExcelWorker.lambda",
+      "description": "Create a JavaScript bundle from src/app/sport/reporter/sportExcelWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/sport/reporter/sportExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/reporter/sportExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/sport/reporter/sportExcelWorker.lambda:watch": {
+      "name": "bundle:app/sport/reporter/sportExcelWorker.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/sport/reporter/sportExcelWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/sport/reporter/sportExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/reporter/sportExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/sport/sport.lambda": {
+      "name": "bundle:app/sport/sport.lambda",
+      "description": "Create a JavaScript bundle from src/app/sport/sport.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/sport/sport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/sport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/sport/sport.lambda:watch": {
+      "name": "bundle:app/sport/sport.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/sport/sport.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/sport/sport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/sport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },
@@ -486,7 +528,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@gemeentenijmegen/components-css,@gemeentenijmegen/design-tokens,@gemeentenijmegen/layout-css,@gemeentenijmegen/semantic-html,@gemeentenijmegen/web-components,@types/aws-lambda,@types/jest,@types/mustache,@types/node,@utrecht/page-body-css,@utrecht/pre-heading-css,@utrecht/rich-text-css,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-lambda-powertools/metrics,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,chokidar,mustache,openid-client"
+            "--filter=@gemeentenijmegen/components-css,@gemeentenijmegen/design-tokens,@gemeentenijmegen/layout-css,@gemeentenijmegen/semantic-html,@gemeentenijmegen/web-components,@types/aws-lambda,@types/jest,@types/mustache,@types/node,@utrecht/page-body-css,@utrecht/pre-heading-css,@utrecht/rich-text-css,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-lambda-powertools/metrics,@aws-sdk/client-dynamodb,@aws-sdk/client-lambda,@aws-sdk/client-s3,@aws-sdk/lib-dynamodb,@aws-sdk/s3-request-presigner,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,chokidar,csv-parse,mustache,openid-client,write-excel-file,zod"
           ]
         },
         {
@@ -544,7 +586,10 @@
             "@aws-lambda-powertools/logger",
             "@aws-lambda-powertools/metrics",
             "@aws-sdk/client-dynamodb",
+            "@aws-sdk/client-lambda",
+            "@aws-sdk/client-s3",
             "@aws-sdk/lib-dynamodb",
+            "@aws-sdk/s3-request-presigner",
             "@gemeentenijmegen/apigateway-http",
             "@gemeentenijmegen/aws-constructs",
             "@gemeentenijmegen/cross-region-parameters",
@@ -554,8 +599,11 @@
             "aws-cdk-lib",
             "chokidar",
             "constructs",
+            "csv-parse",
             "mustache",
-            "openid-client"
+            "openid-client",
+            "write-excel-file",
+            "zod"
           ]
         },
         {

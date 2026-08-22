@@ -4,6 +4,36 @@ import { Transform } from 'projen/lib/javascript';
 const project = new GemeenteNijmegenCdkApp({
   cdkVersion: '2.1.0',
   defaultReleaseBranch: 'main',
+  name: 'open-forms-management',
+  projenrcTs: true,
+  repository: 'https://github.com/GemeenteNijmegen/open-forms-management',
+  deps: [
+    '@gemeentenijmegen/projen-project-type',
+    '@gemeentenijmegen/aws-constructs',
+    '@gemeentenijmegen/cross-region-parameters',
+    '@gemeentenijmegen/utils',
+    '@gemeentenijmegen/session',
+    '@gemeentenijmegen/apigateway-http',
+    '@aws-sdk/client-dynamodb',
+    '@aws-sdk/lib-dynamodb',
+    '@aws-sdk/client-lambda',
+    '@aws-sdk/client-s3',
+    '@aws-sdk/s3-request-presigner',
+    '@aws-lambda-powertools/logger',
+    '@aws-lambda-powertools/metrics',
+    // Widely used file watcher with a small runtime dependency tree and no install lifecycle scripts.
+    'chokidar',
+    // Mature zero-dependency template renderer with no install lifecycle scripts; deliberately kept simple for server-rendered HTML.
+    'mustache',
+    // Widely used, actively maintained OIDC/OAuth client with a small dependency tree, security policy and no install lifecycle scripts.
+    'openid-client',
+    // Widely used TypeScript validation library with no runtime dependencies or install lifecycle scripts.
+    'zod',
+    // Mature, actively maintained CSV parser with zero runtime dependencies and no install lifecycle scripts.
+    'csv-parse',
+    // Small XLSX writer with minimal runtime dependencies and no pre/postinstall scripts; preferred over heavier Excel libraries.
+    'write-excel-file',
+  ],
   devDeps: [
     '@types/aws-lambda',
     '@types/mustache',
@@ -35,26 +65,6 @@ const project = new GemeenteNijmegenCdkApp({
     '@utrecht/form-field-description-css@3.0.1',
     '@utrecht/form-field-error-message-css@3.0.1',
   ],
-  name: 'open-forms-management',
-  projenrcTs: true,
-  repository: 'https://github.com/GemeenteNijmegen/open-forms-management',
-  deps: [
-    '@gemeentenijmegen/projen-project-type',
-    '@gemeentenijmegen/aws-constructs',
-    '@gemeentenijmegen/cross-region-parameters',
-    '@aws-lambda-powertools/logger',
-    '@aws-lambda-powertools/metrics',
-    'chokidar',
-    'mustache',
-    'openid-client',
-    '@gemeentenijmegen/utils',
-    '@gemeentenijmegen/session',
-    '@gemeentenijmegen/apigateway-http',
-    '@aws-sdk/client-dynamodb',
-    '@aws-sdk/lib-dynamodb',
-  ], /* Runtime dependencies of this module. */
-  // description: undefined,  /* The description is just a string that helps people understand the purpose of the package. */
-  // packageName: undefined,  /* The "name" in package.json. */
   tsconfig: {
     compilerOptions: {
       isolatedModules: true,

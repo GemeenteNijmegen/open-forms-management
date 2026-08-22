@@ -15,20 +15,52 @@ describe('AuthRequestHandler', () => {
     process.env.SESSION_TABLE = 'test-sessions-table';
   });
 
-  it('redirects to /login when the idp reports an error', async () => {
+  it('redirects to /login on an idp error without a pending session, without auditing or initializing the OIDC client', async () => {
+    const getOidcClient = jest.fn(async () => new FakeOidcClient());
+    const auditTrail = new FakeAuditTrail();
     const handler = new AuthRequestHandler({
       cookies: undefined,
       fullUrl,
       queryStringParamError: 'access_denied',
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient: new FakeOidcClient(),
-      auditTrail: new FakeAuditTrail(),
+      getOidcClient,
+      auditTrail,
     });
 
     const response = await handler.handleRequest();
 
     expect(response.statusCode).toBe(302);
     expect(dynamoMock.commandCalls(GetItemCommand)).toHaveLength(0);
+    expect(getOidcClient).not.toHaveBeenCalled();
+    expect(auditTrail.events).toHaveLength(0);
+  });
+
+  it('redirects to /login and records LOGIN_FAILED when the idp reports an error for a known pending flow', async () => {
+    dynamoMock.on(GetItemCommand).resolves({
+      Item: {
+        sessionid: { S: 'hash' },
+        data: { M: { loggedin: { BOOL: false }, state: { S: 'fake-state' }, nonce: { S: 'fake-nonce' }, flowId: { S: 'fake-flow-id' } } },
+      },
+    });
+    const auditTrail = new FakeAuditTrail();
+    const addMetricSpy = jest.spyOn(metrics, 'addMetric');
+
+    const handler = new AuthRequestHandler({
+      cookies: 'session=pending-token',
+      fullUrl,
+      queryStringParamError: 'access_denied',
+      dynamoDBClient: new DynamoDBClient({}),
+      getOidcClient: async () => new FakeOidcClient(),
+      auditTrail,
+    });
+
+    const response = await handler.handleRequest();
+
+    expect(response.statusCode).toBe(302);
+    expect(auditTrail.events).toEqual([expect.objectContaining({
+      eventType: 'LOGIN_FAILED', outcome: 'FAILURE', flowId: 'fake-flow-id', metadata: { reason: 'access_denied' },
+    })]);
+    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginFailure']);
   });
 
   it('redirects to /login when there is no pending login session', async () => {
@@ -36,7 +68,7 @@ describe('AuthRequestHandler', () => {
       cookies: undefined,
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient: new FakeOidcClient(),
+      getOidcClient: async () => new FakeOidcClient(),
       auditTrail: new FakeAuditTrail(),
     });
 
@@ -54,7 +86,7 @@ describe('AuthRequestHandler', () => {
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient: new FakeOidcClient(),
+      getOidcClient: async () => new FakeOidcClient(),
       auditTrail: new FakeAuditTrail(),
     });
 
@@ -89,7 +121,7 @@ describe('AuthRequestHandler', () => {
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail: new FakeAuditTrail(),
     });
 
@@ -132,7 +164,7 @@ describe('AuthRequestHandler', () => {
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail,
     });
 
@@ -161,7 +193,7 @@ describe('AuthRequestHandler', () => {
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail,
     });
 
@@ -190,7 +222,7 @@ describe('AuthRequestHandler', () => {
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail: new FakeAuditTrail(),
     });
 
@@ -218,15 +250,15 @@ describe('AuthRequestHandler', () => {
       cookies: 'session=pending-token',
       fullUrl,
       dynamoDBClient: new DynamoDBClient({}),
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail,
     });
 
     const response = await handler.handleRequest();
 
     expect(response.statusCode).toBe(500);
-    expect(auditTrail.events.map((event) => event.eventType)).toEqual(['LOGIN_SUCCEEDED', 'LOGIN_FAILED']);
-    expect(auditTrail.events[1]).toMatchObject({ outcome: 'FAILURE', metadata: { reason: 'DynamoDB unavailable' } });
-    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginSuccess', 'LoginFailure']);
+    expect(auditTrail.events.map((event) => event.eventType)).toEqual(['LOGIN_FAILED']);
+    expect(auditTrail.events[0]).toMatchObject({ outcome: 'FAILURE', metadata: { reason: 'DynamoDB unavailable' } });
+    expect(addMetricSpy.mock.calls.map((call) => call[0])).toEqual(['LoginFailure']);
   });
 });

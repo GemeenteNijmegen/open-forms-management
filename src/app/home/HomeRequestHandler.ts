@@ -3,13 +3,9 @@ import homeTemplate from './templates/home.mustache';
 import notFoundTemplate from './templates/notFound.mustache';
 import { EmployeeIdentity } from '../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../shared/authorization/AuthorizationService';
-import { Feature } from '../../shared/navigation/Feature';
 import { visibleFeatures } from '../../shared/navigation/FeatureRegistry';
+import { REGISTERED_FEATURES } from '../../shared/navigation/RegisteredFeatures';
 import { render } from '../../shared/rendering/Renderer';
-
-// Subproject 1 has no concrete Sport/resource features yet, so this is empty until subproject 2 registers
-// real features. An empty registry means every medewerker sees the "no features" empty state.
-const REGISTERED_FEATURES: Feature[] = [];
 
 export class HomeRequestHandler {
   constructor(private readonly authorizationService: AuthorizationService) { }

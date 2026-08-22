@@ -217,7 +217,19 @@
       "type": "runtime"
     },
     {
+      "name": "@aws-sdk/client-lambda",
+      "type": "runtime"
+    },
+    {
+      "name": "@aws-sdk/client-s3",
+      "type": "runtime"
+    },
+    {
       "name": "@aws-sdk/lib-dynamodb",
+      "type": "runtime"
+    },
+    {
+      "name": "@aws-sdk/s3-request-presigner",
       "type": "runtime"
     },
     {
@@ -259,11 +271,23 @@
       "type": "runtime"
     },
     {
+      "name": "csv-parse",
+      "type": "runtime"
+    },
+    {
       "name": "mustache",
       "type": "runtime"
     },
     {
       "name": "openid-client",
+      "type": "runtime"
+    },
+    {
+      "name": "write-excel-file",
+      "type": "runtime"
+    },
+    {
+      "name": "zod",
       "type": "runtime"
     }
   ],

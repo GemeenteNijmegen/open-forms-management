@@ -53,4 +53,17 @@ export class AuthorizationService {
     const html = render(forbiddenTemplate, { title: 'Geen toegang', features: [], currentPath: '/', actorEmail: context.identity.email });
     return Response.html(html, 403);
   }
+
+  // Alleen expliciet aanroepen vanuit een route die écht een audit-spoor wil van wie er heeft gekeken
+  // (zoals Sport, met privacygevoelige inzendingen), niet automatisch bij elke requireAuthorization-ALLOW.
+  async recordAccessGranted(context: AuthorizationContext, check: PermissionCheck): Promise<void> {
+    await recordAudit(this.auditTrail, {
+      eventType: 'ACCESS_GRANTED',
+      outcome: 'SUCCESS',
+      correlationId: xRayTraceId(),
+      resource: check.resource,
+      action: check.action,
+      ...(context.identity.email ? { actorEmail: context.identity.email } : {}),
+    });
+  }
 }

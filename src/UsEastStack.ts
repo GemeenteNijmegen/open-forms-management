@@ -24,7 +24,9 @@ export class UsEastStack extends Stack {
 
     this.certificate();
     this.webAcl();
-    this.loginHealthCheck();
+    if (this.props.configuration.loginHealthCheckEnabled) {
+      this.loginHealthCheck();
+    }
   }
 
   /**
@@ -130,8 +132,8 @@ export class UsEastStack extends Stack {
     });
   }
 
-  // /login always returns a 2xx/3xx (redirect to Entra), so a plain status-code healthcheck on it is enough:
-  // no rendered page content is needed to have a stable, checkable response.
+  // /login is a side-effect-free page render (no OIDC involved), so a plain status-code healthcheck on it
+  // is enough: it proves Route53 -> CloudFront -> API Gateway -> login Lambda, not Microsoft Entra/OIDC.
   private loginHealthCheck() {
     const domainName = `${Statics.domainPrefix}.${Statics.hostedZoneLabel(this.props.configuration.branchName)}.csp-nijmegen.nl`;
 

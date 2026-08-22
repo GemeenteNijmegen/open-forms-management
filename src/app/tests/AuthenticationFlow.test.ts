@@ -4,11 +4,12 @@ import { requireSession } from '../../shared/auth/requireSession';
 import { FakeOidcClient } from '../../shared/auth/tests/FakeOidcClient';
 import { createInMemorySessionTable } from '../../shared/tests/InMemorySessionTable';
 import { AuthRequestHandler } from '../auth/AuthRequestHandler';
+import { LoginPageRequestHandler } from '../login/LoginPageRequestHandler';
 import { LoginRequestHandler } from '../login/LoginRequestHandler';
 import { LogoutRequestHandler } from '../logout/LogoutRequestHandler';
 
 /**
- * Exercises the login -> callback -> protected route -> logout chain end to
+ * Exercises the login page -> login start -> callback -> protected route -> logout chain end to
  * end, through the same request handlers the Lambdas use, against a fake
  * OIDC provider and an in-memory DynamoDB double.
  */
@@ -38,6 +39,12 @@ describe('full login -> protected route -> logout flow', () => {
     };
     const auditTrail = new FakeAuditTrail();
 
+    const pageResponse = await new LoginPageRequestHandler().handleRequest(undefined, dynamoDBClient, false);
+    expect(pageResponse.statusCode).toBe(200);
+    expect(pageResponse.body).toContain('href="/login/start"');
+    expect(sessionTable.store.size).toBe(0);
+    expect(auditTrail.events).toHaveLength(0);
+
     const loginResponse = await new LoginRequestHandler(oidcClient, auditTrail).handleRequest(undefined, dynamoDBClient);
     expect(loginResponse.statusCode).toBe(302);
     const pendingCookie = toCookieHeader(loginResponse);
@@ -48,7 +55,7 @@ describe('full login -> protected route -> logout flow', () => {
       cookies: pendingCookie,
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail,
     }).handleRequest();
     expect(callbackResponse.statusCode).toBe(302);
@@ -85,12 +92,12 @@ describe('callback without a valid pending session', () => {
       cookies: undefined,
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail: new FakeAuditTrail(),
     }).handleRequest();
 
     expect(response.statusCode).toBe(302);
-    expect(response.headers?.Location).toBe('/login');
+    expect(response.headers?.Location).toBe('/login?failed=1');
     expect(sessionTable.store.size).toBe(0);
   });
 });
@@ -106,7 +113,9 @@ describe('replayed authorization code', () => {
     const pendingCookie = toCookieHeader(loginResponse);
     const fullUrl = new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state');
 
-    const firstCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient, auditTrail }).handleRequest();
+    const firstCallback = await new AuthRequestHandler({
+      cookies: pendingCookie, fullUrl, dynamoDBClient, getOidcClient: async () => oidcClient, auditTrail,
+    }).handleRequest();
     expect(firstCallback.statusCode).toBe(302);
     expect(firstCallback.headers?.Location).toBe('/');
     const sessionCookie = toCookieHeader(firstCallback);
@@ -114,9 +123,11 @@ describe('replayed authorization code', () => {
     // Entra's authorization code is single-use: a second exchange attempt with the same
     // pending cookie fails at the idp, which the fake simulates directly here.
     jest.spyOn(oidcClient, 'exchangeAuthorizationCode').mockRejectedValueOnce(new Error('authorization code already used'));
-    const secondCallback = await new AuthRequestHandler({ cookies: pendingCookie, fullUrl, dynamoDBClient, oidcClient, auditTrail }).handleRequest();
+    const secondCallback = await new AuthRequestHandler({
+      cookies: pendingCookie, fullUrl, dynamoDBClient, getOidcClient: async () => oidcClient, auditTrail,
+    }).handleRequest();
     expect(secondCallback.statusCode).toBe(302);
-    expect(secondCallback.headers?.Location).toBe('/login');
+    expect(secondCallback.headers?.Location).toBe('/login?failed=1');
 
     const stillIdentity = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
     expect(stillIdentity).toEqual({ principalId: 'employee-1' });
@@ -140,7 +151,7 @@ describe('expired session', () => {
       cookies: pendingCookie,
       fullUrl: new URL('https://management.example.nl/auth/callback?code=abc&state=fake-state'),
       dynamoDBClient,
-      oidcClient,
+      getOidcClient: async () => oidcClient,
       auditTrail,
     }).handleRequest();
     const sessionCookie = toCookieHeader(callbackResponse);

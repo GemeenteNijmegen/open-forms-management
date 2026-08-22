@@ -1,0 +1,36 @@
+meta {
+  name: openzaak
+  seq: 3
+}
+
+auth {
+  mode: none
+}
+
+script:pre-request {
+  const jwt = require("jsonwebtoken");
+
+  const clientId = bru.getEnvVar("openZaakClientId");
+  const clientSecret = bru.getEnvVar("openZaakClientSecret");
+
+  if (!clientId) {
+    throw new Error("openZaakClientId environment variable is missing.");
+  }
+  if (!clientSecret) {
+    throw new Error("openZaakClientSecret environment variable is missing.");
+  }
+
+  const payload = {
+    iss: clientId,
+    client_id: clientId,
+    user_id: bru.getEnvVar("openZaakUserId"),
+    user_representation: bru.getEnvVar("openZaakUserRepresentation"),
+  };
+
+  const token = jwt.sign(payload, clientSecret, {
+    algorithm: "HS256",
+    expiresIn: "10m",
+  });
+
+  req.setHeader("Authorization", `Bearer ${token}`);
+}

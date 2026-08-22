@@ -8,13 +8,14 @@ import { countMetric, metrics } from '../../observability/Metrics';
 import { bindRequestLogging, resetRequestLogging } from '../../observability/RequestLogging';
 import { createAuditTrail } from '../../shared/audit/createAuditTrail';
 import { EntraOidcClient } from '../../shared/auth/EntraOidcClient';
+import { OidcClient } from '../../shared/auth/OidcClient';
 import { loadOidcConfiguration } from '../../shared/auth/OidcConfiguration';
 
 const dynamoDBClient = new DynamoDBClient({});
 const auditTrail = createAuditTrail(dynamoDBClient);
 
 let oidcClient: EntraOidcClient | undefined;
-async function initialize(): Promise<EntraOidcClient> {
+async function getOidcClient(): Promise<OidcClient> {
   if (!oidcClient) {
     const configuration = await loadOidcConfiguration();
     oidcClient = new EntraOidcClient(configuration);
@@ -29,13 +30,12 @@ function callbackUrl(event: APIGatewayProxyEventV2): URL {
 export async function handler(event: APIGatewayProxyEventV2, context: Context): Promise<ApiGatewayV2Response> {
   bindRequestLogging(context);
   try {
-    const client = await initialize();
     const requestHandler = new AuthRequestHandler({
       cookies: event.cookies?.join(';'),
       fullUrl: callbackUrl(event),
       queryStringParamError: event.queryStringParameters?.error,
       dynamoDBClient,
-      oidcClient: client,
+      getOidcClient,
       auditTrail,
     });
     return await requestHandler.handleRequest();

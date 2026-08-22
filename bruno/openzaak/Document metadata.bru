@@ -1,0 +1,25 @@
+meta {
+  name: Document metadata
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrlOpenZaakDocuments}}enkelvoudiginformatieobjecten/{{documentUuid}}
+  body: none
+  auth: none
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
+
+tests {
+  test("returns 200 with document metadata", function () {
+    expect(res.getStatus()).to.equal(200);
+    const body = res.getBody();
+    expect(body).to.have.property("identificatie");
+    expect(body).to.have.property("bestandsnaam");
+  });
+}

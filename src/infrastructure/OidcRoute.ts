@@ -13,7 +13,9 @@ import { SessionsTable } from './SessionsTable';
 
 /**
  * Wires the standard logging/session/OIDC environment and permissions onto
- * an OIDC-flow Lambda (login, auth callback) and adds its public route.
+ * an OIDC-flow Lambda (login, auth callback) and adds its public route(s).
+ * Pass multiple paths (e.g. /login and /login/start) to let one Lambda
+ * serve them all without wiring its environment and permissions twice.
  */
 export function addOidcRoute(
   scope: Construct,
@@ -23,7 +25,7 @@ export function addOidcRoute(
   configuration: Configuration,
   fn: Function,
   domainName: string,
-  path: string,
+  paths: string | string[],
 ) {
   applyLambdaLoggingDefaults(fn, configuration);
 
@@ -39,9 +41,12 @@ export function addOidcRoute(
   oidcClientSecret.grantRead(fn);
   fn.addEnvironment('OIDC_CLIENT_SECRET_NAME', Statics.secretOidcClientSecret);
 
-  managementApi.api.addRoutes({
-    path,
-    methods: [HttpMethod.GET],
-    integration: new HttpLambdaIntegration(`integration-${fn.node.id}`, fn),
-  });
+  const integration = new HttpLambdaIntegration(`integration-${fn.node.id}`, fn);
+  for (const path of Array.isArray(paths) ? paths : [paths]) {
+    managementApi.api.addRoutes({
+      path,
+      methods: [HttpMethod.GET],
+      integration,
+    });
+  }
 }

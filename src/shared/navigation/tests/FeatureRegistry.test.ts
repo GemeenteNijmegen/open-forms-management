@@ -57,6 +57,12 @@ const cases: Case[] = [
     grants: [{ resource: 'testresource', actions: ['view'] }],
     expected: [testFeature],
   },
+  {
+    name: 'a scoped grant is enough to show the feature, e.g. a single-district Sport grant',
+    features: [testFeature, otherFeature],
+    grants: [{ resource: 'testresource', actions: ['view'], scopes: { districts: ['dukenburg'] } }],
+    expected: [testFeature],
+  },
 ];
 
 describe('visibleFeatures', () => {

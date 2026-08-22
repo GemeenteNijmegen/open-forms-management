@@ -43,6 +43,9 @@ export class Statics {
   // MARK: audit trail
   static readonly auditTrailTableName = `${Statics.projectName}-audit-trail`;
 
+  // MARK: sport reporter
+  static readonly sportReportsTableName = `${Statics.projectName}-sport-reports`;
+
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;
   static readonly ssmOidcClientId = `/${Statics.projectName}/oidc/client-id`;

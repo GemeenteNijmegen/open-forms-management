@@ -22,6 +22,8 @@
     "src/app/home/home-function.ts",
     "src/app/login/login-function.ts",
     "src/app/logout/logout-function.ts",
+    "src/app/sport/reporter/sportExcelWorker-function.ts",
+    "src/app/sport/sport-function.ts",
     "test/tsconfig.json",
     "tsconfig.json"
   ],
