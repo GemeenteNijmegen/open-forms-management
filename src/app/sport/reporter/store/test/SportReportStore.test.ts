@@ -75,11 +75,12 @@ describe('SportReportStore', () => {
   });
 
   it('finds the active report matching the same canonical district set and date range, ignoring order/finished/expired ones', async () => {
+    const recentUpdatedAt = new Date().toISOString();
     documentMock.on(ScanCommand).resolves({
       Items: [
-        report({ reportId: 'other-range', status: 'QUEUED', to: '2026-02-28' }),
+        report({ reportId: 'other-range', status: 'QUEUED', to: '2026-02-28', updatedAt: recentUpdatedAt }),
         report({ reportId: 'finished', status: 'READY' }),
-        report({ reportId: 'match', status: 'BUILDING', districts: ['lindenholt', 'dukenburg'] }),
+        report({ reportId: 'match', status: 'BUILDING', districts: ['lindenholt', 'dukenburg'], updatedAt: recentUpdatedAt }),
       ],
     });
 
@@ -110,5 +111,68 @@ describe('SportReportStore', () => {
     );
 
     await expect(newStore().markReady('report-1', 'reports/report-1.xlsx', 3)).resolves.toBe(false);
+  });
+
+  it('fails a report that is still QUEUED when the worker invocation itself failed to start', async () => {
+    documentMock.on(UpdateCommand).resolves({});
+
+    await expect(newStore().markQueuedFailed('report-1', 'WORKER_START_ERROR')).resolves.toBe(true);
+
+    const call = documentMock.commandCalls(UpdateCommand)[0];
+    expect(call.args[0].input).toMatchObject({
+      ConditionExpression: '#status = :requiredStatus',
+      ExpressionAttributeValues: expect.objectContaining({
+        ':requiredStatus': 'QUEUED', ':status': 'FAILED', ':failureReason': 'WORKER_START_ERROR',
+      }),
+    });
+  });
+
+  it('fails a stale QUEUED report that never got claimed, but leaves a recently queued one alone', async () => {
+    const staleUpdatedAt = new Date(Date.now() - 11 * 60 * 1000).toISOString();
+    const recentUpdatedAt = new Date().toISOString();
+    documentMock.on(ScanCommand).resolves({
+      Items: [
+        report({ reportId: 'stale-queued', status: 'QUEUED', updatedAt: staleUpdatedAt }),
+        report({ reportId: 'recent-queued', status: 'QUEUED', updatedAt: recentUpdatedAt }),
+      ],
+    });
+    documentMock.on(UpdateCommand).resolves({});
+
+    const reports = await newStore().listRecent();
+
+    expect(reports.find((r) => r.reportId === 'stale-queued')).toMatchObject({ status: 'FAILED', failureReason: 'WORKER_NOT_STARTED' });
+    expect(reports.find((r) => r.reportId === 'recent-queued')).toMatchObject({ status: 'QUEUED' });
+  });
+
+  it('fails a stale BUILDING report whose heartbeat went silent, but a recent touchBuilding() heartbeat keeps one alive', async () => {
+    const staleUpdatedAt = new Date(Date.now() - 21 * 60 * 1000).toISOString();
+    const recentUpdatedAt = new Date().toISOString();
+    documentMock.on(ScanCommand).resolves({
+      Items: [
+        report({ reportId: 'stale-building', status: 'BUILDING', updatedAt: staleUpdatedAt }),
+        report({ reportId: 'recent-building', status: 'BUILDING', updatedAt: recentUpdatedAt }),
+      ],
+    });
+    documentMock.on(UpdateCommand).resolves({});
+
+    const reports = await newStore().listRecent();
+
+    expect(reports.find((r) => r.reportId === 'stale-building')).toMatchObject({ status: 'FAILED', failureReason: 'WORKER_STALLED' });
+    expect(reports.find((r) => r.reportId === 'recent-building')).toMatchObject({ status: 'BUILDING' });
+  });
+
+  it('does not fail a stale-looking report if its heartbeat updated between the read and the cleanup transition', async () => {
+    const staleUpdatedAt = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    documentMock.on(ScanCommand).resolves({
+      Items: [report({ reportId: 'report-1', status: 'BUILDING', updatedAt: staleUpdatedAt })],
+    });
+    // Simulates touchBuilding() having bumped updatedAt in DynamoDB after cleanup already read the report.
+    documentMock.on(UpdateCommand).rejects(
+      Object.assign(new Error('The conditional request failed'), { name: 'ConditionalCheckFailedException' }),
+    );
+
+    const reports = await newStore().listRecent();
+
+    expect(reports.find((r) => r.reportId === 'report-1')).toMatchObject({ status: 'BUILDING', updatedAt: staleUpdatedAt });
   });
 });

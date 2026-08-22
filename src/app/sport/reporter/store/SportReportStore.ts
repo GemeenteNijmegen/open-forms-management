@@ -6,6 +6,12 @@ import { SportDistrict } from '../../sportdata/SportDistrictAuthorization';
 
 const RETENTION_SECONDS = 30 * 24 * 60 * 60;
 
+// QUEUED has no heartbeat, so this only needs to cover how long an async worker invocation can realistically
+// take to start. BUILDING's threshold must stay above the worker Lambda's 15-minute hard timeout (see
+// SportExcelWorkerFunction), otherwise a still-running worker between touchBuilding() calls could be failed here.
+const QUEUED_STALE_AFTER_MS = 10 * 60 * 1000;
+const BUILDING_STALE_AFTER_MS = 20 * 60 * 1000;
+
 export interface CreateQueuedReportInput {
   districts: SportDistrict[];
   from: string;
@@ -94,6 +100,11 @@ export class SportReportStore {
     return this.transition(reportId, 'BUILDING', { status: 'FAILED', failureReason, completedAt: new Date().toISOString() });
   }
 
+  // For a worker invocation that fails before the worker ever claims the report, so it's still QUEUED.
+  async markQueuedFailed(reportId: string, failureReason: string): Promise<boolean> {
+    return this.transition(reportId, 'QUEUED', { status: 'FAILED', failureReason, completedAt: new Date().toISOString() });
+  }
+
   // Idempotent: deleting an already-DELETED report is a no-op, not an error.
   async markDeleted(reportId: string): Promise<boolean> {
     try {
@@ -114,7 +125,11 @@ export class SportReportStore {
     }
   }
 
-  private async transition(reportId: string, requiredStatus: SportReportStatus, changes: Partial<SportReport>): Promise<boolean> {
+  // `guard.updatedAt`, when given, adds `AND updatedAt = <value just read>` to the condition, so a transition
+  // decided from a stale read (e.g. cleanup) is silently skipped if the report changed in the meantime.
+  private async transition(
+    reportId: string, requiredStatus: SportReportStatus, changes: Partial<SportReport>, guard: { updatedAt?: string } = {},
+  ): Promise<boolean> {
     const updates: Record<string, unknown> = { ...changes, updatedAt: new Date().toISOString() };
     const names: Record<string, string> = { '#status': 'status' };
     const values: Record<string, unknown> = { ':requiredStatus': requiredStatus };
@@ -126,12 +141,19 @@ export class SportReportStore {
       setClauses.push(`#${key} = :${key}`);
     }
 
+    let conditionExpression = '#status = :requiredStatus';
+    if (guard.updatedAt !== undefined) {
+      names['#updatedAt'] = 'updatedAt';
+      values[':expectedUpdatedAt'] = guard.updatedAt;
+      conditionExpression += ' AND #updatedAt = :expectedUpdatedAt';
+    }
+
     try {
       await this.documentClient.send(new UpdateCommand({
         TableName: this.tableName,
         Key: { reportId },
         UpdateExpression: `SET ${setClauses.join(', ')}`,
-        ConditionExpression: '#status = :requiredStatus',
+        ConditionExpression: conditionExpression,
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
       }));
@@ -143,6 +165,34 @@ export class SportReportStore {
       }
       throw error;
     }
+  }
+
+  // The one place both listRecent() and findMatchingActive() read reports from, so a report whose worker
+  // stopped without reaching a final status can't block a new request forever. Guarded by the exact
+  // updatedAt just read, so a worker that's still alive in the meantime is never overwritten.
+  private async failStaleReports(reports: SportReport[]): Promise<SportReport[]> {
+    const now = Date.now();
+    return Promise.all(reports.map(async (report) => {
+      if (report.status === 'QUEUED' && now - new Date(report.updatedAt).getTime() > QUEUED_STALE_AFTER_MS) {
+        const failed = await this.transition(
+          report.reportId, 'QUEUED', { status: 'FAILED', failureReason: 'WORKER_NOT_STARTED', completedAt: new Date().toISOString() },
+          { updatedAt: report.updatedAt },
+        );
+        if (failed) {
+          return { ...report, status: 'FAILED' as const, failureReason: 'WORKER_NOT_STARTED' };
+        }
+      }
+      if (report.status === 'BUILDING' && now - new Date(report.updatedAt).getTime() > BUILDING_STALE_AFTER_MS) {
+        const failed = await this.transition(
+          report.reportId, 'BUILDING', { status: 'FAILED', failureReason: 'WORKER_STALLED', completedAt: new Date().toISOString() },
+          { updatedAt: report.updatedAt },
+        );
+        if (failed) {
+          return { ...report, status: 'FAILED' as const, failureReason: 'WORKER_STALLED' };
+        }
+      }
+      return report;
+    }));
   }
 
   private async scanAll(): Promise<SportReport[]> {
@@ -158,6 +208,6 @@ export class SportReportStore {
       exclusiveStartKey = result.LastEvaluatedKey;
     } while (exclusiveStartKey);
 
-    return items;
+    return this.failStaleReports(items);
   }
 }

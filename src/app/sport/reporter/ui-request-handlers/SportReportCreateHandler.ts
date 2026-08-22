@@ -78,7 +78,7 @@ export class SportReportCreateHandler {
       }));
     } catch (error) {
       logger.error('Failed to invoke SportExcelWorker', { reportId: report.reportId, reason: errorReason(error) });
-      await this.reportStore.markFailed(report.reportId, 'WORKER_START_ERROR');
+      await this.reportStore.markQueuedFailed(report.reportId, 'WORKER_START_ERROR');
       return Response.redirect('/sport/overzichten?status=worker_start_error', 303);
     }
 

@@ -38,6 +38,7 @@ function makeStore(overrides: Partial<{ existing: SportReport | undefined }> = {
       expiresAt: Math.floor(Date.now() / 1000) + 3600,
     })),
     markFailed: jest.fn().mockResolvedValue(true),
+    markQueuedFailed: jest.fn().mockResolvedValue(true),
   };
 }
 
@@ -117,6 +118,6 @@ describe('SportReportCreateHandler', () => {
 
     expect(response.statusCode).toBe(303);
     expect(response.headers?.Location).toContain('status=worker_start_error');
-    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'WORKER_START_ERROR');
+    expect(store.markQueuedFailed).toHaveBeenCalledWith('report-1', 'WORKER_START_ERROR');
   });
 });
