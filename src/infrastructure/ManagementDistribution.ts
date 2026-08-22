@@ -2,6 +2,7 @@ import { Duration, Fn, RemovalPolicy } from 'aws-cdk-lib';
 import { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Certificate } from 'aws-cdk-lib/aws-certificatemanager';
 import {
+  AllowedMethods,
   CachePolicy,
   Distribution,
   HeadersFrameOption,
@@ -78,6 +79,8 @@ export class ManagementDistribution extends Construct {
         // API Gateway receives its own execute-api domain as Host, not the CloudFront custom domain.
         origin: new HttpOrigin(Fn.select(2, Fn.split('/', props.api.apiEndpoint))),
         viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        // Default AllowedMethods only forwards GET/HEAD; the reporter's POST routes need this widened.
+        allowedMethods: AllowedMethods.ALLOW_ALL,
         cachePolicy: CachePolicy.CACHING_DISABLED,
         originRequestPolicy: this.dynamicOriginRequestPolicy(),
         responseHeadersPolicy: securityHeadersPolicy,
