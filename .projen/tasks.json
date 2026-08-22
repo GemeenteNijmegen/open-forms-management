@@ -86,6 +86,9 @@
         },
         {
           "spawn": "bundle:app/sport/sport.lambda"
+        },
+        {
+          "spawn": "bundle:app/sport/reporter/sportExcelWorker.lambda"
         }
       ]
     },
@@ -158,6 +161,24 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/sport/reporter/sportExcelWorker.lambda": {
+      "name": "bundle:app/sport/reporter/sportExcelWorker.lambda",
+      "description": "Create a JavaScript bundle from src/app/sport/reporter/sportExcelWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/sport/reporter/sportExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/reporter/sportExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/sport/reporter/sportExcelWorker.lambda:watch": {
+      "name": "bundle:app/sport/reporter/sportExcelWorker.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/sport/reporter/sportExcelWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/sport/reporter/sportExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/reporter/sportExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

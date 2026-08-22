@@ -32,6 +32,14 @@ describe('renderAll', () => {
       const contentVariety = fs.readFileSync(path.join(outDir, 'preview', 'sport-content-variety.html'), 'utf-8');
       expect(contentVariety).toContain('nijmegen-search-results');
       expect(contentVariety).toContain('Bram de Wit-Vermeulen');
+
+      const reporterActiveAndReady = fs.readFileSync(path.join(outDir, 'preview', 'sport-reporter-active-and-ready.html'), 'utf-8');
+      expect(reporterActiveAndReady).toContain('Wordt gemaakt');
+      expect(reporterActiveAndReady).toContain('Gereed');
+
+      const reporterTooLargeAndFailed = fs.readFileSync(path.join(outDir, 'preview', 'sport-reporter-too-large-and-failed.html'), 'utf-8');
+      expect(reporterTooLargeAndFailed).toContain('Te groot');
+      expect(reporterTooLargeAndFailed).toContain('Mislukt');
     } finally {
       process.chdir(previousCwd);
       fs.rmSync(outDir, { recursive: true, force: true });

@@ -190,3 +190,78 @@ footer {
     align-items: start;
   }
 }
+
+/* Route-based subnavigation between /sport and /sport/overzichten, no client-side tab state/framework. */
+.sport-tabs {
+  display: flex;
+  gap: var(--nijmegen-space-200);
+  border-bottom: 1px solid var(--nijmegen-color-border-default);
+  margin-block-end: var(--nijmegen-space-200);
+}
+
+/* An explicit color, not the browser's default link blue/visited-purple: this is a tab, not a body-text link. */
+.sport-tabs__link {
+  display: inline-block;
+  padding-block: var(--nijmegen-space-100);
+  border-bottom: 2px solid transparent;
+  color: var(--nijmegen-color-foreground-default);
+  text-decoration: none;
+}
+
+.sport-tabs__link--active {
+  border-bottom-color: var(--utrecht-link-color);
+  color: var(--utrecht-link-color);
+  font-weight: 600;
+}
+
+/* Groups the create-form and the report list into two visually distinct blocks. */
+.sport-panel {
+  border: 1px solid var(--nijmegen-color-border-subdued);
+  border-radius: var(--nijmegen-space-50);
+  padding: var(--nijmegen-space-150);
+  margin-block-end: var(--nijmegen-space-200);
+}
+
+.sport-report-form fieldset {
+  margin-block-end: var(--nijmegen-space-150);
+}
+
+.sport-report-form__submit {
+  margin-block-start: var(--nijmegen-space-100);
+}
+
+/* Van/tot side by side once there's room for it; only a narrow (mobile) viewport stacks them. */
+.sport-date-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-100);
+}
+
+@media (width >= 768px) {
+  .sport-date-fields {
+    flex-direction: row;
+  }
+
+  .sport-date-fields .utrecht-form-field {
+    flex: 1;
+  }
+}
+
+.sport-report__actions {
+  display: flex;
+  gap: var(--nijmegen-space-100);
+  margin-block-start: var(--nijmegen-space-100);
+}
+
+/* Reinforces the status with color; the text itself ("Gereed"/"Wordt gemaakt"/"Mislukt"/...) is still the actual signal. */
+.sport-status--ready {
+  color: var(--nijmegen-color-feedback-success-default);
+}
+
+.sport-status--building {
+  color: var(--nijmegen-color-feedback-warning-default);
+}
+
+.sport-status--failed {
+  color: var(--nijmegen-color-feedback-error-default);
+}

@@ -64,7 +64,11 @@ export class SportRequestHandler {
     const features = visibleFeatures(REGISTERED_FEATURES, context.evaluator);
 
     const renderStartedAt = Date.now();
-    const html = render(sportTemplate, { title: 'Sport', features, currentPath: '/sport', actorEmail: identity.email }, viewModel);
+    const html = render(
+      sportTemplate,
+      { title: 'Sport', features, currentPath: '/sport', actorEmail: identity.email },
+      { ...viewModel, isAanmeldingenTab: true },
+    );
     logger.debug('Sport render finished', { durationMs: Date.now() - renderStartedAt });
 
     logger.debug('Sport request finished', { durationMs: Date.now() - requestStartedAt });

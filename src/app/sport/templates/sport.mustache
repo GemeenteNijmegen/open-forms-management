@@ -1,6 +1,12 @@
 {{>header}}
 <main id="main-content">
   <h1>Sport</h1>
+
+  <nav class="sport-tabs" aria-label="Sportnavigatie">
+    <a class="sport-tabs__link{{#isAanmeldingenTab}} sport-tabs__link--active{{/isAanmeldingenTab}}" href="/sport"{{#isAanmeldingenTab}} aria-current="page"{{/isAanmeldingenTab}}>Aanmeldingen</a>
+    <a class="sport-tabs__link{{#isOverzichtenTab}} sport-tabs__link--active{{/isOverzichtenTab}}" href="/sport/overzichten"{{#isOverzichtenTab}} aria-current="page"{{/isOverzichtenTab}}>Excel-overzichten</a>
+  </nav>
+
   <p class="utrecht-paragraph">Sportaanmeldingen van het huidige sportseizoen, voor de wijken waar je toegang toe hebt.</p>
 
   {{#hasAccessToAllDistricts}}

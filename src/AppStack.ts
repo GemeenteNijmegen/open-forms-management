@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
+import { SportExcelWorkerFunction } from './app/sport/reporter/sportExcelWorker-function';
 import { SportFunction } from './app/sport/sport-function';
 import { Configurable } from './Configuration';
 import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
@@ -17,7 +18,10 @@ import { addOidcRoute } from './infrastructure/OidcRoute';
 import { applyPageLambdaDefaults } from './infrastructure/PageLambda';
 import { PermissionsTable } from './infrastructure/PermissionsTable';
 import { SessionsTable } from './infrastructure/SessionsTable';
-import { addSportRoute } from './infrastructure/SportRoute';
+import { configureSportExcelWorker } from './infrastructure/sport/SportExcelWorker';
+import { SportReportsBucket } from './infrastructure/sport/SportReportsBucket';
+import { SportReportsTable } from './infrastructure/sport/SportReportsTable';
+import { addSportRoute } from './infrastructure/sport/SportRoute';
 import { resolveUsEastOutputs } from './infrastructure/UsEastOutputs';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from './observability/LambdaLogging';
 import { Statics } from './Statics';
@@ -84,6 +88,17 @@ export class AppStack extends Stack {
 
     addLogoutRoute(this, managementApi, this.sessionsTable, this.auditTrailTable, this.props.configuration);
 
+    const sportReportsTable = new SportReportsTable(this, 'sport-reports-table');
+    const sportReportsBucket = new SportReportsBucket(this, 'sport-reports-bucket');
+
+    const sportExcelWorkerFunction = new SportExcelWorkerFunction(this, 'sport-excel-worker-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'sport-excel-worker-function'),
+      // AWS Lambda's absolute maximum timeout.
+      timeout: Duration.minutes(15),
+    });
+    configureSportExcelWorker(this, sportExcelWorkerFunction, sportReportsTable, sportReportsBucket, this.props.configuration);
+
     const sportFunction = new SportFunction(this, 'sport-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'sport-function'),
@@ -92,7 +107,10 @@ export class AppStack extends Stack {
       // 30th second on the Lambda would never be reached, the gateway already returns its own 504 a second earlier.
       timeout: Duration.seconds(29),
     });
-    addSportRoute(this, managementApi, sportFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable, this.props.configuration);
+    addSportRoute(
+      this, managementApi, sportFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable,
+      this.props.configuration, sportReportsTable, sportReportsBucket, sportExcelWorkerFunction,
+    );
 
     addApplicationAlarms(this, managementApi.api, this.props.configuration);
 

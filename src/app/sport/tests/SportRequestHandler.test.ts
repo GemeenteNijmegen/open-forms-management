@@ -89,7 +89,9 @@ describe('SportRequestHandler', () => {
     expect(body).toContain('>Volwassene<');
     expect(body).toContain('bewegen op muziek voor dames');
     expect(body).toContain('vrouwen (wijkcentrum Dukenburg)');
-    expect(body).not.toMatch(/Excel/);
+    // The reporter tab link is the only mention of Excel on this page; the submission list itself stays free of it.
+    expect(body).toContain('Excel-overzichten');
+    expect(body.split('sport-record__summary')[1]).not.toMatch(/Excel/);
 
     // The adult submission (23:05:37) was submitted after the child submission (23:05:15), so it sorts first.
     expect(body.indexOf('Testvolwassene Dukenburg')).toBeLessThan(body.indexOf('Testkind Dukenburg'));

@@ -4,6 +4,20 @@ import { Match, Template } from 'aws-cdk-lib/assertions';
 import { AppStack } from '../AppStack';
 import { AppStage } from '../AppStage';
 
+function roleLogicalIdFor(template: Template, description: string): string {
+  const functions = template.findResources('AWS::Lambda::Function', Match.objectLike({ Properties: { Description: description } }));
+  const [fn]: any[] = Object.values(functions);
+  return fn.Properties.Role['Fn::GetAtt'][0];
+}
+
+function actionsGrantedToRole(template: Template, roleLogicalId: string): string[] {
+  const policies = Object.values(template.findResources('AWS::IAM::Policy')) as any[];
+  return policies
+    .filter((policy) => (policy.Properties.Roles ?? []).some((role: any) => role.Ref === roleLogicalId))
+    .flatMap((policy) => policy.Properties.PolicyDocument.Statement)
+    .flatMap((statement: any) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action]));
+}
+
 describe('AppStack authentication and routing wiring', () => {
   const configuration = {
     branchName: 'test',
@@ -39,6 +53,7 @@ describe('AppStack authentication and routing wiring', () => {
     'src/app/auth/auth.lambda.ts',
     'src/app/logout/logout.lambda.ts',
     'src/app/sport/sport.lambda.ts',
+    'src/app/sport/reporter/sportExcelWorker.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -46,11 +61,11 @@ describe('AppStack authentication and routing wiring', () => {
     }));
   });
 
-  it('creates an explicit LogGroup with a fixed retention for every route Lambda', () => {
+  it('creates an explicit LogGroup with a fixed retention for every route Lambda plus the SportExcelWorker', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(5);
+    expect(Object.keys(logGroups)).toHaveLength(6);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
@@ -158,6 +173,41 @@ describe('AppStack authentication and routing wiring', () => {
       Description: 'src/app/home/home.lambda.ts',
       Environment: Match.objectLike({ Variables: Match.objectLike({ SESSION_TABLE: Match.anyValue() }) }),
     }));
+  });
+
+  it('gives the SportExcelWorker a 900s timeout, separate from the 29s HTTP-facing sport-function', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/sport/reporter/sportExcelWorker.lambda.ts',
+      Timeout: 900,
+    }));
+  });
+
+  it('does not give the SportExcelWorker an HTTP integration - it is invoked directly, not through the API', () => {
+    const workers = template.findResources('AWS::Lambda::Function', Match.objectLike({
+      Properties: { Description: 'src/app/sport/reporter/sportExcelWorker.lambda.ts' },
+    }));
+    const [workerLogicalId] = Object.keys(workers);
+    const integrations = template.findResources('AWS::ApiGatewayV2::Integration');
+    const referencesWorker = Object.values(integrations).some((integration) => JSON.stringify(integration).includes(workerLogicalId));
+    expect(referencesWorker).toBe(false);
+  });
+
+  // The actual table/bucket grant boundaries (read/write split between sport-function and the worker) are
+  // covered per-construct in SportReportsTable.test.ts and SportReportsBucket.test.ts; this only checks what
+  // those unit tests can't: that the invoke permission on the worker is scoped to sport-function alone.
+  it('only lets sport-function invoke the SportExcelWorker', () => {
+    const actions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/sport.lambda.ts'));
+    expect(actions).toContain('lambda:InvokeFunction');
+
+    const workerActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/reporter/sportExcelWorker.lambda.ts'));
+    expect(workerActions).not.toContain('lambda:InvokeFunction');
+  });
+
+  it('does not add a dedicated error-rate alarm for the SportExcelWorker', () => {
+    const alarms = template.findResources('AWS::CloudWatch::Alarm', Match.objectLike({
+      Properties: { AlarmName: Match.stringLikeRegexp('sport-excel-worker') },
+    }));
+    expect(Object.keys(alarms)).toHaveLength(0);
   });
 
   it('serves a static fallback page for 500 responses, since a Lambda crash never reaches a handler that renders one', () => {

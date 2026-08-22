@@ -17,6 +17,8 @@
     "bundle:app/login/login.lambda:watch": "projen bundle:app/login/login.lambda:watch",
     "bundle:app/logout/logout.lambda": "projen bundle:app/logout/logout.lambda",
     "bundle:app/logout/logout.lambda:watch": "projen bundle:app/logout/logout.lambda:watch",
+    "bundle:app/sport/reporter/sportExcelWorker.lambda": "projen bundle:app/sport/reporter/sportExcelWorker.lambda",
+    "bundle:app/sport/reporter/sportExcelWorker.lambda:watch": "projen bundle:app/sport/reporter/sportExcelWorker.lambda:watch",
     "bundle:app/sport/sport.lambda": "projen bundle:app/sport/sport.lambda",
     "bundle:app/sport/sport.lambda:watch": "projen bundle:app/sport/sport.lambda:watch",
     "bundle:copy-web-components": "projen bundle:copy-web-components",

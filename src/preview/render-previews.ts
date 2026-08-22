@@ -5,10 +5,12 @@ import { homeEmpty, homeWithFeatures, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
 import { logoutData } from './fixtures/logout';
 import { sportAllDistricts, sportContentVariety, sportDukenburg, sportEmpty, sportFiltered, sportPartialError } from './fixtures/sport';
+import { sportReporterActiveAndReady, sportReporterEmpty, sportReporterTooLargeAndFailed } from './fixtures/sportReporter';
 import homeTemplate from '../app/home/templates/home.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
 import loginTemplate from '../app/login/templates/login.mustache';
 import logoutTemplate from '../app/logout/templates/logout.mustache';
+import sportReportsTemplate from '../app/sport/reporter/ui-request-handlers/templates/sport-reports.mustache';
 import sportTemplate from '../app/sport/templates/sport.mustache';
 import { render } from '../shared/rendering/Renderer';
 import forbiddenTemplate from '../shared/rendering/templates/forbidden.mustache';
@@ -51,6 +53,7 @@ const ROUTE_TO_PREVIEW_FILE: Record<string, string> = {
   '/login': 'login',
   '/logout': 'logout',
   '/sport': 'sport-all-districts',
+  '/sport/overzichten': 'sport-reporter-active-and-ready',
 };
 
 function stubFileName(route: string): string {
@@ -88,12 +91,15 @@ export async function renderAll(): Promise<void> {
     'logout': render(logoutTemplate, logoutData),
     '403': render(forbiddenTemplate, forbiddenData),
     '404': render(notFoundTemplate, notFoundData),
-    'sport-all-districts': render(sportTemplate, sportAllDistricts.page, sportAllDistricts.data),
-    'sport-dukenburg': render(sportTemplate, sportDukenburg.page, sportDukenburg.data),
-    'sport-empty': render(sportTemplate, sportEmpty.page, sportEmpty.data),
-    'sport-partial-error': render(sportTemplate, sportPartialError.page, sportPartialError.data),
-    'sport-filtered': render(sportTemplate, sportFiltered.page, sportFiltered.data),
-    'sport-content-variety': render(sportTemplate, sportContentVariety.page, sportContentVariety.data),
+    'sport-all-districts': render(sportTemplate, sportAllDistricts.page, { ...sportAllDistricts.data, isAanmeldingenTab: true }),
+    'sport-dukenburg': render(sportTemplate, sportDukenburg.page, { ...sportDukenburg.data, isAanmeldingenTab: true }),
+    'sport-empty': render(sportTemplate, sportEmpty.page, { ...sportEmpty.data, isAanmeldingenTab: true }),
+    'sport-partial-error': render(sportTemplate, sportPartialError.page, { ...sportPartialError.data, isAanmeldingenTab: true }),
+    'sport-filtered': render(sportTemplate, sportFiltered.page, { ...sportFiltered.data, isAanmeldingenTab: true }),
+    'sport-content-variety': render(sportTemplate, sportContentVariety.page, { ...sportContentVariety.data, isAanmeldingenTab: true }),
+    'sport-reporter-empty': render(sportReportsTemplate, sportReporterEmpty.page, { ...sportReporterEmpty.data, isOverzichtenTab: true }),
+    'sport-reporter-active-and-ready': render(sportReportsTemplate, sportReporterActiveAndReady.page, { ...sportReporterActiveAndReady.data, isOverzichtenTab: true }),
+    'sport-reporter-too-large-and-failed': render(sportReportsTemplate, sportReporterTooLargeAndFailed.page, { ...sportReporterTooLargeAndFailed.data, isOverzichtenTab: true }),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));

@@ -3,32 +3,50 @@ import { z } from 'zod';
 import { SportSubmission, SportSubmissionChild } from './SportSubmission';
 import { logger } from '../../observability/Logger';
 
-const sportCsvRowSchema = z.object({
+// Also carries the reporter-only columns (data contract columns not needed by the Sportpagina itself), so the
+// reporter can build its own richer row on top of this same validated parse instead of a second CSV interpretation.
+const sportCsvRowSchema = z.looseObject({
+  Formuliernaam: z.string(),
   Inzendingdatum: z.string(),
   aanmeldType: z.enum(['kind', 'volwassene']),
   stadsdeel: z.string(),
   voornaam: z.string(),
   achternaam: z.string(),
+  geboortedatum: z.string(),
   telefoonnummer: z.string(),
   eMailadres: z.string(),
+  voornaamTweedeContact: z.string(),
+  achternaamTweedeContact: z.string(),
+  telefoonnummerTweedeContact: z.string(),
+  eMailadresTweedeContact: z.string(),
+  naamNoodgevallen: z.string(),
+  telefoonnummerNoodgevallen: z.string(),
   opmerking: z.string(),
   aanmeldenSportactiviteit: z.string(),
   sportactiviteitenData: z.string(),
+  sportactiviteitAnders: z.string(),
+  sportUwKindBijEenSportvereniging: z.string(),
+  naamAmbulantBegeleider: z.string(),
+  organisatieAmbulantBegeleider: z.string(),
+  toestemmingContactOpnemen: z.string(),
+  toestemmingGegevens: z.string(),
+  toestemmingFotos: z.string(),
   voornaamKind: z.string(),
   achternaamKind: z.string(),
   geboortedatumKind: z.string(),
+  soortOnderwijsDatUwKindVolgt: z.string(),
   basisschool: z.string(),
+  groep: z.string(),
   voorgezetOnderwijs: z.string(),
-}).passthrough();
+});
 
-type SportCsvRow = z.infer<typeof sportCsvRowSchema>;
+export type SportCsvRow = z.infer<typeof sportCsvRowSchema>;
 
 /**
- * Parses one Open Forms "Aanmelden sportactiviteit" CSV export (one header row, one submission row)
- * into the model the Sportpagina needs. `reference` comes from the Object the CSV was fetched for,
- * not from the CSV itself.
+ * Parses one Open Forms "Aanmelden sportactiviteit" CSV export (one header row, one submission row) into the
+ * validated row both the Sportpagina's `parseSportSubmission` and the reporter build their own model on top of.
  */
-export function parseSportSubmission(csvText: string, reference: string): SportSubmission {
+export function parseSportCsvRow(csvText: string): SportCsvRow {
   const rows: unknown[] = parse(csvText, { columns: true, skip_empty_lines: true });
   if (rows.length !== 1) {
     throw new Error(`Sport CSV must contain exactly one submission row, got ${rows.length}`);
@@ -41,7 +59,15 @@ export function parseSportSubmission(csvText: string, reference: string): SportS
     });
     throw new Error('Sport CSV row failed validation');
   }
-  const row = result.data;
+  return result.data;
+}
+
+/**
+ * Parses one Open Forms "Aanmelden sportactiviteit" CSV export into the model the Sportpagina needs.
+ * `reference` comes from the Object the CSV was fetched for, not from the CSV itself.
+ */
+export function parseSportSubmission(csvText: string, reference: string): SportSubmission {
+  const row = parseSportCsvRow(csvText);
   const child = row.aanmeldType === 'kind' ? buildChild(row) : undefined;
 
   return {
@@ -73,7 +99,7 @@ function buildChild(row: SportCsvRow): SportSubmissionChild {
  * `Inzendingdatum` is `YYYY-MM-DD HH:mm:ss.ffffff` (microseconds, no timezone). Date only supports
  * millisecond precision, and this app always compares/sorts these in UTC, so both are normalized here.
  */
-function parseSubmittedAt(value: string): Date {
+export function parseSubmittedAt(value: string): Date {
   const [datePart, timePart = ''] = value.split(' ');
   const [time, fraction = ''] = timePart.split('.');
   const milliseconds = fraction.slice(0, 3).padEnd(3, '0');
@@ -86,7 +112,7 @@ function parseSubmittedAt(value: string): Date {
  * Together they give the readable labels for the selected activities, including `notApplicable` ->
  * "Niet van toepassing", which is already the label Open Forms serializes for that key.
  */
-function parseActivities(selectionField: string, labelsField: string): string[] {
+export function parseActivities(selectionField: string, labelsField: string): string[] {
   const selected = parsePythonBooleanDict(selectionField);
   const labels = parsePythonPairList(labelsField);
   return Object.entries(selected)

@@ -1,0 +1,107 @@
+{{>header}}
+<main id="main-content">
+  <h1>Sport - Excel-overzichten</h1>
+
+  <nav class="sport-tabs" aria-label="Sportnavigatie">
+    <a class="sport-tabs__link{{#isAanmeldingenTab}} sport-tabs__link--active{{/isAanmeldingenTab}}" href="/sport"{{#isAanmeldingenTab}} aria-current="page"{{/isAanmeldingenTab}}>Aanmeldingen</a>
+    <a class="sport-tabs__link{{#isOverzichtenTab}} sport-tabs__link--active{{/isOverzichtenTab}}" href="/sport/overzichten"{{#isOverzichtenTab}} aria-current="page"{{/isOverzichtenTab}}>Excel-overzichten</a>
+  </nav>
+
+  <p class="utrecht-paragraph"><strong>Download alleen als dat nodig is.</strong> Een Excel-overzicht bevat persoonsgegevens. Werk waar mogelijk met de gegevens in deze beheeromgeving.</p>
+  {{#message}}
+  <p class="utrecht-paragraph">{{message}}</p>
+  {{/message}}
+
+  <section class="sport-panel">
+    <h2 class="utrecht-heading-2">Overzicht maken</h2>
+    <form method="post" action="/sport/overzichten" class="sport-report-form">
+      <fieldset>
+        <legend class="utrecht-form-label">Wijken</legend>
+        {{#districtOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input" id="report-district-{{value}}" name="district" value="{{value}}">
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-district-{{value}}">{{label}}</label>
+        </div>
+        {{/districtOptions}}
+      </fieldset>
+      <div class="sport-date-fields">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="report-from">Van</label>
+          <input type="date" class="utrecht-textbox" id="report-from" name="from" value="{{defaultFrom}}">
+        </div>
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="report-to">Tot</label>
+          <input type="date" class="utrecht-textbox" id="report-to" name="to" value="{{defaultTo}}">
+        </div>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action sport-report-form__submit">Overzicht maken</button>
+    </form>
+
+    <details>
+      <summary class="utrecht-form-label">Hoe lang duurt het maken van een overzicht?</summary>
+      <p class="utrecht-paragraph">Dit hangt af van hoeveel aanmeldingen opgehaald moeten worden: meestal enkele minuten, met
+        een maximum van ongeveer 13 minuten verwerkingstijd. Blijft een opdracht langer dan 13 minuten op "Wordt gemaakt" staan,
+        dan kan dat op een onderbreking wijzen; probeer het dan opnieuw.</p>
+    </details>
+  </section>
+
+  <section class="sport-panel">
+    <h2 class="utrecht-heading-2">Overzichten</h2>
+    <p><a class="utrecht-button utrecht-button--primary-action" href="/sport/overzichten">Overzichten opnieuw laden</a></p>
+
+    {{#hasReports}}
+    <div>
+      {{#reports}}
+      <article class="nijmegen-search-results sport-record">
+        <div class="nijmegen-search-results__content">
+          <div class="sport-record__summary">
+            <div class="sport-record__field">
+              <span class="sport-record__field-label">Status</span>
+              <strong class="sport-status sport-status--{{statusVariant}}">{{statusLabel}}</strong>
+            </div>
+            <div class="sport-record__field">
+              <span class="sport-record__field-label">Periode</span>
+              <span>{{from}} t/m {{to}}</span>
+            </div>
+            <div class="sport-record__field">
+              <span class="sport-record__field-label">Wijken</span>
+              <span>{{districtsLabel}}</span>
+            </div>
+            <div class="sport-record__field">
+              <span class="sport-record__field-label">Aangevraagd</span>
+              <span>{{requestedAtLabel}}</span>
+            </div>
+          </div>
+          <ul class="nijmegen-metadata">
+            {{#submissionCountLabel}}
+            <li class="nijmegen-metadata__item">Aantal inzendingen: {{submissionCountLabel}}</li>
+            {{/submissionCountLabel}}
+            {{#expiresAtLabel}}
+            <li class="nijmegen-metadata__item">Beschikbaar tot: {{expiresAtLabel}}</li>
+            {{/expiresAtLabel}}
+          </ul>
+          <div class="sport-report__actions">
+            {{#canDownload}}
+            <a class="utrecht-button utrecht-button--primary-action" href="/sport/overzichten/{{reportId}}/download">Downloaden</a>
+            {{/canDownload}}
+            {{#canDelete}}
+            <form method="post" action="/sport/overzichten/{{reportId}}/delete">
+              <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen</button>
+            </form>
+            {{/canDelete}}
+          </div>
+        </div>
+      </article>
+      {{/reports}}
+    </div>
+    {{/hasReports}}
+    {{^hasReports}}
+    <div class="nijmegen-action-card">
+      <div class="nijmegen-action-card__content">
+        <p class="utrecht-paragraph">Er zijn nog geen Excel-overzichten.</p>
+      </div>
+    </div>
+    {{/hasReports}}
+  </section>
+</main>
+{{>footer}}
