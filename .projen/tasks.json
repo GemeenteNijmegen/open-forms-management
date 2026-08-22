@@ -507,7 +507,7 @@
             "--peer",
             "--no-deprecated",
             "--dep=dev,prod,peer,optional",
-            "--filter=@gemeentenijmegen/components-css,@gemeentenijmegen/design-tokens,@gemeentenijmegen/layout-css,@gemeentenijmegen/semantic-html,@gemeentenijmegen/web-components,@types/aws-lambda,@types/jest,@types/mustache,@types/node,@utrecht/page-body-css,@utrecht/pre-heading-css,@utrecht/rich-text-css,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-lambda-powertools/metrics,@aws-sdk/client-dynamodb,@aws-sdk/lib-dynamodb,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,chokidar,csv-parse,mustache,openid-client,zod"
+            "--filter=@gemeentenijmegen/components-css,@gemeentenijmegen/design-tokens,@gemeentenijmegen/layout-css,@gemeentenijmegen/semantic-html,@gemeentenijmegen/web-components,@types/aws-lambda,@types/jest,@types/mustache,@types/node,@utrecht/page-body-css,@utrecht/pre-heading-css,@utrecht/rich-text-css,aws-sdk-client-mock,esbuild,eslint-import-resolver-typescript,eslint-plugin-import,jest,projen,ts-jest,ts-node,typescript,@aws-lambda-powertools/logger,@aws-lambda-powertools/metrics,@aws-sdk/client-dynamodb,@aws-sdk/client-lambda,@aws-sdk/client-s3,@aws-sdk/lib-dynamodb,@aws-sdk/s3-request-presigner,@gemeentenijmegen/apigateway-http,@gemeentenijmegen/aws-constructs,@gemeentenijmegen/cross-region-parameters,@gemeentenijmegen/projen-project-type,@gemeentenijmegen/session,@gemeentenijmegen/utils,chokidar,csv-parse,mustache,openid-client,write-excel-file,zod"
           ]
         },
         {
@@ -565,7 +565,10 @@
             "@aws-lambda-powertools/logger",
             "@aws-lambda-powertools/metrics",
             "@aws-sdk/client-dynamodb",
+            "@aws-sdk/client-lambda",
+            "@aws-sdk/client-s3",
             "@aws-sdk/lib-dynamodb",
+            "@aws-sdk/s3-request-presigner",
             "@gemeentenijmegen/apigateway-http",
             "@gemeentenijmegen/aws-constructs",
             "@gemeentenijmegen/cross-region-parameters",
@@ -578,6 +581,7 @@
             "csv-parse",
             "mustache",
             "openid-client",
+            "write-excel-file",
             "zod"
           ]
         },
