@@ -118,4 +118,14 @@ describe('runSportExcelReport', () => {
     expect(s3Send).not.toHaveBeenCalled();
     expect(store.markFailed).toHaveBeenCalledWith('report-1', 'DOCUMENT_ERROR');
   });
+
+  it('never marks READY when the S3 upload itself fails', async () => {
+    const { deps, store, s3Send } = makeDeps(makeReport());
+    s3Send.mockRejectedValue(new Error('S3 unavailable'));
+
+    await runSportExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(store.markReady).not.toHaveBeenCalled();
+    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'STORAGE_ERROR');
+  });
 });

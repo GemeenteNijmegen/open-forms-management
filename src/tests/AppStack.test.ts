@@ -210,6 +210,13 @@ describe('AppStack authentication and routing wiring', () => {
     expect(Object.keys(alarms)).toHaveLength(0);
   });
 
+  it('never grants a wildcard s3:* action to either the sport-function or the worker role', () => {
+    const frontendActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/sport.lambda.ts'));
+    const workerActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/reporter/sportExcelWorker.lambda.ts'));
+    expect(frontendActions).not.toContain('s3:*');
+    expect(workerActions).not.toContain('s3:*');
+  });
+
   it('serves a static fallback page for 500 responses, since a Lambda crash never reaches a handler that renders one', () => {
     template.hasResourceProperties('AWS::CloudFront::Distribution', Match.objectLike({
       DistributionConfig: Match.objectLike({
