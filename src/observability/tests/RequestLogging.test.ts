@@ -16,10 +16,11 @@ describe('bindRequestLogging', () => {
     const addContextSpy = jest.spyOn(logger, 'addContext');
     const appendKeysSpy = jest.spyOn(logger, 'appendKeys');
 
-    bindRequestLogging(fakeContext);
+    const correlationId = bindRequestLogging(fakeContext);
 
     expect(addContextSpy).toHaveBeenCalledWith(fakeContext);
     expect(appendKeysSpy).toHaveBeenCalledWith({ correlationId: '1-5e1b4151-5ac6c58e2f1c2a1c9a4e0f0e' });
+    expect(correlationId).toBe('1-5e1b4151-5ac6c58e2f1c2a1c9a4e0f0e');
   });
 });
 

@@ -4,8 +4,12 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { environmentVariables } from '@gemeentenijmegen/utils';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { SportClientErrorHandler } from './aanmeldingen/SportClientErrorHandler';
 import { SportPdfDownloadHandler } from './aanmeldingen/SportPdfDownloadHandler';
+import { SportRefreshHandler } from './aanmeldingen/SportRefreshHandler';
 import { SportRequestHandler } from './aanmeldingen/SportRequestHandler';
+import { SportSubmissionsRequestHandler } from './aanmeldingen/SportSubmissionsRequestHandler';
+import { createSportCacheStore } from './cache/createSportCacheStore';
 import { createSportReportStore } from './reporter/store/createSportReportStore';
 import { SportReportCreateHandler } from './reporter/ui-request-handlers/SportReportCreateHandler';
 import { SportReportDeleteHandler } from './reporter/ui-request-handlers/SportReportDeleteHandler';
@@ -28,9 +32,10 @@ const lambdaClient = new LambdaClient({});
 const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const reportStore = createSportReportStore(dynamoDBClient);
+const cacheStore = createSportCacheStore(dynamoDBClient);
 
 export async function handler(event: APIGatewayProxyEventV2, context: Context): Promise<ApiGatewayV2Response> {
-  bindRequestLogging(context);
+  const correlationId = bindRequestLogging(context);
   try {
     const identity = await requireSession(event.cookies?.join(';'), dynamoDBClient, auditTrail);
     if (!identity) {
@@ -42,6 +47,20 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
       const [objectsClient, openZaakClient] = await Promise.all([getObjectsClient(), getOpenZaakClient()]);
       const pdfHandler = new SportPdfDownloadHandler(authorizationService, objectsClient, openZaakClient, auditTrail);
       return await pdfHandler.handleRequest(identity, objectUuid);
+    }
+
+    if (event.routeKey === 'POST /sport/submissions/refresh') {
+      const env = environmentVariables(['SPORT_CACHE_WORKER_FUNCTION_NAME'] as const);
+      const refreshHandler = new SportRefreshHandler(authorizationService, cacheStore, lambdaClient, env.SPORT_CACHE_WORKER_FUNCTION_NAME);
+      return await refreshHandler.handleRequest(identity, event.headers, correlationId);
+    }
+    if (event.routeKey === 'GET /sport/submissions') {
+      const submissionsHandler = new SportSubmissionsRequestHandler(authorizationService, cacheStore);
+      return await submissionsHandler.handleRequest(identity, event.queryStringParameters, correlationId);
+    }
+    if (event.routeKey === 'POST /sport/client-errors') {
+      const clientErrorHandler = new SportClientErrorHandler(authorizationService);
+      return await clientErrorHandler.handleRequest(identity, event.headers, event.body, Boolean(event.isBase64Encoded));
     }
 
     const reportId = event.pathParameters?.reportId;
@@ -67,8 +86,7 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
       return await reportsHandler.handleRequest(identity, event.queryStringParameters);
     }
 
-    const [objectsClient, openZaakClient] = await Promise.all([getObjectsClient(), getOpenZaakClient()]);
-    const requestHandler = new SportRequestHandler(authorizationService, objectsClient, openZaakClient);
+    const requestHandler = new SportRequestHandler(authorizationService);
     return await requestHandler.handleRequest(identity, event.queryStringParameters);
   } catch (error) {
     logger.error('Unhandled error in sport', { reason: errorReason(error) });

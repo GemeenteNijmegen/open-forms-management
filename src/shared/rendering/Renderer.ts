@@ -35,3 +35,13 @@ export function render(pageTemplate: string, viewModel: PageViewModel, pageData:
     throw error;
   }
 }
+
+/** Renders a template on its own, without the page shell: for a server-rendered fragment an already-loaded page fetches separately. */
+export function renderFragment<T extends object>(template: string, data: T): string {
+  try {
+    return Mustache.render(template, data);
+  } catch (error) {
+    logger.error('Failed to render fragment', { reason: errorReason(error) });
+    throw error;
+  }
+}

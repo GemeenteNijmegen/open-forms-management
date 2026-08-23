@@ -4,20 +4,35 @@ import { forbiddenData } from './fixtures/forbidden';
 import { homeEmpty, homeWithFeatures, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
 import { logoutData } from './fixtures/logout';
-import { sportAllDistricts, sportContentVariety, sportDukenburg, sportEmpty, sportFiltered, sportPartialError } from './fixtures/sport';
+import {
+  sportShellAllDistricts, sportShellDukenburg, sportSubmissionsAllDistricts, sportSubmissionsContentVariety,
+  sportSubmissionsDukenburg, sportSubmissionsEmpty, sportSubmissionsHasMore, sportSubmissionsStale,
+} from './fixtures/sport';
 import { sportReporterActiveAndReady, sportReporterEmpty, sportReporterTooLargeAndFailed } from './fixtures/sportReporter';
 import homeTemplate from '../app/home/templates/home.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
 import loginTemplate from '../app/login/templates/login.mustache';
 import logoutTemplate from '../app/logout/templates/logout.mustache';
 import sportReportsTemplate from '../app/sport/templates/sport-reports.mustache';
+import sportSubmissionsTemplate from '../app/sport/templates/sport-submissions.mustache';
 import sportTemplate from '../app/sport/templates/sport.mustache';
-import { render } from '../shared/rendering/Renderer';
+import { render, renderFragment, PageViewModel } from '../shared/rendering/Renderer';
 import forbiddenTemplate from '../shared/rendering/templates/forbidden.mustache';
 
 // Path from preview/<page>.html back to src/app/static-resources/static
 const STATIC_REL = '../src/app/static-resources/static';
 const ROUTE_PATTERN = /href="(\/[a-zA-Z0-9-]*)"/g;
+const SUBMISSIONS_CONTAINER_PATTERN = /<div id="sport-submissions"[^>]*>[\s\S]*?<\/div>/;
+
+// The preview has no real backend: `sport-submissions.js` would immediately fetch and fail. Previewing the
+// Sport shell instead embeds an already-rendered fragment directly and drops the live script, so the static
+// HTML shows what a real loaded page looks like instead of the script's own network-failure message.
+function renderSportPage(shellFixture: { page: PageViewModel; data: object }, submissionsViewModel: object): string {
+  const shellHtml = render(sportTemplate, shellFixture.page, { ...shellFixture.data, isAanmeldingenTab: true })
+    .replace('<script src="/static/js/sport-submissions.js" defer></script>\n', '');
+  const fragmentHtml = renderFragment(sportSubmissionsTemplate, submissionsViewModel);
+  return shellHtml.replace(SUBMISSIONS_CONTAINER_PATTERN, `<div id="sport-submissions" aria-live="polite" aria-busy="false">${fragmentHtml}</div>`);
+}
 
 // Read at call time, not module load time, so tests can chdir into a temp directory before calling renderAll().
 function outDir(): string {
@@ -83,6 +98,8 @@ function findUnregisteredRoutes(pages: string[]): string[] {
 
 export async function renderAll(): Promise<void> {
   console.log('Rendering previews...');
+  // A page renamed/removed from `pages` below would otherwise leave its old file on disk indefinitely.
+  fs.rmSync(outDir(), { recursive: true, force: true });
 
   const pages: Record<string, string> = {
     'home': render(homeTemplate, homeWithFeatures),
@@ -92,12 +109,12 @@ export async function renderAll(): Promise<void> {
     'logout': render(logoutTemplate, logoutData),
     '403': render(forbiddenTemplate, forbiddenData),
     '404': render(notFoundTemplate, notFoundData),
-    'sport-all-districts': render(sportTemplate, sportAllDistricts.page, { ...sportAllDistricts.data, isAanmeldingenTab: true }),
-    'sport-dukenburg': render(sportTemplate, sportDukenburg.page, { ...sportDukenburg.data, isAanmeldingenTab: true }),
-    'sport-empty': render(sportTemplate, sportEmpty.page, { ...sportEmpty.data, isAanmeldingenTab: true }),
-    'sport-partial-error': render(sportTemplate, sportPartialError.page, { ...sportPartialError.data, isAanmeldingenTab: true }),
-    'sport-filtered': render(sportTemplate, sportFiltered.page, { ...sportFiltered.data, isAanmeldingenTab: true }),
-    'sport-content-variety': render(sportTemplate, sportContentVariety.page, { ...sportContentVariety.data, isAanmeldingenTab: true }),
+    'sport-all-districts': renderSportPage(sportShellAllDistricts, sportSubmissionsAllDistricts),
+    'sport-dukenburg': renderSportPage(sportShellDukenburg, sportSubmissionsDukenburg),
+    'sport-submissions-empty': renderSportPage(sportShellAllDistricts, sportSubmissionsEmpty),
+    'sport-submissions-stale': renderSportPage(sportShellAllDistricts, sportSubmissionsStale),
+    'sport-submissions-has-more': renderSportPage(sportShellAllDistricts, sportSubmissionsHasMore),
+    'sport-submissions-content-variety': renderSportPage(sportShellAllDistricts, sportSubmissionsContentVariety),
     'sport-reporter-empty': render(sportReportsTemplate, sportReporterEmpty.page, { ...sportReporterEmpty.data, isOverzichtenTab: true }),
     'sport-reporter-active-and-ready': render(sportReportsTemplate, sportReporterActiveAndReady.page, { ...sportReporterActiveAndReady.data, isOverzichtenTab: true }),
     'sport-reporter-too-large-and-failed': render(sportReportsTemplate, sportReporterTooLargeAndFailed.page, { ...sportReporterTooLargeAndFailed.data, isOverzichtenTab: true }),

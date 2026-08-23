@@ -44,11 +44,13 @@ describe('fetchSportCsvDocuments', () => {
     expect(result.documents).toEqual([{ reference: 'ref-ok', csvText: 'csv-text', documentUrl: 'csv-ok', hasPdf: false }]);
     expect(result.failedCount).toBe(1);
     expect(result.failedDocuments).toEqual([{ reference: 'ref-fail', objectUuid: 'object-uuid-fail' }]);
-    // OF-nummer, objectnummer en de csv-url moeten in de log staan, zodat een mislukte download snel is op te zoeken.
+    // OF-nummer en objectnummer moeten in de log staan (geen document-URL: dat is bronsysteeminformatie).
     expect(logger.warn).toHaveBeenCalledWith('Sport CSV document fetch failed', expect.objectContaining({
       reference: 'ref-fail',
       objectUuid: 'object-uuid-fail',
-      documentUrl: 'csv-fail',
+    }));
+    expect(logger.warn).not.toHaveBeenCalledWith('Sport CSV document fetch failed', expect.objectContaining({
+      documentUrl: expect.anything(),
     }));
   });
 

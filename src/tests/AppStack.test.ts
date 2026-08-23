@@ -56,6 +56,7 @@ describe('AppStack authentication and routing wiring', () => {
     'src/app/logout/logout.lambda.ts',
     'src/app/sport/sport.lambda.ts',
     'src/app/sport/reporter/sportExcelWorker.lambda.ts',
+    'src/app/sport/cache/sportCacheWorker.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -63,11 +64,11 @@ describe('AppStack authentication and routing wiring', () => {
     }));
   });
 
-  it('creates an explicit LogGroup with a fixed retention for every route Lambda plus the SportExcelWorker', () => {
+  it('creates an explicit LogGroup with a fixed retention for every route Lambda plus the SportExcelWorker and SportCacheWorker', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(6);
+    expect(Object.keys(logGroups)).toHaveLength(7);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
@@ -210,6 +211,28 @@ describe('AppStack authentication and routing wiring', () => {
       Properties: { AlarmName: Match.stringLikeRegexp('sport-excel-worker') },
     }));
     expect(Object.keys(alarms)).toHaveLength(0);
+  });
+
+  it('gives the SportCacheWorker a 900s timeout and no HTTP integration - it is invoked directly, not through the API', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/sport/cache/sportCacheWorker.lambda.ts',
+      Timeout: 900,
+    }));
+    const workers = template.findResources('AWS::Lambda::Function', Match.objectLike({
+      Properties: { Description: 'src/app/sport/cache/sportCacheWorker.lambda.ts' },
+    }));
+    const [workerLogicalId] = Object.keys(workers);
+    const integrations = template.findResources('AWS::ApiGatewayV2::Integration');
+    const referencesWorker = Object.values(integrations).some((integration) => JSON.stringify(integration).includes(workerLogicalId));
+    expect(referencesWorker).toBe(false);
+  });
+
+  it('only lets sport-function invoke the SportCacheWorker', () => {
+    const actions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/sport.lambda.ts'));
+    expect(actions).toContain('lambda:InvokeFunction');
+
+    const workerActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/cache/sportCacheWorker.lambda.ts'));
+    expect(workerActions).not.toContain('lambda:InvokeFunction');
   });
 
   it('never grants a wildcard s3:* action to either the sport-function or the worker role', () => {

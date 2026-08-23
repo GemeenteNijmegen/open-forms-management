@@ -1,0 +1,77 @@
+{{#showTotalCount}}
+<p class="sport-submissions-count">{{totalCountLabel}}</p>
+{{/showTotalCount}}
+{{#staleWarning}}
+<div class="utrecht-alert utrecht-alert--warning" role="status">
+  <div class="utrecht-alert__content">
+    <p class="utrecht-alert__message">De actualiteit van deze lijst kon niet worden bevestigd. De getoonde aanmeldingen zijn de laatst bekende.</p>
+  </div>
+</div>
+{{/staleWarning}}
+{{#hasFailedDocuments}}
+<div class="utrecht-alert utrecht-alert--warning" role="status">
+  <div class="utrecht-alert__content">
+    <p class="utrecht-alert__message">Niet alle inzendingen konden worden geladen ({{failedCount}} overgeslagen).</p>
+    <ul class="nijmegen-metadata">
+      {{#failedDocumentLabels}}
+      <li class="nijmegen-metadata__item">{{.}}</li>
+      {{/failedDocumentLabels}}
+    </ul>
+  </div>
+</div>
+{{/hasFailedDocuments}}
+{{#hasSubmissions}}
+<div>
+  {{#submissions}}
+  <article class="nijmegen-search-results sport-record">
+    <div class="nijmegen-search-results__content">
+      <div class="sport-record__summary">
+        <div class="sport-record__field sport-record__field--submitted">
+          <span class="sport-record__field-label">Ingediend</span>
+          <span>{{#submittedAtLines}}{{.}}<br>{{/submittedAtLines}}</span>
+        </div>
+        <div class="sport-record__field sport-record__field--participant">
+          <span class="sport-record__field-label">Sporter</span>
+          <strong>{{participantName}}</strong>
+          <span class="sport-record__type">{{typeLabel}}</span>
+        </div>
+        <div class="sport-record__field sport-record__field--district">
+          <span class="sport-record__field-label">Wijk</span>
+          <span>{{districtLabel}}</span>
+        </div>
+        <div class="sport-record__field sport-record__field--reference">
+          <span class="sport-record__field-label">Kenmerk</span>
+          <span>{{reference}}</span>
+          {{#pdfDownloadHref}}
+          <a class="utrecht-link" href="{{pdfDownloadHref}}">PDF downloaden</a>
+          {{/pdfDownloadHref}}
+        </div>
+      </div>
+      <ul class="nijmegen-metadata">
+        {{#birthDateLabel}}
+        <li class="nijmegen-metadata__item">Geboren: {{birthDateLabel}}</li>
+        {{/birthDateLabel}}
+        {{#schoolLabel}}
+        <li class="nijmegen-metadata__item">School: {{schoolLabel}}</li>
+        {{/schoolLabel}}
+        <li class="nijmegen-metadata__item">{{contactRoleLabel}}: {{contactValue}}</li>
+        <li class="nijmegen-metadata__item">Activiteit: {{activitiesLabel}}</li>
+        {{#remark}}
+        <li class="nijmegen-metadata__item">Opmerking: {{remark}}</li>
+        {{/remark}}
+      </ul>
+    </div>
+  </article>
+  {{/submissions}}
+</div>
+{{#hasMore}}
+<button type="button" class="utrecht-button utrecht-button--secondary-action" data-sport-load-more data-cursor="{{nextCursor}}">Meer tonen</button>
+{{/hasMore}}
+{{/hasSubmissions}}
+{{^hasSubmissions}}
+<div class="nijmegen-action-card">
+  <div class="nijmegen-action-card__content">
+    <p class="utrecht-paragraph">Er zijn geen Sportaanmeldingen die aan het huidige filter voldoen.</p>
+  </div>
+</div>
+{{/hasSubmissions}}

@@ -7,6 +7,7 @@ import { ManagementApi } from '../ManagementApi';
 import { applyPageLambdaDefaults } from '../PageLambda';
 import { PermissionsTable } from '../PermissionsTable';
 import { SessionsTable } from '../SessionsTable';
+import { SportCacheTable } from './SportCacheTable';
 import { applySportDataSourceAccess } from './SportDataSourceAccess';
 import { SportReportsBucket } from './SportReportsBucket';
 import { SportReportsTable } from './SportReportsTable';
@@ -15,9 +16,8 @@ import { applyLambdaLoggingDefaults } from '../../observability/LambdaLogging';
 
 /**
  * Wires the standard page-lambda session/permission/audit access onto the Sport Lambda, its Objects/Open
- * Zaak data source access, and its routes: the overview and the PDF download, both handled by the same
- * Lambda. Also wires the Sport reporter's table/bucket/worker access, ahead of the reporter routes
- * themselves landing on this same Lambda.
+ * Zaak data source access, and its routes: the overview, PDF download, cache refresh/read and reporter
+ * routes, all handled by the same Lambda. Also wires the reporter's and the cache's table/bucket/worker access.
  */
 export function addSportRoute(
   scope: Construct,
@@ -30,6 +30,8 @@ export function addSportRoute(
   sportReportsTable: SportReportsTable,
   sportReportsBucket: SportReportsBucket,
   sportExcelWorker: Function,
+  sportCacheTable: SportCacheTable,
+  sportCacheWorker: Function,
 ) {
   applyLambdaLoggingDefaults(fn, configuration);
   applyPageLambdaDefaults(scope, fn, permissionsTable, auditTrailTable, sessionsTable, configuration);
@@ -42,6 +44,11 @@ export function addSportRoute(
   sportExcelWorker.grantInvoke(fn);
   fn.addEnvironment('SPORT_EXCEL_WORKER_FUNCTION_NAME', sportExcelWorker.functionName);
 
+  sportCacheTable.grantFrontendAccess(fn);
+  fn.addEnvironment('SPORT_CACHE_TABLE', sportCacheTable.table.tableName);
+  sportCacheWorker.grantInvoke(fn);
+  fn.addEnvironment('SPORT_CACHE_WORKER_FUNCTION_NAME', sportCacheWorker.functionName);
+
   managementApi.api.addRoutes({
     path: '/sport',
     methods: [HttpMethod.GET],
@@ -52,6 +59,24 @@ export function addSportRoute(
     path: '/sport/submissions/{objectUuid}/pdf',
     methods: [HttpMethod.GET],
     integration: new HttpLambdaIntegration('integration-sport-function-pdf', fn),
+  });
+
+  managementApi.api.addRoutes({
+    path: '/sport/submissions/refresh',
+    methods: [HttpMethod.POST],
+    integration: new HttpLambdaIntegration('integration-sport-function-refresh', fn),
+  });
+
+  managementApi.api.addRoutes({
+    path: '/sport/submissions',
+    methods: [HttpMethod.GET],
+    integration: new HttpLambdaIntegration('integration-sport-function-submissions', fn),
+  });
+
+  managementApi.api.addRoutes({
+    path: '/sport/client-errors',
+    methods: [HttpMethod.POST],
+    integration: new HttpLambdaIntegration('integration-sport-function-client-errors', fn),
   });
 
   managementApi.api.addRoutes({

@@ -21,6 +21,7 @@ import { CloudFrontTarget } from 'aws-cdk-lib/aws-route53-targets';
 import { BlockPublicAccess, Bucket, ObjectOwnership } from 'aws-cdk-lib/aws-s3';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { Construct } from 'constructs';
+import { SAME_ORIGIN_HEADERS } from '../shared/security/SameOriginRequest';
 import { Statics } from '../Statics';
 
 export interface ManagementDistributionProps {
@@ -114,7 +115,9 @@ export class ManagementDistribution extends Construct {
     return new OriginRequestPolicy(this, 'dynamic-origin-request-policy', {
       cookieBehavior: OriginRequestCookieBehavior.all(),
       queryStringBehavior: OriginRequestQueryStringBehavior.all(),
-      headerBehavior: OriginRequestHeaderBehavior.allowList('Accept', 'Accept-Language'),
+      // SAME_ORIGIN_HEADERS: every feature's same-origin check header (see SameOriginRequest.ts) has to be
+      // forwarded here too, or CloudFront drops it before it reaches the origin and the check always fails.
+      headerBehavior: OriginRequestHeaderBehavior.allowList('Accept', 'Accept-Language', ...SAME_ORIGIN_HEADERS),
     });
   }
 

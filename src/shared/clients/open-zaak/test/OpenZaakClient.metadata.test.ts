@@ -71,4 +71,18 @@ describe('OpenZaakClient.getDocumentMetadata', () => {
     await expect(client.getDocumentMetadata('not-a-url', ACTOR)).rejects.toThrow('valid URL');
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it('rejects a reference to a different host without making a request', async () => {
+    const otherHost = DOCUMENT_REFERENCE.replace('mijn-services.accp.nijmegen.nl', 'attacker.example');
+
+    await expect(client.getDocumentMetadata(otherHost, ACTOR)).rejects.toThrow('does not match the configured host');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects a reference whose path only coincidentally shares the base path as a string prefix', async () => {
+    const lookalikePath = DOCUMENT_REFERENCE.replace('/documenten/api/v1/', '/documenten/api/v1-evil/');
+
+    await expect(client.getDocumentMetadata(lookalikePath, ACTOR)).rejects.toThrow('outside the configured Open Zaak API root');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

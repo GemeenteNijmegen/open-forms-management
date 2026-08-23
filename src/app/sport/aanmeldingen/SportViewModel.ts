@@ -1,5 +1,6 @@
 import { SportFilter } from './SportFilter';
-import { FailedSportDocument } from '../sportdata/fetchSportCsvDocuments';
+import { SportSubmissionsPage } from './SportSubmissionsOrdering';
+import { SportCacheFailureMarker } from '../cache/SportCacheItem';
 import { SPORT_DISTRICT_LABELS, SPORT_DISTRICTS, SportDistrict } from '../sportdata/SportDistrictAuthorization';
 import { SportAanmeldType, SportSubmission } from '../sportdata/SportSubmission';
 
@@ -34,28 +35,17 @@ export interface SportSubmissionRow {
   pdfDownloadHref?: string;
 }
 
-export interface SportViewModel {
+/** View model for the `/sport` shell: tabs, visible-period text, allowed districts and the filter form. The
+ * submissions list itself is a separate fragment (`SportSubmissionsFragmentViewModel`), fetched by the browser. */
+export interface SportShellViewModel {
   hasAccessToAllDistricts: boolean;
   allowedDistrictLabels: string[];
   districtOptions: SportFilterOption[];
   typeOptions: SportFilterOption[];
-  hasSubmissions: boolean;
-  submissions: SportSubmissionRow[];
-  hasPartialError: boolean;
-  failedCount: number;
-  hasFailedDocumentLabels: boolean;
-  failedDocumentLabels: string[];
+  visibleFromLabel: string;
 }
 
-export function buildSportViewModel(
-  allowedDistricts: SportDistrict[],
-  filter: SportFilter,
-  submissions: SportSubmission[],
-  failedCount: number,
-  failedDocuments: FailedSportDocument[] = [],
-): SportViewModel {
-  const failedDocumentLabels = failedDocuments.map(formatFailedDocumentLabel).filter((label): label is string => label !== undefined);
-
+export function buildSportShellViewModel(allowedDistricts: SportDistrict[], filter: SportFilter, visibleFromLabel: string): SportShellViewModel {
   return {
     hasAccessToAllDistricts: allowedDistricts.length === SPORT_DISTRICTS.length,
     allowedDistrictLabels: allowedDistricts.map((district) => SPORT_DISTRICT_LABELS[district]),
@@ -69,32 +59,11 @@ export function buildSportViewModel(
       label: AANMELD_TYPE_LABELS[type],
       checked: filter.types.includes(type),
     })),
-    hasSubmissions: submissions.length > 0,
-    submissions: submissions.map(toSportSubmissionRow),
-    hasPartialError: failedCount > 0,
-    failedCount,
-    hasFailedDocumentLabels: failedDocumentLabels.length > 0,
-    failedDocumentLabels,
+    visibleFromLabel,
   };
 }
 
-// Kenmerk (OF-nummer) staat er alleen bij als het object nog genoeg te herkennen was; het objectnummer
-// is er vrijwel altijd, ook als de rest van het object onbruikbaar was. Zonder allebei is er niets
-// zinnigs te tonen, zo'n entry laten we dan ook gewoon weg in plaats van een lege regel te tonen.
-function formatFailedDocumentLabel(failedDocument: FailedSportDocument): string | undefined {
-  if (failedDocument.reference && failedDocument.objectUuid) {
-    return `${failedDocument.reference} (document ${failedDocument.objectUuid})`;
-  }
-  if (failedDocument.reference) {
-    return failedDocument.reference;
-  }
-  if (failedDocument.objectUuid) {
-    return `document ${failedDocument.objectUuid}`;
-  }
-  return undefined;
-}
-
-function toSportSubmissionRow(submission: SportSubmission): SportSubmissionRow {
+export function toSportSubmissionRow(submission: SportSubmission): SportSubmissionRow {
   return {
     reference: submission.reference,
     districtLabel: SPORT_DISTRICT_LABELS[submission.district as SportDistrict] ?? submission.district,
@@ -121,7 +90,7 @@ function buildContactValue(submission: SportSubmission): string {
   return parts.join(' · ');
 }
 
-function formatDutchDate(isoDate: string): string {
+export function formatDutchDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-');
   return `${day}-${month}-${year}`;
 }
@@ -134,4 +103,49 @@ function formatSubmittedAt(date: Date): string[] {
   const month = DUTCH_MONTHS[date.getUTCMonth()];
   const time = `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
   return [`${day} ${month} ${date.getUTCFullYear()}`, time];
+}
+
+export interface SportSubmissionsFragmentViewModel {
+  hasSubmissions: boolean;
+  submissions: SportSubmissionRow[];
+  showTotalCount: boolean;
+  totalCountLabel: string;
+  staleWarning: boolean;
+  hasFailedDocuments: boolean;
+  failedCount: number;
+  failedDocumentLabels: string[];
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
+/**
+ * `showTotalCount` is false for a "Meer tonen" page: the browser appends that HTML into the existing
+ * list instead of replacing it (see sport-submissions.js), so a repeated count line would stack up.
+ */
+export function buildSportSubmissionsFragmentViewModel(
+  page: SportSubmissionsPage, staleWarning: boolean, failedMarkers: SportCacheFailureMarker[] = [], showTotalCount: boolean = true,
+): SportSubmissionsFragmentViewModel {
+  const failedDocumentLabels = failedMarkers.map(formatFailedDocumentLabel);
+  return {
+    hasSubmissions: page.submissions.length > 0,
+    submissions: page.submissions.map(toSportSubmissionRow),
+    showTotalCount,
+    totalCountLabel: formatTotalCountLabel(page.totalCount),
+    staleWarning,
+    hasFailedDocuments: failedDocumentLabels.length > 0,
+    failedCount: failedDocumentLabels.length,
+    failedDocumentLabels,
+    hasMore: page.hasMore,
+    ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
+  };
+}
+
+function formatTotalCountLabel(totalCount: number): string {
+  return `${totalCount} ${totalCount === 1 ? 'inzending' : 'inzendingen'}`;
+}
+
+// Kenmerk (OF-nummer) staat er alleen bij als het object nog leesbaar genoeg was om te weten welke inzending
+// het is; het objectnummer is er altijd, ook als de rest van het object onbruikbaar was.
+function formatFailedDocumentLabel(marker: SportCacheFailureMarker): string {
+  return marker.reference ? `${marker.reference} (document ${marker.objectUuid})` : `document ${marker.objectUuid}`;
 }
