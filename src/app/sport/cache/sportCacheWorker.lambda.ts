@@ -32,6 +32,7 @@ export async function handler(event: SportCacheWorkerEvent, context: Context): P
     );
   } catch (error) {
     logger.error('SportCacheWorker failed unexpectedly', { runId: event.runId, reason: errorReason(error) });
+    await cacheStore.finalizeRefresh(event.runId, 'FAILED', new Date(), { failureReason: 'UNEXPECTED_ERROR' });
   } finally {
     resetRequestLogging();
   }
