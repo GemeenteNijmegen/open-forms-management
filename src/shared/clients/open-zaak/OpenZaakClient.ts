@@ -66,14 +66,14 @@ export class OpenZaakClient {
 
     const parsed = new URL(result.data);
     if (parsed.protocol !== this.baseUrl.protocol) {
-      throw new Error('Open Zaak document reference does not match the configured protocol');
+      throw new Error(`Open Zaak document reference does not match the configured protocol: ${parsed.protocol}`);
     }
     if (parsed.host !== this.baseUrl.host) {
-      throw new Error('Open Zaak document reference does not match the configured host');
+      throw new Error(`Open Zaak document reference does not match the configured host: ${parsed.host}`);
     }
     const basePath = this.baseUrl.pathname.endsWith('/') ? this.baseUrl.pathname : `${this.baseUrl.pathname}/`;
     if (!parsed.pathname.startsWith(basePath)) {
-      throw new Error('Open Zaak document reference is outside the configured Open Zaak API root');
+      throw new Error(`Open Zaak document reference is outside the configured Open Zaak API root: ${parsed.pathname} vs ${basePath}`);
     }
 
     return parsed.toString();

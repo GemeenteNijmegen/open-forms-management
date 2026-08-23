@@ -14,6 +14,20 @@ function objectSortKey(objectUuid: string): string {
   return `${OBJECT_SORT_KEY_PREFIX}${objectUuid}`;
 }
 
+// DynamoDB can only store plain strings/numbers, not a JS Date object. submittedAt goes in as an ISO
+// string and comes back out as a Date, so the rest of the app keeps working with a real Date value.
+function toStorableItem(submission: CachedSportSubmission): Record<string, unknown> {
+  return { ...submission, data: { ...submission.data, submittedAt: submission.data.submittedAt.toISOString() } };
+}
+
+function fromStorableItem(item: SportCacheItem): SportCacheItem {
+  if (!isCachedSportSubmission(item)) {
+    return item;
+  }
+  const submittedAt = item.data.submittedAt as unknown as string;
+  return { ...item, data: { ...item.data, submittedAt: new Date(submittedAt) } };
+}
+
 function isConditionalCheckFailed(error: unknown): boolean {
   return error instanceof Error && error.name === 'ConditionalCheckFailedException';
 }
@@ -47,7 +61,7 @@ export class SportCacheStore {
         },
       }));
       for (const item of (response.Responses?.[this.tableName] ?? [])) {
-        const cacheItem = item as SportCacheItem;
+        const cacheItem = fromStorableItem(item as SportCacheItem);
         result.set(cacheItem.objectUuid, cacheItem);
       }
     }
@@ -58,7 +72,7 @@ export class SportCacheStore {
   async putReady(submission: CachedSportSubmission): Promise<void> {
     await this.documentClient.send(new PutCommand({
       TableName: this.tableName,
-      Item: { pk: PARTITION_KEY, sk: objectSortKey(submission.objectUuid), ...submission },
+      Item: { pk: PARTITION_KEY, sk: objectSortKey(submission.objectUuid), ...toStorableItem(submission) },
     }));
   }
 
@@ -89,7 +103,7 @@ export class SportCacheStore {
       }));
 
       for (const rawItem of (response.Items ?? [])) {
-        const item = rawItem as SportCacheItem;
+        const item = fromStorableItem(rawItem as SportCacheItem);
         if (item.expiresAt <= nowSeconds) {
           continue;
         }

@@ -18,7 +18,7 @@ const DEFAULT_READY_SUBMISSION: CachedSportSubmission = {
   reference: 'OF-1',
   hasPdf: false,
   registrationAt: '2026-08-01T00:00:00.000Z',
-  data: {} as CachedSportSubmission['data'],
+  data: { submittedAt: new Date('2026-08-01T00:00:00.000Z') } as CachedSportSubmission['data'],
   cachedAt: '2026-08-01T00:00:00.000Z',
   expiresAt: Math.floor(Date.now() / 1000) + 3600,
   cacheVersion: SPORT_CACHE_VERSION,
