@@ -122,6 +122,11 @@ footer {
   }
 }
 
+/* Otherwise sits directly against Vernieuwen (closed) or the expanded form's own submit button (open). */
+.sport-filter {
+  margin-block-end: var(--nijmegen-space-200);
+}
+
 /* The submit button otherwise sits directly against the last checkbox fieldset above it. */
 .sport-filter__submit {
   margin-block-start: 1rem;
@@ -264,4 +269,30 @@ footer {
 
 .sport-status--failed {
   color: var(--nijmegen-color-feedback-error-default);
+}
+
+.sport-refresh-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nijmegen-space-100);
+  margin-block-end: var(--nijmegen-space-150);
+}
+
+.sport-loading {
+  color: var(--nijmegen-color-foreground-subdued);
+}
+
+/* Otherwise sits directly against the refresh bar above it, e.g. the empty-state card has no margin of its own. */
+#sport-submissions {
+  margin-block-start: var(--nijmegen-space-150);
+}
+
+/* The stale-refresh and failed-documents warnings can both show at once; otherwise they'd sit flush against each other. */
+#sport-submissions .utrecht-alert + .utrecht-alert {
+  margin-block-start: var(--nijmegen-space-150);
+}
+
+[data-sport-load-more] {
+  margin-block-start: var(--nijmegen-space-150);
 }

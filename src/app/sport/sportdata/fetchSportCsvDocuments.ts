@@ -81,7 +81,6 @@ export async function fetchSportCsvDocuments(
       logger.warn('Sport CSV document fetch failed', {
         reference: parsedData.data.reference,
         objectUuid: object.uuid,
-        documentUrl: parsedData.data.csv,
         durationMs: Date.now() - startedDocumentAt,
         outcome: 'failure',
         reason: errorReason(error),

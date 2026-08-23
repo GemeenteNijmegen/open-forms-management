@@ -7,13 +7,11 @@
     <a class="sport-tabs__link{{#isOverzichtenTab}} sport-tabs__link--active{{/isOverzichtenTab}}" href="/sport/overzichten"{{#isOverzichtenTab}} aria-current="page"{{/isOverzichtenTab}}>Excel-overzichten</a>
   </nav>
 
-  <p class="utrecht-paragraph">Sportaanmeldingen van het huidige sportseizoen, voor de wijken waar je toegang toe hebt.</p>
-
   {{#hasAccessToAllDistricts}}
-  <p class="utrecht-paragraph">Je ziet aanmeldingen uit alle wijken.</p>
+  <p class="utrecht-paragraph">Je ziet aanmeldingen vanaf {{visibleFromLabel}}, uit alle wijken.</p>
   {{/hasAccessToAllDistricts}}
   {{^hasAccessToAllDistricts}}
-  <p class="utrecht-paragraph">Je ziet aanmeldingen uit:</p>
+  <p class="utrecht-paragraph">Je ziet aanmeldingen vanaf {{visibleFromLabel}}, voor de wijken waar je toegang toe hebt:</p>
   <ul class="nijmegen-metadata nijmegen-metadata__horizontal">
     {{#allowedDistrictLabels}}
     <li class="nijmegen-metadata__item">{{.}}</li>
@@ -47,72 +45,14 @@
     </form>
   </details>
 
-  {{#hasPartialError}}
-  <div class="utrecht-alert utrecht-alert--warning" role="status">
-    <div class="utrecht-alert__content">
-      <p class="utrecht-alert__message">Niet alle inzendingen konden worden geladen ({{failedCount}} overgeslagen).</p>
-      {{#hasFailedDocumentLabels}}
-      <ul class="nijmegen-metadata">
-        {{#failedDocumentLabels}}
-        <li class="nijmegen-metadata__item">{{.}}</li>
-        {{/failedDocumentLabels}}
-      </ul>
-      {{/hasFailedDocumentLabels}}
-    </div>
+  <div class="sport-refresh-bar">
+    <button type="button" id="sport-refresh-button" class="utrecht-button utrecht-button--secondary-action">Vernieuwen</button>
+    <p id="sport-refresh-status" class="sport-loading" role="status" hidden></p>
   </div>
-  {{/hasPartialError}}
 
-  {{#hasSubmissions}}
-  <div>
-    {{#submissions}}
-    <article class="nijmegen-search-results sport-record">
-      <div class="nijmegen-search-results__content">
-        <div class="sport-record__summary">
-          <div class="sport-record__field sport-record__field--submitted">
-            <span class="sport-record__field-label">Ingediend</span>
-            <span>{{#submittedAtLines}}{{.}}<br>{{/submittedAtLines}}</span>
-          </div>
-          <div class="sport-record__field sport-record__field--participant">
-            <span class="sport-record__field-label">Sporter</span>
-            <strong>{{participantName}}</strong>
-            <span class="sport-record__type">{{typeLabel}}</span>
-          </div>
-          <div class="sport-record__field sport-record__field--district">
-            <span class="sport-record__field-label">Wijk</span>
-            <span>{{districtLabel}}</span>
-          </div>
-          <div class="sport-record__field sport-record__field--reference">
-            <span class="sport-record__field-label">Kenmerk</span>
-            <span>{{reference}}</span>
-            {{#pdfDownloadHref}}
-            <a class="utrecht-link" href="{{pdfDownloadHref}}">PDF downloaden</a>
-            {{/pdfDownloadHref}}
-          </div>
-        </div>
-        <ul class="nijmegen-metadata">
-          {{#birthDateLabel}}
-          <li class="nijmegen-metadata__item">Geboren: {{birthDateLabel}}</li>
-          {{/birthDateLabel}}
-          {{#schoolLabel}}
-          <li class="nijmegen-metadata__item">School: {{schoolLabel}}</li>
-          {{/schoolLabel}}
-          <li class="nijmegen-metadata__item">{{contactRoleLabel}}: {{contactValue}}</li>
-          <li class="nijmegen-metadata__item">Activiteit: {{activitiesLabel}}</li>
-          {{#remark}}
-          <li class="nijmegen-metadata__item">Opmerking: {{remark}}</li>
-          {{/remark}}
-        </ul>
-      </div>
-    </article>
-    {{/submissions}}
+  <div id="sport-submissions" aria-live="polite" aria-busy="true">
+    <p class="sport-loading">Aanmeldingen laden…</p>
   </div>
-  {{/hasSubmissions}}
-  {{^hasSubmissions}}
-  <div class="nijmegen-action-card">
-    <div class="nijmegen-action-card__content">
-      <p class="utrecht-paragraph">Er zijn geen Sportaanmeldingen die aan het huidige filter voldoen.</p>
-    </div>
-  </div>
-  {{/hasSubmissions}}
 </main>
+<script src="/static/js/sport-submissions.js" defer></script>
 {{>footer}}

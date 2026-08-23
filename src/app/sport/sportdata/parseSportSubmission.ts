@@ -79,7 +79,7 @@ export function parseSportSubmission(csvText: string, reference: string): SportS
     phone: row.telefoonnummer,
     email: row.eMailadres,
     activities: parseActivities(row.aanmeldenSportactiviteit, row.sportactiviteitenData),
-    // objectUuid/hasPdf don't come from the CSV; buildSportSubmissions fills them in from the Object.
+    // objectUuid/hasPdf don't come from the CSV itself; a caller that needs them fills them in from the Object.
     hasPdf: false,
     ...(row.opmerking ? { remark: row.opmerking } : {}),
     ...(child ? { child } : {}),

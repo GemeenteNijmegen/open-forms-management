@@ -27,6 +27,7 @@
 /src/app/home/home-function.ts linguist-generated
 /src/app/login/login-function.ts linguist-generated
 /src/app/logout/logout-function.ts linguist-generated
+/src/app/sport/cache/sportCacheWorker-function.ts linguist-generated
 /src/app/sport/reporter/sportExcelWorker-function.ts linguist-generated
 /src/app/sport/sport-function.ts linguist-generated
 /test/tsconfig.json linguist-generated linguist-language=JSON-with-Comments

@@ -8,7 +8,6 @@ export class Statics {
   /**
    * Github repository of this project
    * Used in the PipelineStack
-   * TODO make sure this is correct
    */
   static readonly githubRepository = `GemeenteNijmegen/${Statics.projectName}`;
 
@@ -45,6 +44,9 @@ export class Statics {
 
   // MARK: sport reporter
   static readonly sportReportsTableName = `${Statics.projectName}-sport-reports`;
+
+  // MARK: sport cache
+  static readonly sportCacheTableName = `${Statics.projectName}-sport-cache`;
 
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;

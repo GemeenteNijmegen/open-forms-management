@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
+import { SportCacheWorkerFunction } from './app/sport/cache/sportCacheWorker-function';
 import { SportExcelWorkerFunction } from './app/sport/reporter/sportExcelWorker-function';
 import { SportFunction } from './app/sport/sport-function';
 import { Configurable } from './Configuration';
@@ -18,6 +19,8 @@ import { addOidcRoute } from './infrastructure/OidcRoute';
 import { applyPageLambdaDefaults } from './infrastructure/PageLambda';
 import { PermissionsTable } from './infrastructure/PermissionsTable';
 import { SessionsTable } from './infrastructure/SessionsTable';
+import { SportCacheTable } from './infrastructure/sport/SportCacheTable';
+import { configureSportCacheWorker } from './infrastructure/sport/SportCacheWorker';
 import { configureSportExcelWorker } from './infrastructure/sport/SportExcelWorker';
 import { SportReportsBucket } from './infrastructure/sport/SportReportsBucket';
 import { SportReportsTable } from './infrastructure/sport/SportReportsTable';
@@ -101,17 +104,26 @@ export class AppStack extends Stack {
     });
     configureSportExcelWorker(this, sportExcelWorkerFunction, sportReportsTable, sportReportsBucket, this.auditTrailTable, this.props.configuration);
 
+    const sportCacheTable = new SportCacheTable(this, 'sport-cache-table');
+    const sportCacheWorkerFunction = new SportCacheWorkerFunction(this, 'sport-cache-worker-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'sport-cache-worker-function'),
+      // AWS Lambda's absolute maximum timeout; the runner applies its own ~13-minute application cutoff.
+      timeout: Duration.minutes(15),
+    });
+    configureSportCacheWorker(this, sportCacheWorkerFunction, sportCacheTable, this.props.configuration);
+
     const sportFunction = new SportFunction(this, 'sport-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'sport-function'),
-      // Fetches Sportinzendingen from Objects and their CSV documents from Open Zaak within one request; the default 3s
-      // timeout is too tight for that. 29s, not 30s: HttpApi's Lambda integration itself has a hard 29s timeout, so a
-      // 30th second on the Lambda would never be reached, the gateway already returns its own 504 a second earlier.
+      // PDF download and report routes on this Lambda still call Objects/Open Zaak live. 29s, not 30s: HttpApi's
+      // own integration timeout is a hard 29s, so a 30th second here would never be reached.
       timeout: Duration.seconds(29),
     });
     addSportRoute(
       this, managementApi, sportFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable,
       this.props.configuration, sportReportsTable, sportReportsBucket, sportExcelWorkerFunction,
+      sportCacheTable, sportCacheWorkerFunction,
     );
 
     addApplicationAlarms(this, managementApi.api, this.props.configuration);
