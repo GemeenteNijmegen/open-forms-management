@@ -2,8 +2,8 @@ import { logger } from '../../../../observability/Logger';
 import { FakeAuditTrail } from '../../../../shared/audit/tests/FakeAuditTrail';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { FakePermissionRepository } from '../../../../shared/authorization/tests/FakePermissionRepository';
+import { SPORT_SAME_ORIGIN_HEADER } from '../../../../shared/security/SameOriginRequest';
 import { SportClientErrorHandler } from '../SportClientErrorHandler';
-import { SPORT_SAME_ORIGIN_HEADER } from '../SportSameOriginHeader';
 
 function authorizedService(): AuthorizationService {
   const repository = new FakePermissionRepository();

@@ -2,9 +2,9 @@ import { LambdaClient } from '@aws-sdk/client-lambda';
 import { FakeAuditTrail } from '../../../../shared/audit/tests/FakeAuditTrail';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { FakePermissionRepository } from '../../../../shared/authorization/tests/FakePermissionRepository';
+import { SPORT_SAME_ORIGIN_HEADER } from '../../../../shared/security/SameOriginRequest';
 import { SportCacheStore } from '../../cache/SportCacheStore';
 import { SportRefreshHandler } from '../SportRefreshHandler';
-import { SPORT_SAME_ORIGIN_HEADER } from '../SportSameOriginHeader';
 
 function authorizedService(): AuthorizationService {
   const repository = new FakePermissionRepository();

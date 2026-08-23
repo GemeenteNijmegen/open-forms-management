@@ -1,13 +1,12 @@
 import { randomUUID } from 'crypto';
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
-import { SPORT_SAME_ORIGIN_HEADER } from './SportSameOriginHeader';
 import { errorReason } from '../../../observability/errorReason';
 import { logger } from '../../../observability/Logger';
 import { withCorrelationId } from '../../../observability/withCorrelationId';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
-import { isSameOriginRequest } from '../../../shared/security/SameOriginRequest';
+import { isSameOriginRequest, SPORT_SAME_ORIGIN_HEADER } from '../../../shared/security/SameOriginRequest';
 import { SportCacheStore } from '../cache/SportCacheStore';
 
 function accepted(): ApiGatewayV2Response {

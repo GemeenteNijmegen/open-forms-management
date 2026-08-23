@@ -1,9 +1,8 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
-import { SPORT_SAME_ORIGIN_HEADER } from './SportSameOriginHeader';
 import { logger } from '../../../observability/Logger';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
-import { isSameOriginRequest } from '../../../shared/security/SameOriginRequest';
+import { isSameOriginRequest, SPORT_SAME_ORIGIN_HEADER } from '../../../shared/security/SameOriginRequest';
 
 const ALLOWED_EVENTS = [
   'INITIAL_LOAD_FAILED',
