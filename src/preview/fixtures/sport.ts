@@ -201,10 +201,13 @@ export const sportShellDukenburg = {
 };
 
 function fragment(
-  submissions: SportSubmission[], staleWarning = false, overrides: { hasMore?: boolean; nextCursor?: string } = {},
+  submissions: SportSubmission[], staleWarning = false, overrides: { hasMore?: boolean; nextCursor?: string; totalCount?: number } = {},
 ): SportSubmissionsFragmentViewModel {
   const page: SportSubmissionsPage = {
-    submissions, hasMore: overrides.hasMore ?? false, ...(overrides.nextCursor ? { nextCursor: overrides.nextCursor } : {}),
+    submissions,
+    totalCount: overrides.totalCount ?? submissions.length,
+    hasMore: overrides.hasMore ?? false,
+    ...(overrides.nextCursor ? { nextCursor: overrides.nextCursor } : {}),
   };
   return buildSportSubmissionsFragmentViewModel(page, staleWarning);
 }
@@ -219,7 +222,9 @@ export const sportSubmissionsEmpty = fragment([]);
 
 export const sportSubmissionsStale = fragment([childDukenburg], true);
 
-export const sportSubmissionsHasMore = fragment([childDukenburg, adultDukenburg], false, { hasMore: true, nextCursor: 'preview-cursor' });
+export const sportSubmissionsHasMore = fragment(
+  [childDukenburg, adultDukenburg], false, { hasMore: true, nextCursor: 'preview-cursor', totalCount: 9 },
+);
 
 // Content edge cases in one preview: a fully filled-in record with long text, a long single
 // activity, and a record missing every optional field, for judging the record layout itself.

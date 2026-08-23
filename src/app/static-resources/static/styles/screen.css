@@ -296,3 +296,9 @@ footer {
 [data-sport-load-more] {
   margin-block-start: var(--nijmegen-space-150);
 }
+
+.sport-submissions-count {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+  margin-block-end: var(--nijmegen-space-100);
+}

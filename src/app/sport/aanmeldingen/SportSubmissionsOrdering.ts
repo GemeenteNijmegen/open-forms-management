@@ -8,6 +8,7 @@ export function sortNewestFirst(submissions: SportSubmission[]): SportSubmission
 
 export interface SportSubmissionsPage {
   submissions: SportSubmission[];
+  totalCount: number;
   hasMore: boolean;
   nextCursor?: string;
 }
@@ -27,6 +28,7 @@ export function paginateSportSubmissions(submissions: SportSubmission[], cursor?
 
   return {
     submissions: page,
+    totalCount: sorted.length,
     hasMore,
     ...(hasMore ? { nextCursor: page[page.length - 1].submittedAt.toISOString() } : {}),
   };

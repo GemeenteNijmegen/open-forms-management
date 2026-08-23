@@ -60,11 +60,13 @@ export class SportSubmissionsRequestHandler {
       return withCorrelationId(Response.error(500), correlationId);
     }
 
+    const cursor = queryStringParameters?.cursor;
     const submissions = buildSportSubmissionsFromCache(cachedSubmissions, filter.districts, filter.types);
-    const page = paginateSportSubmissions(submissions, queryStringParameters?.cursor);
+    const page = paginateSportSubmissions(submissions, cursor);
     const staleWarning = state?.status === 'FAILED';
+    const isFirstPage = !cursor;
 
-    const viewModel = buildSportSubmissionsFragmentViewModel(page, staleWarning, failedMarkers);
+    const viewModel = buildSportSubmissionsFragmentViewModel(page, staleWarning, failedMarkers, isFirstPage);
     const html = renderFragment(sportSubmissionsTemplate, viewModel);
 
     logger.debug('Sport submissions fragment finished', {

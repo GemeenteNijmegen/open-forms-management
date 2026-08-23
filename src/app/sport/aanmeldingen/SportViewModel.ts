@@ -108,6 +108,8 @@ function formatSubmittedAt(date: Date): string[] {
 export interface SportSubmissionsFragmentViewModel {
   hasSubmissions: boolean;
   submissions: SportSubmissionRow[];
+  showTotalCount: boolean;
+  totalCountLabel: string;
   staleWarning: boolean;
   hasFailedDocuments: boolean;
   failedCount: number;
@@ -116,13 +118,19 @@ export interface SportSubmissionsFragmentViewModel {
   nextCursor?: string;
 }
 
+/**
+ * `showTotalCount` is false for a "Meer tonen" page: the browser appends that HTML into the existing
+ * list instead of replacing it (see sport-submissions.js), so a repeated count line would stack up.
+ */
 export function buildSportSubmissionsFragmentViewModel(
-  page: SportSubmissionsPage, staleWarning: boolean, failedMarkers: SportCacheFailureMarker[] = [],
+  page: SportSubmissionsPage, staleWarning: boolean, failedMarkers: SportCacheFailureMarker[] = [], showTotalCount: boolean = true,
 ): SportSubmissionsFragmentViewModel {
   const failedDocumentLabels = failedMarkers.map(formatFailedDocumentLabel);
   return {
     hasSubmissions: page.submissions.length > 0,
     submissions: page.submissions.map(toSportSubmissionRow),
+    showTotalCount,
+    totalCountLabel: formatTotalCountLabel(page.totalCount),
     staleWarning,
     hasFailedDocuments: failedDocumentLabels.length > 0,
     failedCount: failedDocumentLabels.length,
@@ -130,6 +138,10 @@ export function buildSportSubmissionsFragmentViewModel(
     hasMore: page.hasMore,
     ...(page.nextCursor ? { nextCursor: page.nextCursor } : {}),
   };
+}
+
+function formatTotalCountLabel(totalCount: number): string {
+  return `${totalCount} ${totalCount === 1 ? 'inzending' : 'inzendingen'}`;
 }
 
 // Kenmerk (OF-nummer) staat er alleen bij als het object nog leesbaar genoeg was om te weten welke inzending
