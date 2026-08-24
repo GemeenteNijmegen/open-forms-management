@@ -1,0 +1,467 @@
+{{>header}}
+<main id="main-content" class="woonbehoefte-detail">
+  <p><a class="utrecht-link" href="{{backHref}}">Terug naar werkvoorraad</a></p>
+
+  <div class="woonbehoefte-detail-header">
+    <p class="woonbehoefte-detail-header__reference">
+      {{caseReference}}
+      <span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}}">{{statusLabel}}</span>
+    </p>
+    <h1 class="utrecht-heading-2">{{projectName}}</h1>
+  </div>
+
+  {{#showStaleWarning}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Deze wijziging kon niet worden opgeslagen: de aanvraag is ondertussen door iemand anders gewijzigd. Ververs de pagina en probeer het opnieuw.</p>
+    </div>
+  </div>
+  {{/showStaleWarning}}
+
+  {{#savedMessage}}
+  <div class="utrecht-alert utrecht-alert--success" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{savedMessage}}</p>
+    </div>
+  </div>
+  {{/savedMessage}}
+
+  {{^hasSource}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{sourceErrorMessage}}</p>
+    </div>
+  </div>
+  {{/hasSource}}
+
+  <section id="basisgegevens" class="woonbehoefte-section">
+    <h2 class="utrecht-heading-4">Basisgegevens</h2>
+    <dl class="woonbehoefte-basics-grid">
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Status</dt>
+        <dd>
+          <span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}}">{{statusLabel}}</span>
+          <span class="woonbehoefte-detail-summary__meta">Status sinds {{statusSinceLabel}}</span>
+        </dd>
+      </div>
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Behandelaar</dt>
+        <dd{{#isUnclaimed}} class="woonbehoefte-unclaimed"{{/isUnclaimed}}>
+          <span>{{assigneeLabel}}</span>
+          {{#canManage}}
+          {{#canClaim}}
+          <form method="post" action="/woonbehoefte/cases/{{caseReference}}/claim" class="woonbehoefte-inline-form">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <input type="hidden" name="expectedVersion" value="{{version}}">
+            <input type="hidden" name="back" value="{{backQuery}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Aanvraag oppakken</button>
+          </form>
+          {{/canClaim}}
+          {{#canRelease}}
+          <form method="post" action="/woonbehoefte/cases/{{caseReference}}/release" class="woonbehoefte-inline-form">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <input type="hidden" name="expectedVersion" value="{{version}}">
+            <input type="hidden" name="back" value="{{backQuery}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Claim vrijgeven</button>
+          </form>
+          {{/canRelease}}
+          {{#canTakeOver}}
+          <form method="post" action="/woonbehoefte/cases/{{caseReference}}/take-over" class="woonbehoefte-inline-form">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <input type="hidden" name="expectedVersion" value="{{version}}">
+            <input type="hidden" name="back" value="{{backQuery}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Behandeling overnemen</button>
+          </form>
+          {{/canTakeOver}}
+          {{/canManage}}
+        </dd>
+      </div>
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Ontvangen</dt>
+        <dd>{{receivedLabel}}</dd>
+      </div>
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Type aanvrager</dt>
+        <dd>{{applicantTypeLabel}}</dd>
+      </div>
+      {{#collectiveHousingLabel}}
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Collectieve woonvorm</dt>
+        <dd>{{collectiveHousingLabel}}{{#collectiveHousingCategory}} ({{collectiveHousingCategory}}){{/collectiveHousingCategory}}</dd>
+      </div>
+      {{/collectiveHousingLabel}}
+    </dl>
+
+    {{#canManage}}
+    <div class="woonbehoefte-actions">
+      {{#canUseGenericStatusSelect}}
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/status" class="woonbehoefte-inline-form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="expectedVersion" value="{{version}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="status-select">Status wijzigen</label>
+          <select class="utrecht-select utrecht-select--html-select" id="status-select" name="status">
+            {{#statusOptions}}
+            <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+            {{/statusOptions}}
+          </select>
+        </div>
+        <button type="submit" class="utrecht-button utrecht-button--secondary-action">Opslaan</button>
+      </form>
+      {{/canUseGenericStatusSelect}}
+
+      {{#isInadmissible}}
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/status" class="woonbehoefte-inline-form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="expectedVersion" value="{{version}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <input type="hidden" name="status" value="IN_PROGRESS">
+        <button type="submit" class="utrecht-button utrecht-button--secondary-action">Heropenen als in behandeling</button>
+      </form>
+      {{/isInadmissible}}
+
+      {{#isProposedInadmissible}}
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/inadmissible/confirm" class="woonbehoefte-inline-form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="expectedVersion" value="{{version}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <button type="submit" class="utrecht-button utrecht-button--primary-action">Niet-ontvankelijk bevestigen</button>
+      </form>
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/status" class="woonbehoefte-inline-form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="expectedVersion" value="{{version}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <input type="hidden" name="status" value="IN_PROGRESS">
+        <button type="submit" class="utrecht-button utrecht-button--secondary-action">Voorstel intrekken</button>
+      </form>
+      {{/isProposedInadmissible}}
+    </div>
+
+    {{#canUseGenericStatusSelect}}
+    <details class="woonbehoefte-details">
+      <summary>Voorstellen als niet-ontvankelijk</summary>
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/status" class="woonbehoefte-inadmissible-form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="expectedVersion" value="{{version}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <input type="hidden" name="status" value="PROPOSED_INADMISSIBLE">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="motivering">Motivering (verplicht)</label>
+          <textarea class="utrecht-textarea" id="motivering" name="motivering" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="utrecht-button utrecht-button--secondary-action">Voorstellen als niet-ontvankelijk</button>
+      </form>
+    </details>
+    {{/canUseGenericStatusSelect}}
+    {{/canManage}}
+  </section>
+
+  <section id="check" class="woonbehoefte-section{{#checkRequested}} woonbehoefte-section--check-open{{/checkRequested}}">
+    <h2 class="utrecht-heading-4">Check</h2>
+    {{#checkRequested}}
+    <p class="woonbehoefte-badge woonbehoefte-badge--check">{{checkRequestedInfo}}</p>
+    {{/checkRequested}}
+    {{^checkRequested}}
+    <p class="utrecht-paragraph">Geen check gevraagd.</p>
+    {{/checkRequested}}
+
+    {{#canManage}}
+    {{^checkRequested}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/check/request" class="woonbehoefte-check-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedVersion" value="{{version}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="check-request-note">Toelichting voor collega (optioneel)</label>
+        <textarea class="utrecht-textarea" id="check-request-note" name="note" rows="2"></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Check vragen</button>
+    </form>
+    {{/checkRequested}}
+    {{#checkRequested}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/check/complete" class="woonbehoefte-check-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedVersion" value="{{version}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="check-outcome">Uitkomst</label>
+        <select class="utrecht-select utrecht-select--html-select" id="check-outcome" name="outcome">
+          {{#checkOutcomeOptions}}
+          <option value="{{value}}">{{label}}</option>
+          {{/checkOutcomeOptions}}
+        </select>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="check-complete-note">Toelichting (optioneel)</label>
+        <textarea class="utrecht-textarea" id="check-complete-note" name="note" rows="2"></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Check afronden</button>
+    </form>
+    {{/checkRequested}}
+    {{/canManage}}
+  </section>
+
+  <details id="aanvraag" class="woonbehoefte-details woonbehoefte-details--section">
+    <summary class="utrecht-heading-4">Aanvraaggegevens</summary>
+    <dl class="woonbehoefte-detail-summary">
+      {{#projectDescription}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Beschrijving</dt>
+        <dd>{{projectDescription}}</dd>
+      </div>
+      {{/projectDescription}}
+      {{#contactName}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Contactpersoon</dt>
+        <dd>{{contactName}}{{#contactPhone}} · {{contactPhone}}{{/contactPhone}}{{#contactEmail}} · {{contactEmail}}{{/contactEmail}}</dd>
+      </div>
+      {{/contactName}}
+      {{#totalHomesLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Aantal woningen</dt>
+        <dd>{{totalHomesLabel}}</dd>
+      </div>
+      {{/totalHomesLabel}}
+      {{#hasExistingLianderRequestLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Lopende aanvraag Liander</dt>
+        <dd>{{hasExistingLianderRequestLabel}}{{#eanOrApplicationNumber}} ({{eanOrApplicationNumber}}){{/eanOrApplicationNumber}}</dd>
+      </div>
+      {{/hasExistingLianderRequestLabel}}
+      {{#hasCollectiveFacilitiesLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Collectieve voorzieningen</dt>
+        <dd>{{hasCollectiveFacilitiesLabel}}</dd>
+      </div>
+      {{/hasCollectiveFacilitiesLabel}}
+      {{#hasKovaLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>KOVA</dt>
+        <dd>{{hasKovaLabel}}</dd>
+      </div>
+      {{/hasKovaLabel}}
+    </dl>
+  </details>
+
+  <details id="documenten" class="woonbehoefte-details woonbehoefte-details--section" open>
+    <summary class="utrecht-heading-4">{{documentCountLabel}}</summary>
+    {{#hasDocuments}}
+    <ul class="woonbehoefte-documents">
+      {{#documents}}
+      <li class="woonbehoefte-documents__item{{#isApplicationPdf}} woonbehoefte-documents__item--pdf{{/isApplicationPdf}}">
+        <a class="utrecht-link" href="{{downloadHref}}">{{filenameLabel}}</a>
+        <span class="woonbehoefte-documents__meta">
+          {{originLabel}}{{#formatLabel}} · {{formatLabel}}{{/formatLabel}}{{#sizeLabel}} · {{sizeLabel}}{{/sizeLabel}}
+        </span>
+      </li>
+      {{/documents}}
+    </ul>
+    {{/hasDocuments}}
+    {{^hasDocuments}}
+    <p class="utrecht-paragraph">Er zijn geen documenten beschikbaar voor deze aanvraag.</p>
+    {{/hasDocuments}}
+  </details>
+
+  <details id="beoordeling" class="woonbehoefte-details woonbehoefte-details--section" open>
+    <summary class="utrecht-heading-4">Beoordeling</summary>
+
+    <p class="utrecht-paragraph"><a class="utrecht-link" href="#documenten">Bekijk documenten</a></p>
+
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/assessment" class="woonbehoefte-assessment-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedVersion" value="{{version}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+
+      <h3 class="utrecht-heading-5">1. Ontvankelijkheid en volledigheid</h3>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="applicationComplete">Aanvraagformulier volledig ingevuld</label>
+        <select class="utrecht-select utrecht-select--html-select" id="applicationComplete" name="applicationComplete" {{^canManage}}disabled{{/canManage}}>
+          {{#applicationCompleteOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/applicationCompleteOptions}}
+        </select>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="boardDeclarationApproved">Bestuursverklaring volledig ingevuld en ondertekend</label>
+        <select class="utrecht-select utrecht-select--html-select" id="boardDeclarationApproved" name="boardDeclarationApproved" {{^canManage}}disabled{{/canManage}}>
+          {{#boardDeclarationApprovedOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/boardDeclarationApprovedOptions}}
+        </select>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="chamberOfCommerceApproved">KvK-uittreksel aanwezig en maximaal 1 maand oud</label>
+        <select class="utrecht-select utrecht-select--html-select" id="chamberOfCommerceApproved" name="chamberOfCommerceApproved" {{^canManage}}disabled{{/canManage}}>
+          {{#chamberOfCommerceApprovedOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/chamberOfCommerceApprovedOptions}}
+        </select>
+      </div>
+
+      <h3 class="utrecht-heading-5">2. Onderbouwing start- en opleverdatum</h3>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="planningAgreementEvidenceApproved">Overeenkomst(en) als onderbouwing</label>
+        <details class="woonbehoefte-details woonbehoefte-details--inline">
+          <summary>Toon uitleg</summary>
+          <p class="utrecht-paragraph">
+            Controleer bijvoorbeeld een koopovereenkomst, aanneemovereenkomst, anterieure overeenkomst, erfpachtovereenkomst,
+            realisatieovereenkomst of ontwikkelovereenkomst.
+          </p>
+        </details>
+        <select class="utrecht-select utrecht-select--html-select" id="planningAgreementEvidenceApproved" name="planningAgreementEvidenceApproved" {{^canManage}}disabled{{/canManage}}>
+          {{#planningAgreementEvidenceApprovedOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/planningAgreementEvidenceApprovedOptions}}
+        </select>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="planningPublicDecisionEvidenceApproved">Subsidie, woondeal of prestatieafspraken</label>
+        <details class="woonbehoefte-details woonbehoefte-details--inline">
+          <summary>Toon uitleg</summary>
+          <p class="utrecht-paragraph">
+            Controleer waar van toepassing een subsidiebeschikking voor woningbouwontwikkeling, woondeal of prestatieafspraken.
+          </p>
+        </details>
+        <select class="utrecht-select utrecht-select--html-select" id="planningPublicDecisionEvidenceApproved" name="planningPublicDecisionEvidenceApproved" {{^canManage}}disabled{{/canManage}}>
+          {{#planningPublicDecisionEvidenceApprovedOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/planningPublicDecisionEvidenceApprovedOptions}}
+        </select>
+      </div>
+
+      <h3 class="utrecht-heading-5">3. Projectrijpheid</h3>
+      <p class="utrecht-paragraph">Projectrijpheid volgens aanvraag: {{submittedReadinessLabel}}</p>
+      <details class="woonbehoefte-details woonbehoefte-details--inline">
+        <summary>Toon voorwaarden</summary>
+        <p class="utrecht-paragraph"><strong>Categorie 1</strong> - Civielrechtelijke overeenkomst én omgevingsvergunning voor de feitelijke bouwactiviteit.</p>
+        <p class="utrecht-paragraph"><strong>Categorie 2</strong> - Civielrechtelijke overeenkomst én onherroepelijk omgevingsplan en/of onherroepelijke BOPA.</p>
+        <p class="utrecht-paragraph"><strong>Categorie 3</strong> - Onherroepelijke BOPA voor de projectlocatie.</p>
+        <p class="utrecht-paragraph"><strong>Categorie 4</strong> - Vastgesteld omgevingsplan of vergunning voor een BOPA voor de projectlocatie.</p>
+        <p class="utrecht-paragraph"><strong>Categorie 5</strong> - Alleen een civielrechtelijke overeenkomst.</p>
+        <p class="utrecht-paragraph">
+          <strong>Categorie 6</strong> - Overige voorbereidende of verkennende stukken, bijvoorbeeld principebesluit, subsidiebeschikking,
+          ontwerp-omgevingsplan/BOPA, optie- of grondreservering, woningbouwprogramma, stedenbouwkundig plan, woondeal, prestatieafspraken
+          of relevante onderzoeken.
+        </p>
+      </details>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="projectReadinessEvidenceApproved">Voldoen de gegevens en bewijsstukken aan deze projectrijpheid?</label>
+        <select class="utrecht-select utrecht-select--html-select" id="projectReadinessEvidenceApproved" name="projectReadinessEvidenceApproved" {{^canManage}}disabled{{/canManage}}>
+          {{#projectReadinessEvidenceApprovedOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/projectReadinessEvidenceApprovedOptions}}
+        </select>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="assessedProjectReadiness">Vastgestelde projectrijpheid</label>
+        <select class="utrecht-select utrecht-select--html-select" id="assessedProjectReadiness" name="assessedProjectReadiness" {{^canManage}}disabled{{/canManage}}>
+          <option value="">Nog niet vastgesteld</option>
+          {{#readinessOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/readinessOptions}}
+        </select>
+      </div>
+
+      {{#canManage}}
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Beoordeling opslaan</button>
+      {{/canManage}}
+    </form>
+  </details>
+
+  <details id="planning" class="woonbehoefte-details woonbehoefte-details--section" open>
+    <summary class="utrecht-heading-4">Planning</summary>
+
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/assessment" class="woonbehoefte-planning-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedVersion" value="{{version}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+
+      <fieldset class="woonbehoefte-planning-block">
+        <legend class="utrecht-heading-5">Start bouw</legend>
+        <p class="utrecht-paragraph">Door aanvrager opgegeven: {{submittedStartDateLabel}}</p>
+        <p class="utrecht-paragraph">Door medewerker vastgesteld: {{assessedStartPeriodLabel}}</p>
+        <div class="woonbehoefte-period-fields">
+          <select class="utrecht-select utrecht-select--html-select" name="assessedStartMonth" aria-label="Maand start bouw" {{^canManage}}disabled{{/canManage}}>
+            <option value="">-</option>
+            {{#assessedStartMonthOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/assessedStartMonthOptions}}
+          </select>
+          <select class="utrecht-select utrecht-select--html-select" name="assessedStartYear" aria-label="Jaar start bouw" {{^canManage}}disabled{{/canManage}}>
+            <option value="">-</option>
+            {{#assessedStartYearOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/assessedStartYearOptions}}
+          </select>
+        </div>
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="assessedStartExplanation">Toelichting (optioneel)</label>
+          <textarea class="utrecht-textarea" id="assessedStartExplanation" name="assessedStartExplanation" rows="2" {{^canManage}}disabled{{/canManage}}>{{assessedStartExplanationValue}}</textarea>
+        </div>
+      </fieldset>
+
+      <fieldset class="woonbehoefte-planning-block">
+        <legend class="utrecht-heading-5">Oplevering</legend>
+        <p class="utrecht-paragraph">Door aanvrager opgegeven: {{submittedCompletionDateLabel}}</p>
+        <p class="utrecht-paragraph">Door medewerker vastgesteld: {{assessedCompletionPeriodLabel}}</p>
+        <div class="woonbehoefte-period-fields">
+          <select class="utrecht-select utrecht-select--html-select" name="assessedCompletionMonth" aria-label="Maand oplevering" {{^canManage}}disabled{{/canManage}}>
+            <option value="">-</option>
+            {{#assessedCompletionMonthOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/assessedCompletionMonthOptions}}
+          </select>
+          <select class="utrecht-select utrecht-select--html-select" name="assessedCompletionYear" aria-label="Jaar oplevering" {{^canManage}}disabled{{/canManage}}>
+            <option value="">-</option>
+            {{#assessedCompletionYearOptions}}<option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>{{/assessedCompletionYearOptions}}
+          </select>
+        </div>
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="assessedCompletionExplanation">Toelichting (optioneel)</label>
+          <textarea class="utrecht-textarea" id="assessedCompletionExplanation" name="assessedCompletionExplanation" rows="2" {{^canManage}}disabled{{/canManage}}>{{assessedCompletionExplanationValue}}</textarea>
+        </div>
+      </fieldset>
+
+      {{#canManage}}
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Planning opslaan</button>
+      {{/canManage}}
+    </form>
+  </details>
+
+  <details id="aantekeningen" class="woonbehoefte-details woonbehoefte-details--section">
+    <summary class="utrecht-heading-4">Interne aantekeningen</summary>
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/notes" class="woonbehoefte-note-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="note-category">Type</label>
+        <select class="utrecht-select utrecht-select--html-select" id="note-category" name="category">
+          {{#noteCategoryOptions}}<option value="{{value}}">{{label}}</option>{{/noteCategoryOptions}}
+        </select>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="note-text">Aantekening</label>
+        <textarea class="utrecht-textarea" id="note-text" name="text" rows="3" required></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Toevoegen</button>
+    </form>
+    {{/canManage}}
+
+    {{#hasNotes}}
+    <ul class="woonbehoefte-notes">
+      {{#notes}}
+      <li class="woonbehoefte-notes__item">
+        <p class="woonbehoefte-notes__meta">{{categoryLabel}} · {{createdByLabel}} · {{createdAtLabel}}</p>
+        <p class="utrecht-paragraph">{{text}}</p>
+      </li>
+      {{/notes}}
+    </ul>
+    {{/hasNotes}}
+    {{^hasNotes}}
+    <p class="utrecht-paragraph">Er zijn nog geen interne aantekeningen.</p>
+    {{/hasNotes}}
+  </details>
+
+  <details id="activiteit" class="woonbehoefte-details woonbehoefte-details--section">
+    <summary class="utrecht-heading-4">Wijzigingen en activiteit</summary>
+    {{#hasActivities}}
+    <ul class="woonbehoefte-activities">
+      {{#activities}}
+      <li class="woonbehoefte-activities__item">
+        <p class="woonbehoefte-activities__meta">{{occurredAtLabel}} - {{actor}}</p>
+        <p class="utrecht-paragraph">{{summary}}</p>
+        {{#changeLines}}
+        <p class="woonbehoefte-activities__change">{{.}}</p>
+        {{/changeLines}}
+      </li>
+      {{/activities}}
+    </ul>
+    {{/hasActivities}}
+    {{^hasActivities}}
+    <p class="utrecht-paragraph">Nog geen activiteit voor deze aanvraag.</p>
+    {{/hasActivities}}
+  </details>
+</main>
+{{>footer}}

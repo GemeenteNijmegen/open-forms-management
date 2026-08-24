@@ -326,3 +326,342 @@ footer {
   font-size: var(--utrecht-paragraph-small-font-size);
   margin-block-end: var(--nijmegen-space-50);
 }
+
+.woonbehoefte-filter {
+  margin-block-end: var(--nijmegen-space-200);
+}
+
+.woonbehoefte-filter__submit {
+  margin-block-start: 1rem;
+}
+
+.woonbehoefte-refresh-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nijmegen-space-100);
+  margin-block-start: var(--nijmegen-space-150);
+  margin-block-end: var(--nijmegen-space-150);
+}
+
+.woonbehoefte-loading {
+  color: var(--nijmegen-color-foreground-subdued);
+}
+
+.woonbehoefte-count {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+  margin-block-end: var(--nijmegen-space-100);
+}
+
+/* nijmegen-search-results itself has no inline padding, so a stripe would otherwise run edge-to-edge. */
+.woonbehoefte-record {
+  padding-inline: var(--nijmegen-space-100);
+}
+
+.woonbehoefte-record:nth-child(even) {
+  background-color: var(--nijmegen-color-background-hover);
+}
+
+.woonbehoefte-record__field-label {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+}
+
+.woonbehoefte-record__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-12);
+}
+
+/*
+ * Fixed 3-column grid, not auto-fit: with exactly 5 fields in this DOM order (status, project,
+ * behandelaar, ontvangen, statusSinds), a 3-column grid's own auto-placement fills row 1 with the first
+ * three and wraps ontvangen/statusSinds onto row 2 - two compact rows instead of one field per row.
+ */
+.woonbehoefte-record__summary {
+  display: grid;
+  grid-template-columns: minmax(6rem, 0.7fr) minmax(9rem, 1.6fr) minmax(7rem, 1fr);
+  column-gap: var(--nijmegen-space-100);
+  row-gap: var(--nijmegen-space-50);
+  align-items: start;
+}
+
+.woonbehoefte-more {
+  margin-block-start: var(--nijmegen-space-150);
+}
+
+.woonbehoefte-unclaimed {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-style: italic;
+}
+
+/* Subtle status pill; the label text itself always stays the actual signal, not the color. */
+.woonbehoefte-badge {
+  display: inline-block;
+  padding: var(--nijmegen-space-12) var(--nijmegen-space-100);
+  border-radius: 999px;
+  font-size: var(--utrecht-paragraph-small-font-size);
+  font-weight: 600;
+  background-color: var(--nijmegen-color-background-hover);
+  color: var(--nijmegen-color-foreground-subdued);
+}
+
+.woonbehoefte-badge--in-progress {
+  background-color: var(--nijmegen-color-feedback-info-subdued);
+  color: var(--nijmegen-color-feedback-info-default);
+}
+
+.woonbehoefte-badge--waiting-for-additional-information,
+.woonbehoefte-badge--proposed-inadmissible,
+.woonbehoefte-badge--check {
+  background-color: var(--nijmegen-color-feedback-warning-subdued);
+  color: var(--nijmegen-color-feedback-warning-default);
+}
+
+.woonbehoefte-badge--inadmissible {
+  background-color: var(--nijmegen-color-feedback-error-subdued);
+  color: var(--nijmegen-color-feedback-error-default);
+}
+
+.woonbehoefte-badge--ready-for-ranking {
+  background-color: var(--nijmegen-color-feedback-success-subdued);
+  color: var(--nijmegen-color-feedback-success-default);
+}
+
+/*
+ * @utrecht/select-css and @utrecht/textbox-css only ever read padding from --utrecht-select-padding-*/
+ * --utrecht-textbox-padding-* or the --utrecht-form-control-padding-* fallback, and none of those are
+ * defined by @gemeentenijmegen/design-tokens or components-css - so every select/textbox in the app
+ * renders with its text flush against the border. Overridden directly here rather than through those
+ * undefined tokens, scoped to Woonbehoefte only. Same repo-wide gap affects Sport's own Van/Tot date
+ * fields; fixing that broadly is a separate, generic decision, not something to do inline here.
+ */
+.woonbehoefte-detail .utrecht-select,
+.woonbehoefte-overview .utrecht-select,
+.woonbehoefte-detail .utrecht-textbox,
+.woonbehoefte-overview .utrecht-textbox {
+  padding-inline: var(--nijmegen-space-100);
+  padding-block: var(--nijmegen-space-50);
+}
+
+/*
+ * .utrecht-select--html-select:not([multiple]) draws its dropdown chevron from --utrecht-select-
+ * background-image, which is equally undefined everywhere - without an override the chevron would be
+ * invisible once appearance is reset. A small chevron-down, same style as the existing header dropdown
+ * icon in @gemeentenijmegen/components-css.
+ */
+.woonbehoefte-detail .utrecht-select.utrecht-select--html-select:not([multiple]),
+.woonbehoefte-overview .utrecht-select.utrecht-select--html-select:not([multiple]) {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6" /></svg>');
+}
+
+/*
+ * @utrecht/form-field-css only gives `.utrecht-form-field` a stacked layout for its `--checkbox`/
+ * `--radio` modifiers; a plain field (a `.utrecht-form-label` next to a `.utrecht-select`/`.utrecht-
+ * textbox`) has no `display` at all, so label and control render inline instead of stacked. Same
+ * repo-wide gap as the padding fix above (Sport's Van/Tot fields use the identical markup), fixed here
+ * scoped to Woonbehoefte only.
+ */
+.woonbehoefte-detail .utrecht-form-field:not(.utrecht-form-field--checkbox),
+.woonbehoefte-overview .utrecht-form-field:not(.utrecht-form-field--checkbox) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-50);
+  align-items: flex-start;
+}
+
+.woonbehoefte-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-150);
+}
+
+.woonbehoefte-detail-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-50);
+}
+
+.woonbehoefte-detail-header__reference {
+  display: flex;
+  align-items: center;
+  gap: var(--nijmegen-space-100);
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-font-size);
+  margin: 0;
+}
+
+.woonbehoefte-section {
+  padding-block-end: var(--nijmegen-space-150);
+  border-bottom: 1px solid var(--nijmegen-color-border-subdued);
+}
+
+/* A open check may stand out a little more, without being loud. */
+.woonbehoefte-section--check-open {
+  border-inline-start: 3px solid var(--nijmegen-color-feedback-warning-default);
+  padding-inline-start: var(--nijmegen-space-100);
+}
+
+.woonbehoefte-basics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  column-gap: var(--nijmegen-space-150);
+  row-gap: var(--nijmegen-space-100);
+  margin: 0 0 var(--nijmegen-space-100) 0;
+}
+
+.woonbehoefte-basics-grid__item dt {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+}
+
+.woonbehoefte-basics-grid__item dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--nijmegen-space-50);
+}
+
+.woonbehoefte-detail-summary__meta {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+}
+
+.woonbehoefte-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nijmegen-space-100);
+  align-items: flex-end;
+  margin-block-start: var(--nijmegen-space-100);
+}
+
+.woonbehoefte-detail-summary {
+  margin: 0 0 var(--nijmegen-space-150) 0;
+}
+
+.woonbehoefte-detail-summary__row {
+  display: grid;
+  grid-template-columns: minmax(10rem, 16rem) 1fr;
+  column-gap: var(--nijmegen-space-100);
+  padding-block: var(--nijmegen-space-50);
+  border-bottom: 1px solid var(--nijmegen-color-border-subdued);
+}
+
+@media (width < 640px) {
+  .woonbehoefte-detail-summary__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.woonbehoefte-detail-summary__row dt {
+  color: var(--nijmegen-color-foreground-subdued);
+}
+
+.woonbehoefte-detail-summary__row dd {
+  margin: 0;
+}
+
+.woonbehoefte-documents {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.woonbehoefte-documents__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--nijmegen-space-100);
+  padding-block: var(--nijmegen-space-50);
+  border-bottom: 1px solid var(--nijmegen-color-border-subdued);
+}
+
+.woonbehoefte-documents__item--pdf {
+  font-weight: 600;
+}
+
+.woonbehoefte-documents__meta {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+}
+
+/* A one-button action form next to a summary value; a form can't be a flex child of a <dd> without inheriting its display. */
+/* flex-end, not center: a form-field here is label-above-select, so centering against its full two-line height floats the button above the select instead of level with it. */
+.woonbehoefte-inline-form {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: var(--nijmegen-space-100);
+}
+
+.woonbehoefte-assessment-form,
+.woonbehoefte-planning-form,
+.woonbehoefte-note-form,
+.woonbehoefte-check-form,
+.woonbehoefte-inadmissible-form {
+  margin-block-start: var(--nijmegen-space-150);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-100);
+  max-width: 34rem;
+}
+
+.woonbehoefte-planning-block + .woonbehoefte-planning-block {
+  margin-block-start: var(--nijmegen-space-200);
+  padding-block-start: var(--nijmegen-space-150);
+  border-top: 1px solid var(--nijmegen-color-border-subdued);
+}
+
+.woonbehoefte-period-fields {
+  display: flex;
+  gap: var(--nijmegen-space-100);
+}
+
+.woonbehoefte-notes,
+.woonbehoefte-activities {
+  list-style: none;
+  padding: 0;
+  margin: var(--nijmegen-space-150) 0 0 0;
+}
+
+.woonbehoefte-notes__item,
+.woonbehoefte-activities__item {
+  padding-block: var(--nijmegen-space-100);
+  border-bottom: 1px solid var(--nijmegen-color-border-subdued);
+}
+
+.woonbehoefte-notes__meta,
+.woonbehoefte-activities__meta {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+  margin: 0 0 var(--nijmegen-space-50) 0;
+}
+
+.woonbehoefte-activities__change {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+  margin: 0;
+}
+
+/* Woonbehoefte-local collapsible sections; native <details>/<summary>, no extra feature JS needed. */
+.woonbehoefte-details {
+  padding-block: var(--nijmegen-space-100);
+}
+
+.woonbehoefte-details > summary {
+  cursor: pointer;
+}
+
+.woonbehoefte-details--section > summary {
+  font-weight: 600;
+}
+
+.woonbehoefte-details--inline {
+  margin-block-end: var(--nijmegen-space-50);
+}
+
+.woonbehoefte-details--inline > summary {
+  font-size: var(--utrecht-paragraph-small-font-size);
+  color: var(--nijmegen-color-foreground-subdued);
+}
