@@ -1,18 +1,23 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { forbiddenData } from './fixtures/forbidden';
-import { homeEmpty, homeWithFeatures, notFoundData } from './fixtures/home';
+import { homeWithFeatures, noPermissionsData, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
 import { logoutData } from './fixtures/logout';
+import { permissionsRemoveConfirm, permissionsSportAdmin, permissionsSuperadmin, permissionsUserMultiResource } from './fixtures/permissions';
 import {
   sportShellAllDistricts, sportShellDukenburg, sportSubmissionsAllDistricts, sportSubmissionsContentVariety,
   sportSubmissionsDukenburg, sportSubmissionsEmpty, sportSubmissionsHasMore, sportSubmissionsStale,
 } from './fixtures/sport';
 import { sportReporterActiveAndReady, sportReporterEmpty, sportReporterTooLargeAndFailed } from './fixtures/sportReporter';
 import homeTemplate from '../app/home/templates/home.mustache';
+import noPermissionsTemplate from '../app/home/templates/no-permissions.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
 import loginTemplate from '../app/login/templates/login.mustache';
 import logoutTemplate from '../app/logout/templates/logout.mustache';
+import permissionEditTemplate from '../app/permissions/templates/permission-edit.mustache';
+import permissionRemoveConfirmTemplate from '../app/permissions/templates/permission-remove-confirm.mustache';
+import permissionsTemplate from '../app/permissions/templates/permissions.mustache';
 import sportReportsTemplate from '../app/sport/templates/sport-reports.mustache';
 import sportSubmissionsTemplate from '../app/sport/templates/sport-submissions.mustache';
 import sportTemplate from '../app/sport/templates/sport.mustache';
@@ -69,6 +74,7 @@ const ROUTE_TO_PREVIEW_FILE: Record<string, string> = {
   '/logout': 'logout',
   '/sport': 'sport-all-districts',
   '/sport/overzichten': 'sport-reporter-active-and-ready',
+  '/permissions': 'permissions-superadmin',
 };
 
 function stubFileName(route: string): string {
@@ -103,7 +109,7 @@ export async function renderAll(): Promise<void> {
 
   const pages: Record<string, string> = {
     'home': render(homeTemplate, homeWithFeatures),
-    'home-empty': render(homeTemplate, homeEmpty),
+    'no-permissions': render(noPermissionsTemplate, noPermissionsData),
     'login': render(loginTemplate, loginData),
     'login-failed': render(loginTemplate, loginData, { failed: true }),
     'logout': render(logoutTemplate, logoutData),
@@ -118,6 +124,10 @@ export async function renderAll(): Promise<void> {
     'sport-reporter-empty': render(sportReportsTemplate, sportReporterEmpty.page, { ...sportReporterEmpty.data, isOverzichtenTab: true }),
     'sport-reporter-active-and-ready': render(sportReportsTemplate, sportReporterActiveAndReady.page, { ...sportReporterActiveAndReady.data, isOverzichtenTab: true }),
     'sport-reporter-too-large-and-failed': render(sportReportsTemplate, sportReporterTooLargeAndFailed.page, { ...sportReporterTooLargeAndFailed.data, isOverzichtenTab: true }),
+    'permissions-superadmin': render(permissionsTemplate, permissionsSuperadmin.page, permissionsSuperadmin.data),
+    'permissions-sport-admin': render(permissionsTemplate, permissionsSportAdmin.page, permissionsSportAdmin.data),
+    'permissions-user-multi-resource': render(permissionEditTemplate, permissionsUserMultiResource.page, permissionsUserMultiResource.data),
+    'permissions-remove-confirm': render(permissionRemoveConfirmTemplate, permissionsRemoveConfirm.page, permissionsRemoveConfirm.data),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));
