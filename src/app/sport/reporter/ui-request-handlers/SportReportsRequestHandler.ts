@@ -5,6 +5,7 @@ import { AuthorizationService } from '../../../../shared/authorization/Authoriza
 import { visibleFeatures } from '../../../../shared/navigation/FeatureRegistry';
 import { REGISTERED_FEATURES } from '../../../../shared/navigation/RegisteredFeatures';
 import { render } from '../../../../shared/rendering/Renderer';
+import { visiblePermissionsFeature } from '../../../permissions/PermissionsNavigationFeature';
 import { resolveAllowedDistricts } from '../../sportdata/SportDistrictAuthorization';
 import { currentSportSeasonStart } from '../../sportdata/SportSeason';
 import sportReportsTemplate from '../../templates/sport-reports.mustache';
@@ -44,7 +45,7 @@ export class SportReportsRequestHandler {
     const message = queryStringParameters?.status ? FLASH_MESSAGES[queryStringParameters.status] : undefined;
 
     const viewModel = buildSportReportsViewModel(reports, allowedDistricts, defaults, message);
-    const features = visibleFeatures(REGISTERED_FEATURES, context.evaluator);
+    const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
       sportReportsTemplate,
       { title: 'Sport - Excel-overzichten', features, currentPath: '/sport', actorEmail: identity.email },

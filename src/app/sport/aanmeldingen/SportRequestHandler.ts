@@ -6,6 +6,7 @@ import { AuthorizationService } from '../../../shared/authorization/Authorizatio
 import { visibleFeatures } from '../../../shared/navigation/FeatureRegistry';
 import { REGISTERED_FEATURES } from '../../../shared/navigation/RegisteredFeatures';
 import { render } from '../../../shared/rendering/Renderer';
+import { visiblePermissionsFeature } from '../../permissions/PermissionsNavigationFeature';
 import { resolveAllowedDistricts } from '../sportdata/SportDistrictAuthorization';
 import { sportOverviewVisibleFrom } from '../sportdata/SportOverviewPolicy';
 import sportTemplate from '../templates/sport.mustache';
@@ -32,7 +33,7 @@ export class SportRequestHandler {
     const visibleFromLabel = formatDutchDate(sportOverviewVisibleFrom(new Date()).toISOString().slice(0, 10));
 
     const viewModel = buildSportShellViewModel(allowedDistricts, filter, visibleFromLabel);
-    const features = visibleFeatures(REGISTERED_FEATURES, context.evaluator);
+    const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
 
     const html = render(
       sportTemplate,

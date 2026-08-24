@@ -1,15 +1,6 @@
 {{>header}}
 <main id="main-content">
   <h1>Welkom{{#actorEmail}}, {{actorEmail}}{{/actorEmail}}</h1>
-  {{#hasSidenav}}
   <p class="utrecht-paragraph">Gebruik het menu om een onderdeel te openen.</p>
-  {{/hasSidenav}}
-  {{^hasSidenav}}
-  <div class="nijmegen-action-card">
-    <div class="nijmegen-action-card__content">
-      <p class="utrecht-paragraph">Er zijn nog geen onderdelen beschikbaar voor je account.</p>
-    </div>
-  </div>
-  {{/hasSidenav}}
 </main>
 {{>footer}}
