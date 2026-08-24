@@ -9,4 +9,11 @@ export const REGISTERED_FEATURES: Feature[] = [
     resource: 'sport',
     action: 'view',
   },
+  {
+    id: 'woonbehoefte',
+    label: 'Woonbehoefte',
+    route: '/woonbehoefte',
+    resource: 'woonbehoefte',
+    action: 'view',
+  },
 ];

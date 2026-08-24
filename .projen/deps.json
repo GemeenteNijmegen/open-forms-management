@@ -52,6 +52,11 @@
       "type": "build"
     },
     {
+      "name": "@utrecht/accordion-css",
+      "version": "4.0.1",
+      "type": "build"
+    },
+    {
       "name": "@utrecht/alert-css",
       "version": "4.0.2",
       "type": "build"
@@ -64,6 +69,11 @@
     {
       "name": "@utrecht/button-group-css",
       "version": "1.4.0",
+      "type": "build"
+    },
+    {
+      "name": "@utrecht/checkbox-css",
+      "version": "3.0.1",
       "type": "build"
     },
     {
@@ -141,6 +151,16 @@
     },
     {
       "name": "@utrecht/rich-text-css",
+      "type": "build"
+    },
+    {
+      "name": "@utrecht/select-css",
+      "version": "3.0.1",
+      "type": "build"
+    },
+    {
+      "name": "@utrecht/textarea-css",
+      "version": "4.0.1",
       "type": "build"
     },
     {

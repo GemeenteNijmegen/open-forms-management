@@ -31,5 +31,7 @@
 /src/app/sport/cache/sportCacheWorker-function.ts linguist-generated
 /src/app/sport/reporter/sportExcelWorker-function.ts linguist-generated
 /src/app/sport/sport-function.ts linguist-generated
+/src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts linguist-generated
+/src/app/woonbehoefte/woonbehoefte-function.ts linguist-generated
 /test/tsconfig.json linguist-generated linguist-language=JSON-with-Comments
 /tsconfig.json linguist-generated linguist-language=JSON-with-Comments

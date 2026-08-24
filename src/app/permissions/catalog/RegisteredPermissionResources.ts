@@ -16,4 +16,13 @@ export const REGISTERED_PERMISSION_RESOURCES: PermissionResourceDefinition[] = [
       },
     ],
   },
+  {
+    resource: 'woonbehoefte',
+    label: 'Woonbehoefte',
+    actions: [
+      { action: 'view', label: 'Bekijken' },
+      { action: 'manage', label: 'Behandelen' },
+    ],
+    scopes: [],
+  },
 ];

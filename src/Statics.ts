@@ -48,6 +48,10 @@ export class Statics {
   // MARK: sport cache
   static readonly sportCacheTableName = `${Statics.projectName}-sport-cache`;
 
+  // MARK: woonbehoefte
+  static readonly woonbehoefteSourceCacheTableName = `${Statics.projectName}-woonbehoefte-source-cache`;
+  static readonly woonbehoefteCasesTableName = `${Statics.projectName}-woonbehoefte-cases`;
+
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;
   static readonly ssmOidcClientId = `/${Statics.projectName}/oidc/client-id`;
