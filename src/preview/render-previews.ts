@@ -10,6 +10,11 @@ import {
   sportSubmissionsDukenburg, sportSubmissionsEmpty, sportSubmissionsHasMore, sportSubmissionsStale,
 } from './fixtures/sport';
 import { sportReporterActiveAndReady, sportReporterEmpty, sportReporterTooLargeAndFailed } from './fixtures/sportReporter';
+import {
+  woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal, woonbehoefteDetailProposedInadmissible,
+  woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
+  woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
+} from './fixtures/woonbehoefte';
 import homeTemplate from '../app/home/templates/home.mustache';
 import noPermissionsTemplate from '../app/home/templates/no-permissions.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
@@ -21,6 +26,8 @@ import permissionsTemplate from '../app/permissions/templates/permissions.mustac
 import sportReportsTemplate from '../app/sport/templates/sport-reports.mustache';
 import sportSubmissionsTemplate from '../app/sport/templates/sport-submissions.mustache';
 import sportTemplate from '../app/sport/templates/sport.mustache';
+import woonbehoefteDetailTemplate from '../app/woonbehoefte/templates/woonbehoefte-detail.mustache';
+import woonbehoefteOverviewTemplate from '../app/woonbehoefte/templates/woonbehoefte-overview.mustache';
 import { render, renderFragment, PageViewModel } from '../shared/rendering/Renderer';
 import forbiddenTemplate from '../shared/rendering/templates/forbidden.mustache';
 
@@ -75,6 +82,7 @@ const ROUTE_TO_PREVIEW_FILE: Record<string, string> = {
   '/sport': 'sport-all-districts',
   '/sport/overzichten': 'sport-reporter-active-and-ready',
   '/permissions': 'permissions-superadmin',
+  '/woonbehoefte': 'woonbehoefte-overview-mix',
 };
 
 function stubFileName(route: string): string {
@@ -128,6 +136,18 @@ export async function renderAll(): Promise<void> {
     'permissions-sport-admin': render(permissionsTemplate, permissionsSportAdmin.page, permissionsSportAdmin.data),
     'permissions-user-multi-resource': render(permissionEditTemplate, permissionsUserMultiResource.page, permissionsUserMultiResource.data),
     'permissions-remove-confirm': render(permissionRemoveConfirmTemplate, permissionsRemoveConfirm.page, permissionsRemoveConfirm.data),
+    'woonbehoefte-overview-mix': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewWithMix.page, woonbehoefteOverviewWithMix.data),
+    'woonbehoefte-overview-empty': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewEmpty.page, woonbehoefteOverviewEmpty.data),
+    'woonbehoefte-overview-view-only': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewViewOnly.page, woonbehoefteOverviewViewOnly.data),
+    'woonbehoefte-detail-normal': render(woonbehoefteDetailTemplate, woonbehoefteDetailNormal.page, woonbehoefteDetailNormal.data),
+    'woonbehoefte-detail-source-error': render(woonbehoefteDetailTemplate, woonbehoefteDetailSourceError.page, woonbehoefteDetailSourceError.data),
+    'woonbehoefte-detail-many-documents': render(woonbehoefteDetailTemplate, woonbehoefteDetailManyDocuments.page, woonbehoefteDetailManyDocuments.data),
+    'woonbehoefte-detail-proposed-inadmissible': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProposedInadmissible.page, woonbehoefteDetailProposedInadmissible.data,
+    ),
+    'woonbehoefte-detail-inadmissible': render(woonbehoefteDetailTemplate, woonbehoefteDetailInadmissible.page, woonbehoefteDetailInadmissible.data),
+    'woonbehoefte-detail-view-only': render(woonbehoefteDetailTemplate, woonbehoefteDetailViewOnly.page, woonbehoefteDetailViewOnly.data),
+    'woonbehoefte-detail-saved': render(woonbehoefteDetailTemplate, woonbehoefteDetailSaved.page, woonbehoefteDetailSaved.data),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));

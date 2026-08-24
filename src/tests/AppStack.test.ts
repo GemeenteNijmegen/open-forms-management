@@ -65,11 +65,11 @@ describe('AppStack authentication and routing wiring', () => {
     }));
   });
 
-  it('creates an explicit LogGroup with a fixed retention for every route Lambda plus the SportExcelWorker and SportCacheWorker', () => {
+  it('creates an explicit LogGroup with a fixed retention for every route Lambda plus the SportExcelWorker, SportCacheWorker and the Woonbehoefte Lambdas', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(8);
+    expect(Object.keys(logGroups)).toHaveLength(10);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
