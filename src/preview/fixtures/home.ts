@@ -12,8 +12,10 @@ export const homeWithFeatures: PageViewModel = {
   title: 'Home', features: exampleFeatures, currentPath: '/', actorEmail: 'medewerker@nijmegen.nl',
 };
 
-export const homeEmpty: PageViewModel = {
-  title: 'Home', features: [], currentPath: '/', actorEmail: 'medewerker@nijmegen.nl',
+// A medewerker with zero usable grants never actually sees home.mustache with empty features: they land on
+// the dedicated no-permissions page instead, see HomeRequestHandler.ts.
+export const noPermissionsData: PageViewModel = {
+  title: 'Geen toegang', features: [], currentPath: '/', actorEmail: 'medewerker@nijmegen.nl',
 };
 
 export const notFoundData: PageViewModel = {

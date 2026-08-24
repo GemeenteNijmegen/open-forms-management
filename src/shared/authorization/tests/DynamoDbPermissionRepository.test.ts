@@ -1,6 +1,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
+import { logger } from '../../../observability/Logger';
 import { DynamoDbPermissionRepository } from '../DynamoDbPermissionRepository';
 
 const documentMock = mockClient(DynamoDBDocumentClient);
@@ -41,6 +42,22 @@ describe('DynamoDbPermissionRepository', () => {
       KeyConditionExpression: 'pk = :pk',
       ExpressionAttributeValues: { ':pk': 'medewerker@nijmegen.nl' },
     });
+  });
+
+  it('ignores a _subject item in the same partition without logging a warning', async () => {
+    const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    documentMock.on(QueryCommand).resolves({
+      Items: [
+        { pk: 'medewerker@nijmegen.nl', sk: '_subject', createdAt: '2026-08-22T20:00:00.000Z', createdBy: 'beheerder@nijmegen.nl' },
+        { pk: 'medewerker@nijmegen.nl', sk: 'testresource#1', resource: 'testresource', actions: ['view'] },
+      ],
+    });
+
+    const grants = await newRepository().getGrants('medewerker@nijmegen.nl');
+
+    expect(grants).toEqual([{ resource: 'testresource', actions: ['view'] }]);
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('returns an empty array when the employee has no grants', async () => {
@@ -108,56 +125,5 @@ describe('DynamoDbPermissionRepository', () => {
     const grants = await newRepository().getGrants('medewerker@nijmegen.nl');
 
     expect(grants).toEqual([{ resource: 'testresource', actions: ['view'] }]);
-  });
-
-  it('writes a grant with a resource-prefixed sk and a conditional write guarding against overwriting an existing item', async () => {
-    documentMock.on(PutCommand).resolves({});
-
-    await newRepository().putGrant('medewerker@nijmegen.nl', { resource: 'testresource', actions: ['view'] }, 'beheerder@nijmegen.nl');
-
-    const call = documentMock.commandCalls(PutCommand)[0];
-    expect(call.args[0].input).toMatchObject({
-      TableName: 'test-permissions-table',
-      ConditionExpression: 'attribute_not_exists(sk)',
-      Item: expect.objectContaining({
-        pk: 'medewerker@nijmegen.nl',
-        resource: 'testresource',
-        actions: ['view'],
-        createdBy: 'beheerder@nijmegen.nl',
-      }),
-    });
-    expect(call.args[0].input.Item?.sk).toMatch(/^testresource#/);
-    expect(call.args[0].input.Item?.createdAt).toEqual(expect.any(String));
-  });
-
-  it('writes a grant without createdBy when none is given', async () => {
-    documentMock.on(PutCommand).resolves({});
-
-    await newRepository().putGrant('medewerker@nijmegen.nl', { resource: 'testresource', actions: ['view'] });
-
-    const call = documentMock.commandCalls(PutCommand)[0];
-    expect(call.args[0].input.Item).not.toHaveProperty('createdBy');
-  });
-
-  it('propagates a conditional check failure when the generated sk somehow already exists', async () => {
-    const conditionalCheckFailed = Object.assign(new Error('The conditional request failed'), { name: 'ConditionalCheckFailedException' });
-    documentMock.on(PutCommand).rejects(conditionalCheckFailed);
-
-    await expect(newRepository().putGrant('medewerker@nijmegen.nl', { resource: 'testresource', actions: ['view'] }))
-      .rejects.toThrow('The conditional request failed');
-  });
-
-  it('rejects a grant with an empty resource instead of writing an item that getGrants would silently ignore later', async () => {
-    await expect(newRepository().putGrant('medewerker@nijmegen.nl', { resource: '', actions: ['view'] }))
-      .rejects.toThrow('Cannot write a permission grant with an empty resource');
-
-    expect(documentMock.commandCalls(PutCommand)).toHaveLength(0);
-  });
-
-  it('rejects a grant with no actions instead of writing an item that getGrants would silently ignore later', async () => {
-    await expect(newRepository().putGrant('medewerker@nijmegen.nl', { resource: 'testresource', actions: [] }))
-      .rejects.toThrow('Cannot write a permission grant with no actions');
-
-    expect(documentMock.commandCalls(PutCommand)).toHaveLength(0);
   });
 });

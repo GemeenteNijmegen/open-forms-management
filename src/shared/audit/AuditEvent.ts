@@ -6,6 +6,8 @@ export const AUDIT_EVENT_TYPES = [
   'LOGIN_STARTED', 'LOGIN_SUCCEEDED', 'LOGIN_FAILED', 'SESSION_CREATED', 'SESSION_REVOKED', 'LOGOUT',
   'AUTHENTICATION_DENIED', 'ACCESS_DENIED', 'ACCESS_GRANTED', 'SPORT_PDF_DOWNLOADED',
   'SPORT_EXCEL_REQUESTED', 'SPORT_EXCEL_DOWNLOADED', 'SPORT_EXCEL_DELETED', 'SPORT_EXCEL_GENERATED', 'SPORT_EXCEL_GENERATION_FAILED',
+  'PERMISSION_SUBJECT_CREATED', 'PERMISSION_RESOURCE_ADDED', 'PERMISSION_RESOURCE_CHANGED', 'PERMISSION_RESOURCE_REMOVED',
+  'PERMISSION_SUBJECT_REMOVED', 'PERMISSION_CHANGE_DENIED',
 ] as const;
 
 export type AuditEventType = typeof AUDIT_EVENT_TYPES[number];
@@ -17,6 +19,8 @@ export interface AuditEvent {
   outcome: AuditOutcome;
 
   actorEmail?: string;
+  // The medewerker a permissionmutatie is about, distinct from actorEmail (who performed it).
+  targetEmail?: string;
   resource?: string;
   action?: string;
 

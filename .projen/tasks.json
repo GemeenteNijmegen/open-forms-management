@@ -85,6 +85,9 @@
           "spawn": "bundle:app/logout/logout.lambda"
         },
         {
+          "spawn": "bundle:app/permissions/permissions.lambda"
+        },
+        {
           "spawn": "bundle:app/sport/sport.lambda"
         },
         {
@@ -167,6 +170,24 @@
         }
       ]
     },
+    "bundle:app/permissions/permissions.lambda": {
+      "name": "bundle:app/permissions/permissions.lambda",
+      "description": "Create a JavaScript bundle from src/app/permissions/permissions.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/permissions/permissions.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/permissions/permissions.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/permissions/permissions.lambda:watch": {
+      "name": "bundle:app/permissions/permissions.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/permissions/permissions.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/permissions/permissions.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/permissions/permissions.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
     "bundle:app/sport/cache/sportCacheWorker.lambda": {
       "name": "bundle:app/sport/cache/sportCacheWorker.lambda",
       "description": "Create a JavaScript bundle from src/app/sport/cache/sportCacheWorker.lambda.ts",
@@ -244,7 +265,7 @@
       "description": "Lint synthesized CloudFormation templates",
       "steps": [
         {
-          "exec": "cfn-lint cdk.out/**/*.template.json -i W3005 W2001"
+          "exec": "cfn-lint cdk.out/**/*.template.json -i W3005 W2001 W3037"
         }
       ]
     },

@@ -18,6 +18,6 @@ describe('createPermissionRepository', () => {
   it('throws instead of silently building a client with an undefined table name', () => {
     delete process.env.PERMISSIONS_TABLE;
 
-    expect(() => createPermissionRepository(new DynamoDBClient({}))).toThrow('PERMISSIONS_TABLE environment variable is not set');
+    expect(() => createPermissionRepository(new DynamoDBClient({}))).toThrow('Environment variable PERMISSIONS_TABLE is missing');
   });
 });

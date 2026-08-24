@@ -8,15 +8,9 @@ import { AuditTrail } from '../../../../shared/audit/AuditTrail';
 import { recordAudit } from '../../../../shared/audit/recordAudit';
 import { EmployeeIdentity } from '../../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
+import { parseFormBody } from '../../../../shared/lambda/parseFormBody';
 import { resolveAllowedDistricts } from '../../sportdata/SportDistrictAuthorization';
 import { SportReportStore } from '../store/SportReportStore';
-
-function parseFormBody(body: string | undefined, isBase64Encoded: boolean): URLSearchParams {
-  if (!body) {
-    return new URLSearchParams();
-  }
-  return new URLSearchParams(isBase64Encoded ? Buffer.from(body, 'base64').toString('utf-8') : body);
-}
 
 /**
  * Handles `POST /sport/overzichten`: validates the request, writes a QUEUED report, invokes the worker

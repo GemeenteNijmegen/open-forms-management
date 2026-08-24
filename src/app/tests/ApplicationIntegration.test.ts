@@ -11,7 +11,7 @@ import { LoginRequestHandler } from '../login/LoginRequestHandler';
 import { LogoutRequestHandler } from '../logout/LogoutRequestHandler';
 
 /**
- * Extends the login/callback/logout chain from AuthenticationFlow.test.ts (BF-017) into what happens
+ * Extends the login/callback/logout chain from AuthenticationFlow.test.ts into what happens
  * inside an authenticated session: home rendering, a permission check and its audit trail, through the
  * same real request handlers. Global admin/resource-admin feature visibility is already covered by
  * FeatureRegistry.test.ts; expired/revoked sessions by AuthenticationFlow.test.ts, not repeated here.
@@ -60,14 +60,14 @@ describe('login -> home -> permission check -> logout', () => {
     const sessionCookie = toCookieHeader(callbackResponse);
 
     // A missing or invalid session always yields a 302 to /login from the page lambda itself, never a raw
-    // 401/403 (ADR-031) - there is no separate authorizer Lambda to produce one.
+    // 401/403 - there is no separate authorizer Lambda to produce one.
     const identity = await requireSession(sessionCookie, dynamoDBClient, auditTrail);
     expect(identity).toEqual({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
 
+    // A medewerker without any usable grants gets a dedicated no-permissions page, not an empty Home.
     const homeResponse = await new HomeRequestHandler(authorizationService).handleRequest(identity, '/');
     expect(homeResponse.statusCode).toBe(200);
-    expect(homeResponse.body).toContain('Welkom, medewerker@nijmegen.nl');
-    expect(homeResponse.body).toContain('Er zijn nog geen onderdelen beschikbaar');
+    expect(homeResponse.body).toContain('Geen toegang');
 
     const authContext = await authorizationService.loadContext(identity);
     const denied = await authorizationService.requireAuthorization(authContext, { resource: 'testresource', action: 'view' });
