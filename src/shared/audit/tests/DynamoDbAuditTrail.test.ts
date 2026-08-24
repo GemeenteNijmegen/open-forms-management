@@ -91,6 +91,29 @@ describe('DynamoDbAuditTrail', () => {
       expect(item.metadata).toEqual({ reason: 'no-grant' });
     });
 
+    it('round-trips targetEmail and a PERMISSION_* eventType through a write and a findLatest read', async () => {
+      documentMock.on(PutCommand).resolves({});
+
+      await newAuditTrail().record({
+        eventType: 'PERMISSION_RESOURCE_ADDED',
+        outcome: 'SUCCESS',
+        correlationId: 'trace-3',
+        actorEmail: 'beheerder@nijmegen.nl',
+        targetEmail: 'medewerker@nijmegen.nl',
+        resource: 'sport',
+      });
+
+      const item = documentMock.commandCalls(PutCommand)[0].args[0].input.Item as Record<string, unknown>;
+      expect(item.eventType).toBe('PERMISSION_RESOURCE_ADDED');
+      expect(item.targetEmail).toBe('medewerker@nijmegen.nl');
+
+      documentMock.on(QueryCommand).resolves({ Items: [item] });
+      const [event] = await newAuditTrail().findLatest(1);
+      expect(event).toMatchObject({
+        eventType: 'PERMISSION_RESOURCE_ADDED', actorEmail: 'beheerder@nijmegen.nl', targetEmail: 'medewerker@nijmegen.nl',
+      });
+    });
+
     it('logs an ERROR, records an AuditWriteFailure metric and propagates the failure when the write fails', async () => {
       documentMock.on(PutCommand).rejects(new Error('ProvisionedThroughputExceededException'));
       const addMetricSpy = jest.spyOn(metrics, 'addMetric');
