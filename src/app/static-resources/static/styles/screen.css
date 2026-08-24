@@ -302,3 +302,23 @@ footer {
   font-size: var(--utrecht-paragraph-small-font-size);
   margin-block-end: var(--nijmegen-space-100);
 }
+
+/* nijmegen-search-results itself has no inline padding, and consecutive <article> records otherwise sit flush against each other. */
+.permissions-record {
+  padding-inline: var(--nijmegen-space-100);
+}
+
+.permissions-record + .permissions-record {
+  margin-block-start: var(--nijmegen-space-100);
+}
+
+/* Spacing between resource blocks inside one medewerker's expanded rechten; the last one needs none. */
+.permissions-resource + .permissions-resource {
+  margin-block-start: var(--nijmegen-space-150);
+}
+
+.permissions-scope-label {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+  margin-block-end: var(--nijmegen-space-50);
+}

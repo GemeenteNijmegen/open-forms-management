@@ -1,0 +1,18 @@
+{{>header}}
+<main id="main-content">
+  <h1>{{targetEmail}} verwijderen uit {{resourceLabel}}?</h1>
+  <p class="utrecht-paragraph">Alle {{resourceLabel}}-rechten van {{targetEmail}} worden verwijderd.</p>
+  <p class="utrecht-paragraph">Andere beheeronderdelen worden niet aangepast.</p>
+
+  <form method="post" action="/permissions/users/remove">
+    <input type="hidden" name="targetEmail" value="{{targetEmail}}">
+    <input type="hidden" name="resource" value="{{resource}}">
+    <input type="hidden" name="confirmed" value="1">
+    <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
+    <div class="utrecht-action-group">
+      <a class="utrecht-button utrecht-button--secondary-action" href="/permissions">Annuleren</a>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Verwijderen</button>
+    </div>
+  </form>
+</main>
+{{>footer}}

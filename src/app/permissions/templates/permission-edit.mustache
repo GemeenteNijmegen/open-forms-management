@@ -1,0 +1,74 @@
+{{>header}}
+<main id="main-content">
+  <h1>Rechten van {{targetEmail}}</h1>
+
+  {{#generalGrants}}
+  <section class="permissions-resource">
+    <h2 class="utrecht-heading-2">Algemene rechten</h2>
+    <ul class="nijmegen-metadata">
+      {{#actions}}
+      <li class="nijmegen-metadata__item">{{label}}</li>
+      {{/actions}}
+    </ul>
+  </section>
+  {{/generalGrants}}
+
+  <h2 class="utrecht-heading-2">Paginarechten</h2>
+
+  {{#resources}}
+  <section class="permissions-edit-resource">
+    <h3 class="utrecht-heading-3">{{label}}</h3>
+    <form method="post" action="/permissions/users/update">
+      <input type="hidden" name="targetEmail" value="{{targetEmail}}">
+      <input type="hidden" name="resource" value="{{resource}}">
+      <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
+
+      <fieldset>
+        <legend class="utrecht-form-label">Toegang</legend>
+        <div class="utrecht-form-field utrecht-form-field--radio">
+          <input type="radio" class="utrecht-form-field__input" id="accessMode-{{resource}}-specific" name="accessMode" value="specific" {{^isResourceAdmin}}checked{{/isResourceAdmin}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--radio" for="accessMode-{{resource}}-specific">Specifieke rechten</label>
+        </div>
+        <div class="utrecht-form-field utrecht-form-field--radio">
+          <input type="radio" class="utrecht-form-field__input" id="accessMode-{{resource}}-admin" name="accessMode" value="admin" {{#isResourceAdmin}}checked{{/isResourceAdmin}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--radio" for="accessMode-{{resource}}-admin">Beheerder van {{label}}</label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="utrecht-form-label">Rechten</legend>
+        {{#actions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input" id="action-{{resource}}-{{value}}" name="action" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="action-{{resource}}-{{value}}">{{label}}</label>
+        </div>
+        {{/actions}}
+      </fieldset>
+
+      {{#scopes}}
+      <fieldset>
+        <legend class="utrecht-form-label">{{label}}</legend>
+        {{#values}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input" id="scope-{{resource}}-{{key}}-{{value}}" name="{{key}}" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="scope-{{resource}}-{{key}}-{{value}}">{{label}}</label>
+        </div>
+        {{/values}}
+      </fieldset>
+      {{/scopes}}
+
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Rechten voor {{label}} opslaan</button>
+    </form>
+
+    <form method="post" action="/permissions/users/remove">
+      <input type="hidden" name="targetEmail" value="{{targetEmail}}">
+      <input type="hidden" name="resource" value="{{resource}}">
+      <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen uit {{label}}</button>
+    </form>
+  </section>
+  {{/resources}}
+
+  <p><a class="utrecht-button utrecht-button--secondary-action" href="/permissions">Terug naar overzicht</a></p>
+</main>
+{{>footer}}

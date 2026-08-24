@@ -1,0 +1,61 @@
+{{>header}}
+<main id="main-content">
+  <h1>Nieuwe gebruiker voor {{label}}</h1>
+
+  {{#showInvalid}}
+  <div class="utrecht-alert utrecht-alert--error" role="alert">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Controleer het e-mailadres en de gekozen rechten.</p>
+    </div>
+  </div>
+  {{/showInvalid}}
+
+  <form method="post" action="/permissions/users/create">
+    <input type="hidden" name="resource" value="{{resource}}">
+    <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
+
+    <div class="utrecht-form-field utrecht-form-field--text">
+      <label class="utrecht-form-field__label utrecht-form-label" for="targetEmail">E-mailadres</label>
+      <input type="email" class="utrecht-form-field__input utrecht-textbox" id="targetEmail" name="targetEmail" required>
+    </div>
+
+    <fieldset>
+      <legend class="utrecht-form-label">Toegang</legend>
+      <div class="utrecht-form-field utrecht-form-field--radio">
+        <input type="radio" class="utrecht-form-field__input" id="accessMode-specific" name="accessMode" value="specific" checked>
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--radio" for="accessMode-specific">Specifieke rechten</label>
+      </div>
+      <div class="utrecht-form-field utrecht-form-field--radio">
+        <input type="radio" class="utrecht-form-field__input" id="accessMode-admin" name="accessMode" value="admin">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--radio" for="accessMode-admin">Beheerder van {{label}}</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend class="utrecht-form-label">Rechten</legend>
+      {{#actions}}
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input" id="action-{{action}}" name="action" value="{{action}}">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="action-{{action}}">{{label}}</label>
+      </div>
+      {{/actions}}
+    </fieldset>
+
+    {{#scopes}}
+    <fieldset>
+      <legend class="utrecht-form-label">{{label}}</legend>
+      {{#values}}
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input" id="scope-{{key}}-{{value}}" name="{{key}}" value="{{value}}">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="scope-{{key}}-{{value}}">{{label}}</label>
+      </div>
+      {{/values}}
+    </fieldset>
+    {{/scopes}}
+
+    <button type="submit" class="utrecht-button utrecht-button--primary-action">Toevoegen</button>
+  </form>
+
+  <p><a class="utrecht-button utrecht-button--secondary-action" href="/permissions">Annuleren</a></p>
+</main>
+{{>footer}}
