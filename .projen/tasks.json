@@ -85,6 +85,9 @@
           "spawn": "bundle:app/logout/logout.lambda"
         },
         {
+          "spawn": "bundle:app/permissions/permissions.lambda"
+        },
+        {
           "spawn": "bundle:app/sport/sport.lambda"
         },
         {
@@ -164,6 +167,24 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/permissions/permissions.lambda": {
+      "name": "bundle:app/permissions/permissions.lambda",
+      "description": "Create a JavaScript bundle from src/app/permissions/permissions.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/permissions/permissions.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/permissions/permissions.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/permissions/permissions.lambda:watch": {
+      "name": "bundle:app/permissions/permissions.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/permissions/permissions.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/permissions/permissions.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/permissions/permissions.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

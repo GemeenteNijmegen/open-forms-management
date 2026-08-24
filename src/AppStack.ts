@@ -5,6 +5,7 @@ import { Construct } from 'constructs';
 import { AuthFunction } from './app/auth/auth-function';
 import { HomeFunction } from './app/home/home-function';
 import { LoginFunction } from './app/login/login-function';
+import { PermissionsFunction } from './app/permissions/permissions-function';
 import { SportCacheWorkerFunction } from './app/sport/cache/sportCacheWorker-function';
 import { SportExcelWorkerFunction } from './app/sport/reporter/sportExcelWorker-function';
 import { SportFunction } from './app/sport/sport-function';
@@ -17,6 +18,7 @@ import { ManagementApi } from './infrastructure/ManagementApi';
 import { ManagementDistribution } from './infrastructure/ManagementDistribution';
 import { addOidcRoute } from './infrastructure/OidcRoute';
 import { applyPageLambdaDefaults } from './infrastructure/PageLambda';
+import { addPermissionsRoute } from './infrastructure/permissions/PermissionsRoute';
 import { PermissionsTable } from './infrastructure/PermissionsTable';
 import { SessionsTable } from './infrastructure/SessionsTable';
 import { SportCacheTable } from './infrastructure/sport/SportCacheTable';
@@ -124,6 +126,14 @@ export class AppStack extends Stack {
       this, managementApi, sportFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable,
       this.props.configuration, sportReportsTable, sportReportsBucket, sportExcelWorkerFunction,
       sportCacheTable, sportCacheWorkerFunction,
+    );
+
+    const permissionsFunction = new PermissionsFunction(this, 'permissions-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'permissions-function'),
+    });
+    addPermissionsRoute(
+      this, managementApi, permissionsFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable, this.props.configuration,
     );
 
     addApplicationAlarms(this, managementApi.api, this.props.configuration);

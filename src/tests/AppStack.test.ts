@@ -57,6 +57,7 @@ describe('AppStack authentication and routing wiring', () => {
     'src/app/sport/sport.lambda.ts',
     'src/app/sport/reporter/sportExcelWorker.lambda.ts',
     'src/app/sport/cache/sportCacheWorker.lambda.ts',
+    'src/app/permissions/permissions.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -68,7 +69,7 @@ describe('AppStack authentication and routing wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(7);
+    expect(Object.keys(logGroups)).toHaveLength(8);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
@@ -148,6 +149,44 @@ describe('AppStack authentication and routing wiring', () => {
       DestinationBucketKeyPrefix: 'static',
       DistributionPaths: ['/static/*'],
     }));
+  });
+
+  it('gives permissions-function read access to the PermissionsTable, including Scan for the admin overview', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/permissions/permissions.lambda.ts',
+      Environment: Match.objectLike({ Variables: Match.objectLike({ PERMISSIONS_TABLE: Match.anyValue() }) }),
+    }));
+    // grantReadData() includes Scan, unlike home-function/sport-function which only ever Query.
+    const actions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/permissions/permissions.lambda.ts'));
+    expect(actions).toContain('dynamodb:Scan');
+  });
+
+  it('gives permissions-function exactly the write actions the mutation handlers need, nothing broader', () => {
+    const actions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/permissions/permissions.lambda.ts'));
+    expect(actions).toEqual(expect.arrayContaining(['dynamodb:PutItem', 'dynamodb:DeleteItem', 'dynamodb:TransactWriteItems']));
+    // UpdateItem/BatchWriteItem would come from grantWriteData()/grantReadWriteData(); this design replaces
+    // a resource's grants wholesale (delete + put) instead of patching an item in place.
+    expect(actions).not.toContain('dynamodb:UpdateItem');
+    expect(actions).not.toContain('dynamodb:BatchWriteItem');
+  });
+
+  // DeleteItem/TransactWriteItems only ever come from PermissionsRoute.ts's write grant, so this check is safe
+  // without also matching the resource ARN. PutItem can't be checked the same way: every page lambda already
+  // has it for the (unrelated) AuditTrailTable via applyPageLambdaDefaults's grantPut().
+  it('never gives home-function or sport-function DeleteItem/TransactWriteItems, the write actions only the Permissions Lambda needs', () => {
+    const homeActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/home/home.lambda.ts'));
+    const sportActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/sport/sport.lambda.ts'));
+    expect(homeActions).not.toContain('dynamodb:DeleteItem');
+    expect(homeActions).not.toContain('dynamodb:TransactWriteItems');
+    expect(sportActions).not.toContain('dynamodb:DeleteItem');
+    expect(sportActions).not.toContain('dynamodb:TransactWriteItems');
+  });
+
+  it('does not add a dedicated error-rate alarm for permissions-function, same as the other content pages', () => {
+    const alarms = template.findResources('AWS::CloudWatch::Alarm', Match.objectLike({
+      Properties: { AlarmName: 'increased-error-rate-permissions-function-error-alarm-low-lvl' },
+    }));
+    expect(Object.keys(alarms)).toHaveLength(0);
   });
 
   it('gives home-function read access to the PermissionsTable and the PERMISSIONS_TABLE env var', () => {
