@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { PermissionGrant } from './PermissionGrant';
 import { logger } from '../../observability/Logger';
 
@@ -73,4 +74,22 @@ export function toPermissionSubject(item: Record<string, unknown>): PermissionSu
     createdAt: item.createdAt,
     ...(typeof item.createdBy === 'string' ? { createdBy: item.createdBy } : {}),
   };
+}
+
+/** The write-side counterpart of toPermissionGrant(): same item shape, a fresh `<resource>#<uuid>` sk each time. */
+export function grantToItem(email: string, grant: PermissionGrant, createdBy: string): Record<string, unknown> {
+  return {
+    pk: email,
+    sk: `${grant.resource}#${randomUUID()}`,
+    resource: grant.resource,
+    actions: grant.actions,
+    ...(grant.scopes ? { scopes: grant.scopes } : {}),
+    createdAt: new Date().toISOString(),
+    createdBy,
+  };
+}
+
+/** The write-side counterpart of toPermissionSubject(). */
+export function subjectToItem(email: string, createdBy: string): Record<string, unknown> {
+  return { pk: email, sk: SUBJECT_SORT_KEY, createdAt: new Date().toISOString(), createdBy };
 }

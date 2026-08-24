@@ -40,6 +40,16 @@ export class AuthorizationService {
       return undefined;
     }
 
+    return this.denyAccess(context, check);
+  }
+
+  /**
+   * Same 403 + ACCESS_DENIED audit as requireAuthorization(), for a gate that isn't a single PermissionCheck
+   * against PermissionEvaluator (e.g. permissionsbeheer's "at least one manageable resource" rule, which is an
+   * OR across a dynamic resource list). `resource`/`action` here are only descriptive audit metadata. Prefer
+   * requireAuthorization() whenever the gate is one concrete resource/action check.
+   */
+  async denyAccess(context: AuthorizationContext, check: { resource: string; action: string }): Promise<ApiGatewayV2Response> {
     logger.info('Access denied', { resource: check.resource, action: check.action });
     countMetric('AccessDenied');
     await recordAudit(this.auditTrail, {

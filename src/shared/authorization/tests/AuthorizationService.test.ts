@@ -99,4 +99,20 @@ describe('AuthorizationService', () => {
       expect(auditTrail.events).toEqual([]);
     });
   });
+
+  describe('denyAccess', () => {
+    it('renders the same 403 and records the same ACCESS_DENIED audit shape as requireAuthorization, for a gate without a single PermissionCheck', async () => {
+      const auditTrail = new FakeAuditTrail();
+      const service = new AuthorizationService(new FakePermissionRepository(), auditTrail);
+      const context = await service.loadContext({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' });
+
+      const response = await service.denyAccess(context, { resource: 'permissions', action: 'view' });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.body).toContain('Geen toegang');
+      expect(auditTrail.events).toEqual([expect.objectContaining({
+        eventType: 'ACCESS_DENIED', outcome: 'DENIED', resource: 'permissions', action: 'view', actorEmail: 'medewerker@nijmegen.nl',
+      })]);
+    });
+  });
 });
