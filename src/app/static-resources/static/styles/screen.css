@@ -312,6 +312,10 @@ footer {
   margin-block-start: var(--nijmegen-space-100);
 }
 
+.permissions-record__actions {
+  margin-block-start: var(--nijmegen-space-100);
+}
+
 /* Spacing between resource blocks inside one medewerker's expanded rechten; the last one needs none. */
 .permissions-resource + .permissions-resource {
   margin-block-start: var(--nijmegen-space-150);

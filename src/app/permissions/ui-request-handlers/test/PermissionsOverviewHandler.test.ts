@@ -66,6 +66,7 @@ describe('PermissionsOverviewHandler', () => {
     const body = response.body ?? '';
 
     expect(response.statusCode).toBe(200);
+    expect(body).toContain('href="/permissions/users/new"');
     expect(body).toContain('subject-only@nijmegen.nl');
     expect(body).toContain('Geen rechten');
     expect(body).toContain('multi@nijmegen.nl');
@@ -73,6 +74,35 @@ describe('PermissionsOverviewHandler', () => {
     expect(body).toContain('Dukenburg');
     expect(body).toContain('App2');
     expect(body).toContain('Organisatie A');
+  });
+
+  it('lets a superadmin see another superadmin read-only, without an edit action, while a regular user still gets one', async () => {
+    const repository = new FakePermissionAdministrationRepository();
+    repository.seedUsers(
+      { email: 'andere-superadmin@nijmegen.nl', hasSubject: true, grants: [{ resource: '*', actions: ['*'] }] },
+      { email: 'multi@nijmegen.nl', hasSubject: true, grants: [{ resource: 'sport', actions: ['view'] }] },
+    );
+    const administrationService = new PermissionAdministrationService(catalog, new PermissionAdministrationPolicy(catalog));
+    const authorizationService = seedActorGrants('superadmin@nijmegen.nl', [{ resource: '*', actions: ['*'] }]);
+    const handler = new PermissionsOverviewHandler(authorizationService, administrationService, repository);
+
+    const response = await handler.handleRequest({ principalId: 'superadmin-1', email: 'superadmin@nijmegen.nl' });
+    const body = response.body ?? '';
+
+    expect(body).toContain('andere-superadmin@nijmegen.nl');
+    expect(body).toContain('Superadmin');
+    expect(body).toContain('value="multi@nijmegen.nl"');
+    expect(body).not.toContain('value="andere-superadmin@nijmegen.nl"');
+  });
+
+  it('shows a flash message after a redirect from create/update/remove', async () => {
+    const authorizationService = seedActorGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);
+    const administrationService = new PermissionAdministrationService(catalog, new PermissionAdministrationPolicy(catalog));
+    const handler = new PermissionsOverviewHandler(authorizationService, administrationService, new FakePermissionAdministrationRepository());
+
+    const response = await handler.handleRequest({ principalId: 'sportadmin-1', email: 'sportadmin@nijmegen.nl' }, { status: 'created' });
+
+    expect(response.body ?? '').toContain('Gebruiker en rechten opgeslagen.');
   });
 
   it('never shows a sport admin an app2-only user', async () => {
@@ -110,7 +140,6 @@ describe('PermissionsOverviewHandler', () => {
     expect(body).toContain('Dukenburg');
     expect(body).not.toContain('App2');
     expect(body).not.toContain('Organisatie A');
-    expect(body).not.toContain('Wijzigen');
   });
 
   it('never shows a sport admin a global superadmin merely because *:* implies access to sport', async () => {

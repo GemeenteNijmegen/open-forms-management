@@ -7,6 +7,7 @@ export interface PermissionOverviewUserViewModel {
   summary: string;
   generalGrants: PermissionUserViewModel['generalGrants'];
   resources: PermissionResourceViewModel[];
+  canEdit: boolean;
 }
 
 export interface PermissionEditValueViewModel {
@@ -39,10 +40,18 @@ export function buildSummary(generalGrants: PermissionUserViewModel['generalGran
 /**
  * The read-only overview only ever shows resources the medewerker actually has grants for; projectUser() also
  * includes every manageable-but-empty resource, because the same projection prefills the later edit form.
+ * canEdit is false whenever generalGrants is non-empty: that only happens for a global-admin actor looking at
+ * a target who is a superadmin too, and superadmin lifecycle is not something this UI edits or removes.
  */
 export function buildOverviewRecord(email: string, permissions: PermissionUserViewModel): PermissionOverviewUserViewModel {
   const resources = permissions.resources.filter((resource) => resource.grants.length > 0);
-  return { email, summary: buildSummary(permissions.generalGrants, resources), generalGrants: permissions.generalGrants, resources };
+  return {
+    email,
+    summary: buildSummary(permissions.generalGrants, resources),
+    generalGrants: permissions.generalGrants,
+    resources,
+    canEdit: permissions.generalGrants.length === 0,
+  };
 }
 
 /**

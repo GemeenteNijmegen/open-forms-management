@@ -53,7 +53,7 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     const isBase64Encoded = Boolean(event.isBase64Encoded);
     switch (event.routeKey) {
       case 'GET /permissions':
-        return await overviewHandler.handleRequest(identity);
+        return await overviewHandler.handleRequest(identity, event.queryStringParameters);
       case 'GET /permissions/users/new':
         return await createOpenHandler.handleRequest(identity, event.queryStringParameters);
       case 'POST /permissions/users/edit':

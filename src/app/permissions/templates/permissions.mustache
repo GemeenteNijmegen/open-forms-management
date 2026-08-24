@@ -2,11 +2,29 @@
 <main id="main-content">
   <h1>Gebruikers en rechten</h1>
 
+  {{#message}}
+  <div class="utrecht-alert utrecht-alert--{{alertVariant}}" role="{{alertRole}}">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{message}}</p>
+    </div>
+  </div>
+  {{/message}}
+
+  <p><a class="utrecht-button utrecht-button--primary-action" href="/permissions/users/new">Gebruiker toevoegen</a></p>
+
   {{#records}}
   <article class="nijmegen-search-results permissions-record">
     <div class="nijmegen-search-results__content">
       <h2 class="nijmegen-search-results__heading utrecht-heading-2">{{email}}</h2>
       <p class="utrecht-paragraph">{{summary}}</p>
+      {{#canEdit}}
+      <div class="permissions-record__actions">
+        <form method="post" action="/permissions/users/edit">
+          <input type="hidden" name="targetEmail" value="{{email}}">
+          <button type="submit" class="utrecht-button utrecht-button--secondary-action">Wijzigen</button>
+        </form>
+      </div>
+      {{/canEdit}}
       <details>
         <summary class="utrecht-form-label">Rechten tonen</summary>
         {{#generalGrants}}
