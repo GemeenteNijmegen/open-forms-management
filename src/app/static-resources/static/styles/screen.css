@@ -430,9 +430,9 @@ footer {
 }
 
 /*
- * @utrecht/select-css and @utrecht/textbox-css only ever read padding from --utrecht-select-padding-*/
- * --utrecht-textbox-padding-* or the --utrecht-form-control-padding-* fallback, and none of those are
- * defined by @gemeentenijmegen/design-tokens or components-css - so every select/textbox in the app
+ * @utrecht/select-css and @utrecht/textbox-css only ever read padding from --utrecht-select-padding-*
+ * or --utrecht-textbox-padding-*, falling back to --utrecht-form-control-padding-*, and none of those
+ * are defined by @gemeentenijmegen/design-tokens or components-css - so every select/textbox in the app
  * renders with its text flush against the border. Overridden directly here rather than through those
  * undefined tokens, scoped to Woonbehoefte only. Same repo-wide gap affects Sport's own Van/Tot date
  * fields; fixing that broadly is a separate, generic decision, not something to do inline here.
