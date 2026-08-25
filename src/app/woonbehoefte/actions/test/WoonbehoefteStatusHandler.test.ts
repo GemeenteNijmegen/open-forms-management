@@ -83,6 +83,26 @@ describe('WoonbehoefteStatusHandler', () => {
     expect(caseRepository.changeStatus).toHaveBeenCalledWith('OF-1', 'medewerker', 5, 'READY_FOR_RANKING', 'IN_PROGRESS');
   });
 
+  it('resubmitting the same status is a no-op: no mutation, no audit, plain redirect', async () => {
+    const caseRepository = {
+      getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', status: 'IN_PROGRESS', version: 5 }),
+      changeStatus: jest.fn(),
+      proposeInadmissible: jest.fn(),
+    };
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const handler = new WoonbehoefteStatusHandler(makeAuthorizationService(), caseRepository as unknown as WoonbehoefteCaseRepository, auditTrail);
+
+    const response = await handler.handleChangeStatus(
+      { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ expectedVersion: '5', status: 'IN_PROGRESS', csrfToken }), false,
+    );
+
+    expect(caseRepository.changeStatus).not.toHaveBeenCalled();
+    expect(caseRepository.proposeInadmissible).not.toHaveBeenCalled();
+    expect(auditTrail.record).not.toHaveBeenCalled();
+    expect(response.statusCode).toBe(303);
+    expect(response.headers?.Location).not.toMatch(/saved=/);
+  });
+
   it('confirmInadmissible refuses (409) unless the case is currently PROPOSED_INADMISSIBLE', async () => {
     const caseRepository = {
       getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', status: 'IN_PROGRESS', version: 2 }),

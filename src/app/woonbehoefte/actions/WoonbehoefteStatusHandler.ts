@@ -43,6 +43,10 @@ export class WoonbehoefteStatusHandler {
       return Response.error(404);
     }
 
+    if (targetStatus === existingCase.status) {
+      return redirectAfterMutation(caseReference, 'OK', back);
+    }
+
     const actorEmail = identity.email ?? identity.principalId;
     if (targetStatus === 'PROPOSED_INADMISSIBLE') {
       const motivering = form.get('motivering')?.trim();
