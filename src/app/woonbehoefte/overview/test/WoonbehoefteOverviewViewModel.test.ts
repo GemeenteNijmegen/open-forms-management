@@ -140,7 +140,7 @@ describe('WoonbehoefteOverviewViewModel', () => {
     expect(buildWoonbehoefteOverviewViewModel(entries, filter, undefined).rows.map((r) => r.caseReference)).toEqual(['OF-individual']);
   });
 
-  it('paginates: only the first 30 render by default, with an offset revealing more', () => {
+  it('paginates: only the first 30 render by default, with visible=60 revealing more', () => {
     const entries = joinCasesWithSources(
       Array.from({ length: 35 }, (_, index) => makeCase({ caseReference: `OF-${index}` })), [],
     );
@@ -148,9 +148,9 @@ describe('WoonbehoefteOverviewViewModel', () => {
     const firstPage = buildWoonbehoefteOverviewViewModel(entries, resolveWoonbehoefteOverviewFilter(undefined), undefined);
     expect(firstPage.rows).toHaveLength(30);
     expect(firstPage.hasMore).toBe(true);
-    expect(firstPage.nextOffset).toBe(30);
+    expect(firstPage.nextVisibleCount).toBe(60);
 
-    const secondPage = buildWoonbehoefteOverviewViewModel(entries, resolveWoonbehoefteOverviewFilter(undefined), undefined, 30);
+    const secondPage = buildWoonbehoefteOverviewViewModel(entries, resolveWoonbehoefteOverviewFilter({ visible: '60' }), undefined);
     expect(secondPage.rows).toHaveLength(35);
     expect(secondPage.hasMore).toBe(false);
   });

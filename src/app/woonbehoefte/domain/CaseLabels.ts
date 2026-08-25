@@ -44,6 +44,17 @@ export const PROJECT_READINESS_LABELS: Record<number, string> = {
   6: 'Categorie 6 - overige voorbereidende of verkennende bewijsstukken',
 };
 
+/** The full condition text per projectrijpheid-categorie, shown only for the category the aanvraag actually claims - never all six at once. */
+export const PROJECT_READINESS_CONDITIONS: Record<number, string> = {
+  1: 'Civielrechtelijke overeenkomst én omgevingsvergunning voor de feitelijke bouwactiviteit.',
+  2: 'Civielrechtelijke overeenkomst én onherroepelijk omgevingsplan en/of onherroepelijke BOPA.',
+  3: 'Onherroepelijke BOPA voor de projectlocatie.',
+  4: 'Vastgesteld omgevingsplan of vergunning voor een BOPA voor de projectlocatie.',
+  5: 'Alleen een civielrechtelijke overeenkomst.',
+  6: 'Overige voorbereidende of verkennende stukken, bijvoorbeeld principebesluit, subsidiebeschikking, ontwerp-omgevingsplan/BOPA, '
+    + 'optie- of grondreservering, woningbouwprogramma, stedenbouwkundig plan, woondeal, prestatieafspraken of relevante onderzoeken.',
+};
+
 export const CHECK_OUTCOME_LABELS: Record<string, string> = {
   OK: 'Akkoord',
   CHANGES_NEEDED: 'Aanpassing gewenst',

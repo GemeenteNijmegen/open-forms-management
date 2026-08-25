@@ -157,6 +157,20 @@
     {{/canManage}}
   </section>
 
+  <details class="woonbehoefte-details woonbehoefte-details--section">
+    <summary class="utrecht-heading-4">Op deze pagina</summary>
+    <nav class="nijmegen-table-of-contents" aria-label="Op deze pagina">
+      <a class="utrecht-link" href="#basisgegevens">Basisgegevens</a>
+      <a class="utrecht-link" href="#check">Check</a>
+      <a class="utrecht-link" href="#aanvraag">Aanvraaggegevens</a>
+      <a class="utrecht-link" href="#documenten">Documenten</a>
+      <a class="utrecht-link" href="#beoordeling">Beoordeling</a>
+      <a class="utrecht-link" href="#planning">Planning</a>
+      <a class="utrecht-link" href="#aantekeningen">Interne aantekeningen</a>
+      <a class="utrecht-link" href="#activiteit">Wijzigingen en activiteit</a>
+    </nav>
+  </details>
+
   <section id="check" class="woonbehoefte-section{{#checkRequested}} woonbehoefte-section--check-open{{/checkRequested}}">
     <h2 class="utrecht-heading-4">Check</h2>
     {{#checkRequested}}
@@ -205,7 +219,7 @@
     {{/canManage}}
   </section>
 
-  <details id="aanvraag" class="woonbehoefte-details woonbehoefte-details--section">
+  <details id="aanvraag" class="woonbehoefte-details woonbehoefte-details--section" open>
     <summary class="utrecht-heading-4">Aanvraaggegevens</summary>
     <dl class="woonbehoefte-detail-summary">
       {{#projectDescription}}
@@ -248,22 +262,39 @@
   </details>
 
   <details id="documenten" class="woonbehoefte-details woonbehoefte-details--section" open>
-    <summary class="utrecht-heading-4">{{documentCountLabel}}</summary>
-    {{#hasDocuments}}
+    <summary class="utrecht-heading-4">Documenten</summary>
+
+    <h3 class="utrecht-heading-5">Aanvraagformulier</h3>
+    {{#applicationDocument}}
     <ul class="woonbehoefte-documents">
-      {{#documents}}
-      <li class="woonbehoefte-documents__item{{#isApplicationPdf}} woonbehoefte-documents__item--pdf{{/isApplicationPdf}}">
+      <li class="woonbehoefte-documents__item woonbehoefte-documents__item--pdf">
         <a class="utrecht-link" href="{{downloadHref}}">{{filenameLabel}}</a>
         <span class="woonbehoefte-documents__meta">
           {{originLabel}}{{#formatLabel}} · {{formatLabel}}{{/formatLabel}}{{#sizeLabel}} · {{sizeLabel}}{{/sizeLabel}}
         </span>
       </li>
-      {{/documents}}
     </ul>
-    {{/hasDocuments}}
-    {{^hasDocuments}}
-    <p class="utrecht-paragraph">Er zijn geen documenten beschikbaar voor deze aanvraag.</p>
-    {{/hasDocuments}}
+    {{/applicationDocument}}
+    {{^applicationDocument}}
+    <p class="utrecht-paragraph">Geen aanvraagformulier beschikbaar voor deze aanvraag.</p>
+    {{/applicationDocument}}
+
+    <h3 class="utrecht-heading-5">{{attachmentCountLabel}}</h3>
+    {{#hasAttachments}}
+    <ul class="woonbehoefte-documents">
+      {{#attachments}}
+      <li class="woonbehoefte-documents__item">
+        <a class="utrecht-link" href="{{downloadHref}}">{{filenameLabel}}</a>
+        <span class="woonbehoefte-documents__meta">
+          {{originLabel}}{{#formatLabel}} · {{formatLabel}}{{/formatLabel}}{{#sizeLabel}} · {{sizeLabel}}{{/sizeLabel}}
+        </span>
+      </li>
+      {{/attachments}}
+    </ul>
+    {{/hasAttachments}}
+    {{^hasAttachments}}
+    <p class="utrecht-paragraph">Geen bijlagen beschikbaar voor deze aanvraag.</p>
+    {{/hasAttachments}}
   </details>
 
   <details id="beoordeling" class="woonbehoefte-details woonbehoefte-details--section" open>
@@ -325,19 +356,12 @@
 
       <h3 class="utrecht-heading-5">3. Projectrijpheid</h3>
       <p class="utrecht-paragraph">Projectrijpheid volgens aanvraag: {{submittedReadinessLabel}}</p>
+      {{#submittedReadinessConditionText}}
       <details class="woonbehoefte-details woonbehoefte-details--inline">
         <summary>Toon voorwaarden</summary>
-        <p class="utrecht-paragraph"><strong>Categorie 1</strong> - Civielrechtelijke overeenkomst én omgevingsvergunning voor de feitelijke bouwactiviteit.</p>
-        <p class="utrecht-paragraph"><strong>Categorie 2</strong> - Civielrechtelijke overeenkomst én onherroepelijk omgevingsplan en/of onherroepelijke BOPA.</p>
-        <p class="utrecht-paragraph"><strong>Categorie 3</strong> - Onherroepelijke BOPA voor de projectlocatie.</p>
-        <p class="utrecht-paragraph"><strong>Categorie 4</strong> - Vastgesteld omgevingsplan of vergunning voor een BOPA voor de projectlocatie.</p>
-        <p class="utrecht-paragraph"><strong>Categorie 5</strong> - Alleen een civielrechtelijke overeenkomst.</p>
-        <p class="utrecht-paragraph">
-          <strong>Categorie 6</strong> - Overige voorbereidende of verkennende stukken, bijvoorbeeld principebesluit, subsidiebeschikking,
-          ontwerp-omgevingsplan/BOPA, optie- of grondreservering, woningbouwprogramma, stedenbouwkundig plan, woondeal, prestatieafspraken
-          of relevante onderzoeken.
-        </p>
+        <p class="utrecht-paragraph">{{submittedReadinessConditionText}}</p>
       </details>
+      {{/submittedReadinessConditionText}}
       <div class="utrecht-form-field">
         <label class="utrecht-form-label" for="projectReadinessEvidenceApproved">Voldoen de gegevens en bewijsstukken aan deze projectrijpheid?</label>
         <select class="utrecht-select utrecht-select--html-select" id="projectReadinessEvidenceApproved" name="projectReadinessEvidenceApproved" {{^canManage}}disabled{{/canManage}}>

@@ -1,3 +1,4 @@
+import { WoonbehoefteDocumentRow } from '../../documents/WoonbehoefteDocumentsLoader';
 import { CaseNote, WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { buildWoonbehoefteDetailViewModel } from '../WoonbehoefteDetailViewModel';
@@ -216,5 +217,66 @@ describe('buildWoonbehoefteDetailViewModel', () => {
     );
 
     expect(viewModel.checkRequestNoteText).toBeUndefined();
+  });
+
+  it('splits the application PDF from the attachments, keeping filename/content-type/download link intact', () => {
+    const applicationPdf: WoonbehoefteDocumentRow = {
+      documentId: 'doc-pdf',
+      filenameLabel: 'Aanvraagformulier.pdf',
+      formatLabel: 'application/pdf',
+      downloadHref: '/woonbehoefte/cases/OF-1/documents/doc-pdf',
+      originLabel: 'Oorspronkelijke aanvraag',
+      isApplicationPdf: true,
+    };
+    const attachmentOne: WoonbehoefteDocumentRow = {
+      documentId: 'doc-a', filenameLabel: 'Bijlage 1', downloadHref: '/woonbehoefte/cases/OF-1/documents/doc-a', originLabel: 'Oorspronkelijke aanvraag', isApplicationPdf: false,
+    };
+    const attachmentTwo: WoonbehoefteDocumentRow = {
+      documentId: 'doc-b', filenameLabel: 'Bijlage 2', downloadHref: '/woonbehoefte/cases/OF-1/documents/doc-b', originLabel: 'Oorspronkelijke aanvraag', isApplicationPdf: false,
+    };
+
+    const viewModel = buildWoonbehoefteDetailViewModel(
+      makeCase(), makeSource(), 'READY', [applicationPdf, attachmentOne, attachmentTwo], [], [], true, 'medewerker@example.nl', '', 'csrf-token',
+    );
+
+    expect(viewModel.applicationDocument).toEqual(applicationPdf);
+    expect(viewModel.attachments).toEqual([attachmentOne, attachmentTwo]);
+    expect(viewModel.hasAttachments).toBe(true);
+    expect(viewModel.attachmentCountLabel).toBe('Bijlagen (2)');
+  });
+
+  it('has no applicationDocument and zero attachments when no documents are available at all', () => {
+    const viewModel = buildWoonbehoefteDetailViewModel(makeCase(), makeSource(), 'READY', [], [], [], true, 'medewerker@example.nl', '', 'csrf-token');
+
+    expect(viewModel.applicationDocument).toBeUndefined();
+    expect(viewModel.attachments).toEqual([]);
+    expect(viewModel.hasAttachments).toBe(false);
+    expect(viewModel.attachmentCountLabel).toBe('Bijlagen (0)');
+  });
+
+  it('shows only the projectrijpheid condition text for the category the aanvraag actually claims', () => {
+    const viewModel = build(makeCase(), makeSource({ submittedProjectReadiness: 3 }), 'READY');
+
+    expect(viewModel.submittedReadinessLabel).toContain('Categorie 3');
+    expect(viewModel.submittedReadinessConditionText).toBe('Onherroepelijke BOPA voor de projectlocatie.');
+    expect(viewModel.submittedReadinessConditionText).not.toContain('Categorie 1');
+    expect(viewModel.submittedReadinessConditionText).not.toContain('Categorie 6');
+  });
+
+  it('has no submittedReadinessConditionText when the source category could not be determined: never guesses conditions', () => {
+    const viewModel = build(makeCase(), makeSource({ submittedProjectReadiness: undefined }), 'READY');
+
+    expect(viewModel.submittedReadinessLabel).toBe('Kon niet eenduidig worden vastgesteld');
+    expect(viewModel.submittedReadinessConditionText).toBeUndefined();
+  });
+
+  it('keeps the vastgestelde projectrijpheid override fully independent of the submitted condition text', () => {
+    const viewModel = build(
+      makeCase({ assessment: { assessedProjectReadiness: 5 } }), makeSource({ submittedProjectReadiness: 2 }), 'READY',
+    );
+
+    expect(viewModel.submittedReadinessConditionText).toBe('Civielrechtelijke overeenkomst én onherroepelijk omgevingsplan en/of onherroepelijke BOPA.');
+    expect(viewModel.assessedReadinessLabel).toContain('Categorie 5');
+    expect(viewModel.readinessOptions.find((option) => option.value === '5')?.selected).toBe(true);
   });
 });

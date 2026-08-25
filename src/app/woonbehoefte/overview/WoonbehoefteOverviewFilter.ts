@@ -11,12 +11,26 @@ export interface WoonbehoefteOverviewFilter {
   assignment: WoonbehoefteAssignmentFilter;
   checkRequestedOnly: boolean;
   search?: string;
+  visibleCount: number;
 }
 
 export const START_YEAR_NOT_SET_VALUE = 'nog-niet-vastgesteld';
 
+/** One "Meer tonen" page. Also the visibleCount floor/step: a tampered value always rounds down to a whole number of pages. */
+export const OVERVIEW_PAGE_SIZE = 30;
+const MAX_VISIBLE_COUNT = 1000;
+
 function splitValues(value: string | undefined): string[] {
   return value ? value.split(',').filter((entry) => entry.length > 0) : [];
+}
+
+/** Anything not a whole number of pages between one page and MAX_VISIBLE_COUNT (missing, negative, a string, an extreme value) falls back to one page. */
+function resolveVisibleCount(raw: string | undefined): number {
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < OVERVIEW_PAGE_SIZE || value > MAX_VISIBLE_COUNT) {
+    return OVERVIEW_PAGE_SIZE;
+  }
+  return Math.floor(value / OVERVIEW_PAGE_SIZE) * OVERVIEW_PAGE_SIZE;
 }
 
 /** No filter query params at all: an unfiltered overview, not "everything unchecked". */
@@ -32,6 +46,7 @@ export function resolveWoonbehoefteOverviewFilter(queryStringParameters: Record<
     assignment: qsp.assignment === 'mine' ? 'MINE' : qsp.assignment === 'unclaimed' ? 'UNCLAIMED' : 'ALL',
     checkRequestedOnly: qsp.check === 'requested',
     ...(qsp.search?.trim() ? { search: qsp.search.trim() } : {}),
+    visibleCount: resolveVisibleCount(qsp.visible),
   };
 }
 
@@ -62,6 +77,9 @@ export function serializeWoonbehoefteOverviewFilter(filter: WoonbehoefteOverview
   }
   if (filter.search) {
     params.set('search', filter.search);
+  }
+  if (filter.visibleCount > OVERVIEW_PAGE_SIZE) {
+    params.set('visible', String(filter.visibleCount));
   }
   return params.toString();
 }

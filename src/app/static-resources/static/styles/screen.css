@@ -405,6 +405,7 @@ footer {
   font-weight: 600;
   background-color: var(--nijmegen-color-background-hover);
   color: var(--nijmegen-color-foreground-subdued);
+  white-space: nowrap;
 }
 
 .woonbehoefte-badge--in-progress {

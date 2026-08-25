@@ -1,4 +1,4 @@
-import { serializeWoonbehoefteOverviewFilter, WoonbehoefteAssignmentFilter, WoonbehoefteOverviewFilter } from './WoonbehoefteOverviewFilter';
+import { OVERVIEW_PAGE_SIZE, serializeWoonbehoefteOverviewFilter, WoonbehoefteAssignmentFilter, WoonbehoefteOverviewFilter } from './WoonbehoefteOverviewFilter';
 import { logger } from '../../../observability/Logger';
 import { APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, PROJECT_READINESS_LABELS } from '../domain/CaseLabels';
 import { CASE_STATUSES, CaseStatus } from '../domain/CaseStatus';
@@ -155,14 +155,12 @@ export interface WoonbehoefteOverviewViewModel {
   checkRequestedOnly: boolean;
   search: string;
   hasMore: boolean;
-  nextOffset?: number;
+  nextVisibleCount?: number;
   backQuery: string;
 }
 
-const PAGE_SIZE = 30;
-
 export function buildWoonbehoefteOverviewViewModel(
-  entries: WoonbehoefteCaseWithSource[], filter: WoonbehoefteOverviewFilter, actorEmail: string | undefined, offset: number = 0,
+  entries: WoonbehoefteCaseWithSource[], filter: WoonbehoefteOverviewFilter, actorEmail: string | undefined,
 ): WoonbehoefteOverviewViewModel {
   const matched = entries
     .filter((entry) => matchesOverviewFilter(entry, filter, actorEmail))
@@ -173,7 +171,7 @@ export function buildWoonbehoefteOverviewViewModel(
   )].sort((a, b) => a - b);
 
   const backQuery = serializeWoonbehoefteOverviewFilter(filter);
-  const page = matched.slice(0, offset + PAGE_SIZE);
+  const page = matched.slice(0, filter.visibleCount);
 
   return {
     rows: page.map((entry) => buildOverviewRow(entry, backQuery)),
@@ -192,7 +190,7 @@ export function buildWoonbehoefteOverviewViewModel(
     checkRequestedOnly: filter.checkRequestedOnly,
     search: filter.search ?? '',
     hasMore: page.length < matched.length,
-    ...(page.length < matched.length ? { nextOffset: page.length } : {}),
+    ...(page.length < matched.length ? { nextVisibleCount: filter.visibleCount + OVERVIEW_PAGE_SIZE } : {}),
     backQuery,
   };
 }

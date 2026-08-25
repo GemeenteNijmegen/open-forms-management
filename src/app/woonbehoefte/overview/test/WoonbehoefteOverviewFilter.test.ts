@@ -5,8 +5,25 @@ describe('resolveWoonbehoefteOverviewFilter', () => {
     const filter = resolveWoonbehoefteOverviewFilter(undefined);
 
     expect(filter).toEqual({
-      statuses: [], startYears: [], startYearNotSet: false, applicantTypes: [], assignment: 'ALL', checkRequestedOnly: false,
+      statuses: [], startYears: [], startYearNotSet: false, applicantTypes: [], assignment: 'ALL', checkRequestedOnly: false, visibleCount: 30,
     });
+  });
+
+  it('accepts a valid ?visible= as a whole number of pages', () => {
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '60' }).visibleCount).toBe(60);
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '990' }).visibleCount).toBe(990);
+  });
+
+  it('rounds a non-page-aligned ?visible= down to a whole number of pages', () => {
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '45' }).visibleCount).toBe(30);
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '61' }).visibleCount).toBe(60);
+  });
+
+  it('ignores a negative, non-numeric, or extreme ?visible= and falls back to one page', () => {
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '-30' }).visibleCount).toBe(30);
+    expect(resolveWoonbehoefteOverviewFilter({ visible: 'not-a-number' }).visibleCount).toBe(30);
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '1000000' }).visibleCount).toBe(30);
+    expect(resolveWoonbehoefteOverviewFilter({ visible: '0' }).visibleCount).toBe(30);
   });
 
   it('parses multi-select checkboxes joined by API Gateway into comma-separated values', () => {
@@ -67,5 +84,24 @@ describe('serializeWoonbehoefteOverviewFilter / sanitizeWoonbehoefteFilterQuery'
   it('sanitizes an empty/missing raw query to an empty string', () => {
     expect(sanitizeWoonbehoefteFilterQuery(undefined)).toBe('');
     expect(sanitizeWoonbehoefteFilterQuery('')).toBe('');
+  });
+
+  it('omits ?visible= entirely at the default page size, so a plain overview URL stays clean', () => {
+    expect(serializeWoonbehoefteOverviewFilter(resolveWoonbehoefteOverviewFilter({ visible: '30' }))).toBe('');
+  });
+
+  it('keeps visible=60 across a detail/back round-trip, alongside other active filters', () => {
+    const sanitized = sanitizeWoonbehoefteFilterQuery('status=NEW&visible=60&assignment=mine');
+
+    expect(sanitized).toContain('visible=60');
+    expect(sanitized).toContain('status=NEW');
+    expect(sanitized).toContain('assignment=mine');
+  });
+
+  it('never lets a tampered visible= in a back-form field re-inflate past what resolveWoonbehoefteOverviewFilter allows', () => {
+    const sanitized = sanitizeWoonbehoefteFilterQuery('visible=-30');
+
+    expect(sanitized).not.toContain('visible=-30');
+    expect(sanitized).toBe('');
   });
 });

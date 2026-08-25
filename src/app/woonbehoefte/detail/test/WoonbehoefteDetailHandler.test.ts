@@ -71,7 +71,7 @@ describe('WoonbehoefteDetailHandler', () => {
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toContain('Documenten (1)');
+    expect(response.body).toContain('Bijlagen (1)');
     expect(response.body).toContain('bewijsstuk.jpeg');
   });
 });

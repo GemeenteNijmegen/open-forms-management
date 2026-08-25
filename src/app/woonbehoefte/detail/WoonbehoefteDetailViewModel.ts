@@ -1,7 +1,7 @@
 import { WoonbehoefteDocumentRow } from '../documents/WoonbehoefteDocumentsLoader';
 import {
-  APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, CHECK_OUTCOME_LABELS, NOTE_CATEGORY_LABELS, PROJECT_READINESS_LABELS, TERNARY_ASSESSMENT_LABELS,
-  TERNARY_ASSESSMENT_UNASSESSED_LABEL,
+  APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, CHECK_OUTCOME_LABELS, NOTE_CATEGORY_LABELS, PROJECT_READINESS_CONDITIONS,
+  PROJECT_READINESS_LABELS, TERNARY_ASSESSMENT_LABELS, TERNARY_ASSESSMENT_UNASSESSED_LABEL,
 } from '../domain/CaseLabels';
 import { CaseStatus } from '../domain/CaseStatus';
 import {
@@ -141,11 +141,13 @@ export interface WoonbehoefteDetailViewModel {
   assessedCompletionPeriodLabel: string;
   assessedCompletionExplanationValue: string;
   submittedReadinessLabel: string;
+  submittedReadinessConditionText?: string;
   assessedReadinessLabel: string;
 
-  documents: WoonbehoefteDocumentRow[];
-  hasDocuments: boolean;
-  documentCountLabel: string;
+  applicationDocument?: WoonbehoefteDocumentRow;
+  attachments: WoonbehoefteDocumentRow[];
+  hasAttachments: boolean;
+  attachmentCountLabel: string;
 
   notes: WoonbehoefteNoteRow[];
   hasNotes: boolean;
@@ -239,6 +241,8 @@ export function buildWoonbehoefteDetailViewModel(
   const checkRequestNoteText = woonbehoefteCase.check.requested && woonbehoefteCase.check.requestNoteId
     ? notes.find((note) => note.noteId === woonbehoefteCase.check.requestNoteId)?.text
     : undefined;
+  const applicationDocument = documents.find((document) => document.isApplicationPdf);
+  const attachments = documents.filter((document) => !document.isApplicationPdf);
 
   return {
     caseReference: woonbehoefteCase.caseReference,
@@ -287,12 +291,17 @@ export function buildWoonbehoefteDetailViewModel(
     submittedReadinessLabel: source?.submittedProjectReadiness
       ? PROJECT_READINESS_LABELS[source.submittedProjectReadiness]
       : 'Kon niet eenduidig worden vastgesteld',
+    ...withOptional(
+      'submittedReadinessConditionText',
+      source?.submittedProjectReadiness ? PROJECT_READINESS_CONDITIONS[source.submittedProjectReadiness] : undefined,
+    ),
     assessedReadinessLabel: assessment.assessedProjectReadiness
       ? PROJECT_READINESS_LABELS[assessment.assessedProjectReadiness] : 'Nog niet vastgesteld',
 
-    documents,
-    hasDocuments: documents.length > 0,
-    documentCountLabel: `Documenten (${documents.length})`,
+    ...(applicationDocument ? { applicationDocument } : {}),
+    attachments,
+    hasAttachments: attachments.length > 0,
+    attachmentCountLabel: `Bijlagen (${attachments.length})`,
 
     notes: sortedNotes.map(noteRow),
     hasNotes: sortedNotes.length > 0,

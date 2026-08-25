@@ -1,5 +1,5 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
-import { resolveWoonbehoefteOverviewFilter } from './WoonbehoefteOverviewFilter';
+import { resolveWoonbehoefteOverviewFilter, serializeWoonbehoefteOverviewFilter } from './WoonbehoefteOverviewFilter';
 import { buildWoonbehoefteOverviewViewModel, joinCasesWithSources } from './WoonbehoefteOverviewViewModel';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
@@ -44,11 +44,9 @@ export class WoonbehoefteOverviewHandler {
     ]);
 
     const entries = joinCasesWithSources(cases, submissions);
-    const offsetRaw = Number(queryStringParameters?.offset);
-    const offset = Number.isInteger(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0;
     // Same actor-id fallback as every mutation handler uses for claimedBy, so "Door mij" also works for an identity without an email.
     const actorId = identity.email ?? identity.principalId;
-    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, actorId, offset);
+    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, actorId);
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
@@ -63,7 +61,7 @@ export class WoonbehoefteOverviewHandler {
         refreshAlreadyRunning: queryStringParameters?.refresh === 'already-running',
         refreshFailed: queryStringParameters?.refresh === 'failed',
         ...(viewModel.hasMore
-          ? { nextHref: `/woonbehoefte?${viewModel.backQuery}${viewModel.backQuery ? '&' : ''}offset=${viewModel.nextOffset}` }
+          ? { nextHref: `/woonbehoefte?${serializeWoonbehoefteOverviewFilter({ ...filter, visibleCount: viewModel.nextVisibleCount! })}` }
           : {}),
       },
     );
