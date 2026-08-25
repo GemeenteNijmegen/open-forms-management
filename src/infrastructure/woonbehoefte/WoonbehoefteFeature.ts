@@ -47,8 +47,8 @@ export class WoonbehoefteFeature extends Construct {
     const syncWorkerFunction = new WoonbehoefteSyncWorkerFunction(this, 'sync-worker-function', {
       tracing: Tracing.ACTIVE,
       logGroup: createLambdaLogGroup(this, 'woonbehoefte-sync-worker-function'),
-      // AWS Lambda's absolute maximum timeout; the runner applies its own 13-minute application cutoff.
-      timeout: Duration.minutes(14),
+      // AWS Lambda's absolute maximum timeout; the runner applies its own 13-minute application cutoff, a 2-minute margin.
+      timeout: Duration.minutes(15),
     });
     applyLambdaLoggingDefaults(syncWorkerFunction, props.configuration);
     applyWoonbehoefteDataSourceAccess(this, syncWorkerFunction);

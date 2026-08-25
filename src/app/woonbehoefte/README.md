@@ -16,7 +16,7 @@ Twee volledig gescheiden DynamoDB-tabellen, ook fysiek en via IAM:
 Tabel | Inhoud | Removal policy | Wie schrijft
 --- | --- | --- | ---
 `open-forms-management-woonbehoefte-source-cache` | genormaliseerde CSV-data, refresh-status | `DESTROY` (reproduceerbaar) | sync worker (Get/BatchGet/Put/Update), page Lambda alleen lezen + refresh claimen
-`open-forms-management-woonbehoefte-cases` | case, source-links, aantekeningen, activiteit | `RETAIN`, PITR aan | sync worker mag alleen conditioneel *aanmaken* (`PutItem`, nooit `UpdateItem`); page Lambda heeft de volledige menselijke-mutatietoegang
+`open-forms-management-woonbehoefte-cases` | case, source-links, aantekeningen, activiteit | `RETAIN`, PITR aan | sync worker mag alleen conditioneel *aanmaken* (`GetItem` + `PutItem`, nooit `UpdateItem`/`Query`/`Scan`); page Lambda heeft de volledige menselijke-mutatietoegang
 
 Een source-refresh kan daardoor nooit lopende menselijke verwerking overschrijven: de sync worker heeft
 er via IAM domweg geen rechten toe.
