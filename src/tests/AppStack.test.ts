@@ -141,7 +141,14 @@ describe('AppStack authentication and routing wiring', () => {
     expect(apiStage.Properties.StageName).toBe('$default');
     expect(apiStage.Properties.AccessLogSettings.DestinationArn).toBeDefined();
     const format = JSON.stringify(apiStage.Properties.AccessLogSettings.Format);
-    expect(format.toLowerCase()).not.toMatch(/cookie|authorization/);
+    expect(format).toEqual(expect.stringContaining('$context.requestId'));
+    expect(format).toEqual(expect.stringContaining('$context.routeKey'));
+    expect(format).toEqual(expect.stringContaining('$context.integrationStatus'));
+    expect(format).toEqual(expect.stringContaining('$context.integration.status'));
+    expect(format).toEqual(expect.stringContaining('$context.integrationErrorMessage'));
+    expect(format).toEqual(expect.stringContaining('$context.integration.requestId'));
+    expect(format).toEqual(expect.stringContaining('$context.error.message'));
+    expect(format.toLowerCase()).not.toMatch(/cookie|authorization|csrf/);
   });
 
   it('deploys the static assets to the static-resources bucket under a static/ prefix, invalidating /static/* on deploy', () => {

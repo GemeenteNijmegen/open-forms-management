@@ -1,5 +1,4 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
-import { AccessLogFormat } from 'aws-cdk-lib/aws-apigateway';
 import { CfnStage, HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { IFunction } from 'aws-cdk-lib/aws-lambda';
@@ -13,18 +12,22 @@ export interface ManagementApiProps {
   defaultFunction: IFunction;
 }
 
-// Method, path, status, ip, protocol and response size only. Headers and cookies aren't fields this format
-// can express, so a session cookie or Authorization header can't end up in an access log line by construction.
-const ACCESS_LOG_FORMAT = AccessLogFormat.jsonWithStandardFields({
-  ip: true,
-  caller: false,
-  user: false,
-  requestTime: true,
-  httpMethod: true,
-  resourcePath: true,
-  status: true,
-  protocol: true,
-  responseLength: true,
+// Request/response and integration fields only, so a 500 can be traced to either the Lambda integration
+// or the Lambda's own response without ever logging headers, cookies or a request body.
+const ACCESS_LOG_FORMAT = JSON.stringify({
+  requestId: '$context.requestId',
+  routeKey: '$context.routeKey',
+  requestTime: '$context.requestTime',
+  httpMethod: '$context.httpMethod',
+  status: '$context.status',
+  protocol: '$context.protocol',
+  responseLength: '$context.responseLength',
+  integrationStatus: '$context.integrationStatus',
+  integrationBackendStatus: '$context.integration.status',
+  integrationError: '$context.integrationErrorMessage',
+  integrationLatency: '$context.integrationLatency',
+  integrationRequestId: '$context.integration.requestId',
+  gatewayError: '$context.error.message',
 });
 
 export class ManagementApi extends Construct {
@@ -54,7 +57,7 @@ export class ManagementApi extends Construct {
     const defaultStage = this.api.defaultStage!.node.defaultChild as CfnStage;
     defaultStage.accessLogSettings = {
       destinationArn: accessLogGroup.logGroupArn,
-      format: ACCESS_LOG_FORMAT.toString(),
+      format: ACCESS_LOG_FORMAT,
     };
   }
 }
