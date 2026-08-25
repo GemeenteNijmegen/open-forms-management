@@ -16,6 +16,13 @@
     </div>
   </div>
   {{/refreshAlreadyRunning}}
+  {{#refreshFailed}}
+  <div class="utrecht-alert utrecht-alert--error" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Verversen kon niet worden gestart. Probeer het opnieuw.</p>
+    </div>
+  </div>
+  {{/refreshFailed}}
   {{#isRefreshing}}
   <p class="woonbehoefte-loading">Bezig met verversen…</p>
   {{/isRefreshing}}

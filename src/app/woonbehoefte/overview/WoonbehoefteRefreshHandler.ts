@@ -61,6 +61,7 @@ export class WoonbehoefteRefreshHandler {
     } catch (error) {
       logger.error('Failed to invoke WoonbehoefteSyncWorker', { runId, reason: errorReason(error) });
       await this.sourceCacheStore.finalizeRefresh(runId, 'FAILED', new Date(), { failureReason: 'WORKER_START_ERROR' });
+      return Response.redirect(`/woonbehoefte?refresh=failed${backParam}`, 303);
     }
 
     return Response.redirect(`/woonbehoefte?refresh=started${backParam}`, 303);

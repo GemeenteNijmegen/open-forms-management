@@ -61,6 +61,7 @@ export class WoonbehoefteOverviewHandler {
         isRefreshing: refreshState?.status === 'REFRESHING',
         refreshStarted: queryStringParameters?.refresh === 'started',
         refreshAlreadyRunning: queryStringParameters?.refresh === 'already-running',
+        refreshFailed: queryStringParameters?.refresh === 'failed',
         ...(viewModel.hasMore
           ? { nextHref: `/woonbehoefte?${viewModel.backQuery}${viewModel.backQuery ? '&' : ''}offset=${viewModel.nextOffset}` }
           : {}),
