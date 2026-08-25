@@ -55,7 +55,14 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     }
 
     const caseReference = event.pathParameters?.caseReference;
+    const documentId = event.pathParameters?.documentId;
     const isBase64Encoded = Boolean(event.isBase64Encoded);
+
+    logger.appendKeys({
+      routeKey: event.routeKey,
+      ...(caseReference ? { caseReference } : {}),
+      ...(documentId ? { documentId } : {}),
+    });
 
     if (event.routeKey === 'GET /woonbehoefte') {
       return await overviewHandler.handleRequest(identity, event.queryStringParameters);
@@ -77,7 +84,7 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
       const downloadHandler = new WoonbehoefteDocumentDownloadHandler(
         authorizationService, caseRepository, sourceCacheStore, openZaakClient, auditTrail,
       );
-      return await downloadHandler.handleRequest(identity, caseReference, event.pathParameters?.documentId);
+      return await downloadHandler.handleRequest(identity, caseReference, documentId);
     }
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/claim') {
       return await claimHandler.handleRequest('claim', identity, caseReference, cookieHeader, event.body, isBase64Encoded);
@@ -110,7 +117,10 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     const html = render(notFoundTemplate, { title: 'Pagina niet gevonden', features: [], currentPath: event.rawPath, actorEmail: identity.email });
     return Response.html(html, 404);
   } catch (error) {
-    logger.error('Unhandled error in woonbehoefte', { reason: errorReason(error) });
+    logger.error('Unhandled error in woonbehoefte', {
+      reason: errorReason(error),
+      ...(error instanceof Error ? { errorName: error.name, stack: error.stack } : {}),
+    });
     countMetric('UnhandledError');
     return Response.error(500);
   } finally {

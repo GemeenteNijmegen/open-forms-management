@@ -137,6 +137,44 @@ describe('WoonbehoefteAssessmentHandler', () => {
     );
   });
 
+  it('first set of a ternary field: the activity change has no `from` property at all (not even undefined)', async () => {
+    const caseRepository = {
+      getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', version: 1, assessment: {} }),
+      updateAssessment: jest.fn().mockResolvedValue('OK'),
+    };
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const handler = new WoonbehoefteAssessmentHandler(
+      makeAuthorizationService(), caseRepository as unknown as WoonbehoefteCaseRepository, auditTrail,
+    );
+
+    await handler.handleRequest(
+      { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ expectedVersion: '1', applicationComplete: 'YES', csrfToken }), false,
+    );
+
+    const changes = caseRepository.updateAssessment.mock.calls[0][4];
+    expect(changes).toEqual([{ field: 'assessment.applicationComplete', to: 'YES' }]);
+    expect(changes[0].hasOwnProperty('from')).toBe(false);
+  });
+
+  it('clearing an existing ternary field: the activity change has no `to` property at all (not even undefined)', async () => {
+    const caseRepository = {
+      getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', version: 1, assessment: { applicationComplete: 'YES' } }),
+      updateAssessment: jest.fn().mockResolvedValue('OK'),
+    };
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const handler = new WoonbehoefteAssessmentHandler(
+      makeAuthorizationService(), caseRepository as unknown as WoonbehoefteCaseRepository, auditTrail,
+    );
+
+    await handler.handleRequest(
+      { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ expectedVersion: '1', applicationComplete: '', csrfToken }), false,
+    );
+
+    const changes = caseRepository.updateAssessment.mock.calls[0][4];
+    expect(changes).toEqual([{ field: 'assessment.applicationComplete', from: 'YES' }]);
+    expect(changes[0].hasOwnProperty('to')).toBe(false);
+  });
+
   it('short-circuits without a repository call when nothing actually changed', async () => {
     const caseRepository = {
       getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', version: 1, assessment: {} }),

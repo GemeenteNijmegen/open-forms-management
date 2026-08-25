@@ -23,6 +23,15 @@ function isTernaryAssessment(value: string | null): value is TernaryAssessment {
 
 type FieldOutcome = { kind: 'unchanged' } | { kind: 'clear' } | { kind: 'set'; value: CaseAssessment[keyof CaseAssessment] };
 
+/** Omits `from`/`to` entirely when absent, never sets them to `undefined` - the DocumentClient rejects an explicit `undefined` value. */
+function buildChange(field: string, from: CaseActivityChange['from'], to?: CaseActivityChange['to']): CaseActivityChange {
+  return {
+    field,
+    ...(from !== undefined ? { from } : {}),
+    ...(to !== undefined ? { to } : {}),
+  };
+}
+
 /** An empty select value ("Nog niet beoordeeld") is an explicit clear, never left as "no change". */
 function ternaryOutcome(submitted: string | null): FieldOutcome {
   if (submitted === null) {
@@ -112,10 +121,10 @@ export class WoonbehoefteAssessmentHandler {
       const existing = existingCase.assessment[field];
       if (outcome.kind === 'set' && outcome.value !== existing) {
         (set as Record<string, unknown>)[field] = outcome.value;
-        changes.push({ field: `assessment.${field}`, from: existing as CaseActivityChange['from'], to: outcome.value as CaseActivityChange['to'] });
+        changes.push(buildChange(`assessment.${field}`, existing as CaseActivityChange['from'], outcome.value as CaseActivityChange['to']));
       } else if (outcome.kind === 'clear' && existing !== undefined) {
         remove.push(field);
-        changes.push({ field: `assessment.${field}`, from: existing as CaseActivityChange['from'] });
+        changes.push(buildChange(`assessment.${field}`, existing as CaseActivityChange['from']));
       }
     };
 
