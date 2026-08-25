@@ -1,3 +1,5 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { AuditTrail } from '../../../../shared/audit/AuditTrail';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { PermissionEvaluator } from '../../../../shared/authorization/PermissionEvaluator';
@@ -6,6 +8,10 @@ import { WoonbehoefteCaseRepository, WoonbehoefteCaseItems } from '../../cases/W
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteDocumentDownloadHandler } from '../WoonbehoefteDocumentDownloadHandler';
+
+jest.mock('@aws-sdk/s3-request-presigner', () => ({ getSignedUrl: jest.fn() }));
+
+const bucketName = 'test-woonbehoefte-downloads';
 
 function makeSource(overrides: Partial<WoonbehoefteSourceRecord> = {}): WoonbehoefteSourceRecord {
   return {
@@ -53,8 +59,16 @@ function makeAuthorizationService(): AuthorizationService {
   } as unknown as AuthorizationService;
 }
 
+function makeS3Client(): S3Client {
+  return { send: jest.fn().mockResolvedValue({}) } as unknown as S3Client;
+}
+
 describe('WoonbehoefteDocumentDownloadHandler', () => {
-  it('refuses a documentId from a different case: no content, even though the document exists elsewhere', async () => {
+  beforeEach(() => {
+    (getSignedUrl as jest.Mock).mockReset().mockResolvedValue('https://signed.example.invalid/downloads/doc-a');
+  });
+
+  it('refuses a documentId from a different case: no content, no S3 staging', async () => {
     const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-B', 'uuid-b')) } as unknown as WoonbehoefteCaseRepository;
     const sourceCacheStore = {
       getItems: jest.fn().mockResolvedValue(new Map([
@@ -63,28 +77,51 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = { getDocumentContent: jest.fn() } as unknown as OpenZaakClient;
     const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
 
-    const handler = new WoonbehoefteDocumentDownloadHandler(makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail);
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-B', 'doc-a');
 
     expect(response.statusCode).toBe(404);
     expect(openZaakClient.getDocumentContent).not.toHaveBeenCalled();
+    expect(s3Client.send).not.toHaveBeenCalled();
   });
 
-  it('downloads a document that is actually linked to the requested case, and audits caseReference+documentId only', async () => {
+  it('stages the document in S3 and redirects to a 60-second presigned URL, auditing caseReference+documentId only', async () => {
     const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-A', 'uuid-1')) } as unknown as WoonbehoefteCaseRepository;
     const sourceCacheStore = {
       getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', makeSource()]])),
     } as unknown as WoonbehoefteSourceCacheStore;
-    const openZaakClient = { getDocumentContent: jest.fn().mockResolvedValue({ body: new Uint8Array([1, 2, 3]) }) } as unknown as OpenZaakClient;
+    const content = { body: new Uint8Array([1, 2, 3]) };
+    const openZaakClient = {
+      getDocumentContent: jest.fn().mockResolvedValue(content),
+      getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijsstuk.jpeg', formaat: 'image/jpeg' }),
+    } as unknown as OpenZaakClient;
     const record = jest.fn().mockResolvedValue(undefined);
     const auditTrail = { record } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
 
-    const handler = new WoonbehoefteDocumentDownloadHandler(makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail);
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
 
-    expect(response.statusCode).toBe(200);
-    expect(response.headers?.['Cache-Control']).toBe('private, no-store');
+    expect(s3Client.send).toHaveBeenCalledWith(expect.any(PutObjectCommand));
+    const putCommand = (s3Client.send as jest.Mock).mock.calls[0][0] as PutObjectCommand;
+    expect(putCommand.input).toEqual(expect.objectContaining({
+      Bucket: bucketName,
+      Key: 'downloads/doc-a',
+      Body: content.body,
+      ContentType: 'image/jpeg',
+      ContentDisposition: 'attachment; filename="bewijsstuk.jpeg"',
+      CacheControl: 'private, no-store',
+    }));
+    expect(getSignedUrl).toHaveBeenCalledWith(s3Client, expect.anything(), { expiresIn: 60 });
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers?.Location).toBe('https://signed.example.invalid/downloads/doc-a');
     expect(record).toHaveBeenCalledWith(expect.objectContaining({
       eventType: 'WOONBEHOEFTE_DOCUMENT_DOWNLOADED', metadata: { caseReference: 'OF-A', documentId: 'doc-a' },
     }));
@@ -97,30 +134,15 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = { getDocumentContent: jest.fn() } as unknown as OpenZaakClient;
     const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
 
-    const handler = new WoonbehoefteDocumentDownloadHandler(makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail);
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-missing', 'doc-a');
 
     expect(response.statusCode).toBe(404);
     expect(sourceCacheStore.getItems).not.toHaveBeenCalled();
-  });
-
-  it('uses the real Open Zaak filename/content-type when metadata is available', async () => {
-    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-A', 'uuid-1')) } as unknown as WoonbehoefteCaseRepository;
-    const sourceCacheStore = {
-      getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', makeSource()]])),
-    } as unknown as WoonbehoefteSourceCacheStore;
-    const openZaakClient = {
-      getDocumentContent: jest.fn().mockResolvedValue({ body: new Uint8Array([1, 2, 3]) }),
-      getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijsstuk.jpeg', formaat: 'image/jpeg' }),
-    } as unknown as OpenZaakClient;
-    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
-
-    const handler = new WoonbehoefteDocumentDownloadHandler(makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail);
-    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
-
-    expect(response.headers?.['Content-Type']).toBe('image/jpeg');
-    expect(response.headers?.['Content-Disposition']).toContain('bewijsstuk.jpeg');
   });
 
   it('falls back to a generic filename/content-type when the metadata call fails, without blocking the download', async () => {
@@ -133,13 +155,17 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
       getDocumentMetadata: jest.fn().mockRejectedValue(new Error('metadata unavailable')),
     } as unknown as OpenZaakClient;
     const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
 
-    const handler = new WoonbehoefteDocumentDownloadHandler(makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail);
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
 
-    expect(response.statusCode).toBe(200);
-    expect(response.headers?.['Content-Type']).toBe('application/octet-stream');
-    expect(response.headers?.['Content-Disposition']).toContain('OF-A-doc-a');
+    const putCommand = (s3Client.send as jest.Mock).mock.calls[0][0] as PutObjectCommand;
+    expect(putCommand.input.ContentType).toBe('application/octet-stream');
+    expect(putCommand.input.ContentDisposition).toContain('OF-A-doc-a');
+    expect(response.statusCode).toBe(302);
   });
 
   it('never offers the CSV document for download, even if requested by its documentId', async () => {
@@ -148,11 +174,37 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', csvSource]])) } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = { getDocumentContent: jest.fn() } as unknown as OpenZaakClient;
     const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
 
-    const handler = new WoonbehoefteDocumentDownloadHandler(makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail);
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'csv-1');
 
     expect(response.statusCode).toBe(404);
     expect(openZaakClient.getDocumentContent).not.toHaveBeenCalled();
+    expect(s3Client.send).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 and skips the success audit when staging in S3 fails', async () => {
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-A', 'uuid-1')) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = {
+      getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', makeSource()]])),
+    } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {
+      getDocumentContent: jest.fn().mockResolvedValue({ body: new Uint8Array([1, 2, 3]) }),
+      getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijsstuk.jpeg', formaat: 'image/jpeg' }),
+    } as unknown as OpenZaakClient;
+    const record = jest.fn().mockResolvedValue(undefined);
+    const auditTrail = { record } as unknown as AuditTrail;
+    const s3Client = { send: jest.fn().mockRejectedValue(new Error('s3 unavailable')) } as unknown as S3Client;
+
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
+
+    expect(response.statusCode).toBe(500);
+    expect(record).not.toHaveBeenCalled();
   });
 });

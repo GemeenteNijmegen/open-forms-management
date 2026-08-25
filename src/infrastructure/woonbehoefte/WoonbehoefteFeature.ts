@@ -6,6 +6,7 @@ import { Construct } from 'constructs';
 import { WoonbehoefteCasesTable } from './WoonbehoefteCasesTable';
 import { applyWoonbehoefteDataSourceAccess } from './WoonbehoefteDataSourceAccess';
 import { WoonbehoefteSourceCacheTable } from './WoonbehoefteSourceCacheTable';
+import { WoonbehoefteTemporaryDownloadsBucket } from './WoonbehoefteTemporaryDownloadsBucket';
 import { WoonbehoefteSyncWorkerFunction } from '../../app/woonbehoefte/source/woonbehoefteSyncWorker-function';
 import { WoonbehoefteFunction } from '../../app/woonbehoefte/woonbehoefte-function';
 import { Configuration } from '../../Configuration';
@@ -61,6 +62,8 @@ export class WoonbehoefteFeature extends Construct {
       logGroup: createLambdaLogGroup(this, 'woonbehoefte-page-function'),
       // Document download/detail routes call Objects/Open Zaak live; 29s (not 30s) matches HttpApi's own hard integration timeout.
       timeout: Duration.seconds(29),
+      // A ~15MB document download is read into memory in full before it's staged in S3; the 128MB default runs out of headroom.
+      memorySize: 256,
     });
     applyLambdaLoggingDefaults(pageFunction, props.configuration);
     applyPageLambdaDefaults(this, pageFunction, props.permissionsTable, props.auditTrailTable, props.sessionsTable, props.configuration);
@@ -71,6 +74,10 @@ export class WoonbehoefteFeature extends Construct {
     pageFunction.addEnvironment('WOONBEHOEFTE_CASES_TABLE', casesTable.table.tableName);
     syncWorkerFunction.grantInvoke(pageFunction);
     pageFunction.addEnvironment('WOONBEHOEFTE_SYNC_WORKER_FUNCTION_NAME', syncWorkerFunction.functionName);
+
+    const temporaryDownloadsBucket = new WoonbehoefteTemporaryDownloadsBucket(this, 'temporary-downloads-bucket');
+    temporaryDownloadsBucket.grantFrontendAccess(pageFunction);
+    pageFunction.addEnvironment('WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET', temporaryDownloadsBucket.bucket.bucketName);
 
     const integration = new HttpLambdaIntegration('integration-woonbehoefte-function', pageFunction);
     props.managementApi.api.addRoutes({ path: '/woonbehoefte', methods: [HttpMethod.GET], integration });

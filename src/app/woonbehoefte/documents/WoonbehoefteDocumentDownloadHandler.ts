@@ -1,3 +1,5 @@
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { errorReason } from '../../../observability/errorReason';
 import { logger } from '../../../observability/Logger';
@@ -12,6 +14,7 @@ import { isReadySource, SourceDocumentReference, WoonbehoefteSourceRecord } from
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
+const PRESIGN_EXPIRY_SECONDS = 60;
 
 /** Only these roles are ever offered for download; the CSV export itself is a sync input, not a medewerker document. */
 function findDownloadableDocument(sources: WoonbehoefteSourceRecord[], documentId: string): SourceDocumentReference | undefined {
@@ -34,6 +37,11 @@ function sanitizeFilenameSegment(value: string): string {
  * supplies `caseReference`/`documentId`; the backend resolves the real Open Zaak URL itself from the
  * case's own source links, and refuses anything not actually linked to this case (document IDOR
  * protection). Never trusts a browser-supplied Open Zaak URL.
+ *
+ * The Open Zaak bytes never go back through API Gateway/Lambda as the response body: a large document
+ * would hit the payload limit and the medewerker's browser would see a bare 500. Instead the content is
+ * staged in a private, short-lived S3 bucket and the medewerker gets redirected to a 60-second presigned
+ * GetObject URL, the same pattern `SportReportDownloadHandler` already uses.
  */
 export class WoonbehoefteDocumentDownloadHandler {
   constructor(
@@ -42,6 +50,8 @@ export class WoonbehoefteDocumentDownloadHandler {
     private readonly sourceCacheStore: WoonbehoefteSourceCacheStore,
     private readonly openZaakClient: OpenZaakClient,
     private readonly auditTrail: AuditTrail,
+    private readonly s3Client: S3Client,
+    private readonly bucketName: string,
   ) { }
 
   async handleRequest(identity: EmployeeIdentity, caseReference: string | undefined, documentId: string | undefined): Promise<ApiGatewayV2Response> {
@@ -89,6 +99,26 @@ export class WoonbehoefteDocumentDownloadHandler {
       logger.warn('Woonbehoefte document metadata fetch failed, falling back to a generic filename', { caseReference, documentId, reason: errorReason(error) });
     }
 
+    const key = `downloads/${documentId}`;
+    let url: string;
+    try {
+      await this.s3Client.send(new PutObjectCommand({
+        Bucket: this.bucketName,
+        Key: key,
+        Body: content.body,
+        ContentType: contentType,
+        ContentDisposition: `attachment; filename="${filename}"`,
+        CacheControl: 'private, no-store',
+      }));
+      url = await getSignedUrl(
+        this.s3Client, new GetObjectCommand({ Bucket: this.bucketName, Key: key }), { expiresIn: PRESIGN_EXPIRY_SECONDS },
+      );
+    } catch (error) {
+      logger.error('Woonbehoefte document staging in temporary download bucket failed', { caseReference, documentId, reason: errorReason(error) });
+      return Response.error(500);
+    }
+
+    // Semantics: the download was authorized and a temporary URL was issued, not that the browser received every byte.
     await recordAudit(this.auditTrail, {
       eventType: 'WOONBEHOEFTE_DOCUMENT_DOWNLOADED',
       outcome: 'SUCCESS',
@@ -99,15 +129,6 @@ export class WoonbehoefteDocumentDownloadHandler {
       metadata: { caseReference, documentId },
     });
 
-    return {
-      statusCode: 200,
-      isBase64Encoded: true,
-      body: Buffer.from(content.body).toString('base64'),
-      headers: {
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'private, no-store',
-      },
-    };
+    return Response.redirect(url, 302);
   }
 }

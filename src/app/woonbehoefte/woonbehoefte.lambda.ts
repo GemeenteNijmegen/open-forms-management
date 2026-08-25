@@ -1,5 +1,6 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { LambdaClient } from '@aws-sdk/client-lambda';
+import { S3Client } from '@aws-sdk/client-s3';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { environmentVariables } from '@gemeentenijmegen/utils';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
@@ -28,6 +29,7 @@ import notFoundTemplate from '../home/templates/notFound.mustache';
 
 const dynamoDBClient = new DynamoDBClient({});
 const lambdaClient = new LambdaClient({});
+const s3Client = new S3Client({});
 const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const caseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
@@ -81,8 +83,10 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     }
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}/documents/{documentId}') {
       const openZaakClient = await getOpenZaakClient();
+      const env = environmentVariables(['WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET'] as const);
       const downloadHandler = new WoonbehoefteDocumentDownloadHandler(
         authorizationService, caseRepository, sourceCacheStore, openZaakClient, auditTrail,
+        s3Client, env.WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET,
       );
       return await downloadHandler.handleRequest(identity, caseReference, documentId);
     }
