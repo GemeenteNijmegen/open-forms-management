@@ -80,8 +80,10 @@ export class WoonbehoefteDetailHandler {
     const canManage = context.evaluator.evaluate(WOONBEHOEFTE_MANAGE_CHECK) === 'ALLOW';
     const csrf = canManage ? issueCsrfToken() : undefined;
     const backQuery = sanitizeWoonbehoefteFilterQuery(queryStringParameters?.back);
+    // Same actor-id fallback as every mutation handler uses for claimedBy, so the own-claim UI also works for an identity without an email.
+    const actorId = identity.email ?? identity.principalId;
     const viewModel = buildWoonbehoefteDetailViewModel(
-      caseItems.woonbehoefteCase, source, availability, documents, caseItems.notes, caseItems.activities, canManage, identity.email, backQuery,
+      caseItems.woonbehoefteCase, source, availability, documents, caseItems.notes, caseItems.activities, canManage, actorId, backQuery,
       csrf?.value,
     );
 

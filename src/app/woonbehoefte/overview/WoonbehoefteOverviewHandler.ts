@@ -46,7 +46,9 @@ export class WoonbehoefteOverviewHandler {
     const entries = joinCasesWithSources(cases, submissions);
     const offsetRaw = Number(queryStringParameters?.offset);
     const offset = Number.isInteger(offsetRaw) && offsetRaw > 0 ? offsetRaw : 0;
-    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, identity.email, offset);
+    // Same actor-id fallback as every mutation handler uses for claimedBy, so "Door mij" also works for an identity without an email.
+    const actorId = identity.email ?? identity.principalId;
+    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, actorId, offset);
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
