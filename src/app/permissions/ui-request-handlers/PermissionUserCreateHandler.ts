@@ -36,7 +36,8 @@ export class PermissionUserCreateHandler {
 
     const parsed = parsePermissionGrantRequest(form, this.catalog);
     if (!parsed) {
-      return Response.redirect('/permissions/users/new?status=invalid', 303);
+      const resource = form.get('resource');
+      return Response.redirect(`/permissions/users/new?status=invalid${resource ? `&resource=${encodeURIComponent(resource)}` : ''}`, 303);
     }
 
     /**

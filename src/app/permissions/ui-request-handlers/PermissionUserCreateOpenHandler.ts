@@ -10,9 +10,10 @@ import { visiblePermissionsFeature } from '../PermissionsNavigationFeature';
 import permissionCreateTemplate from '../templates/permission-create.mustache';
 
 /**
- * Handles GET /permissions/users/new. Always targets the actor's first manageable resource: the current
- * catalog only registers Sport, so there is no real data yet to justify a resource picker for an actor who
- * manages several resources at once.
+ * Handles GET /permissions/users/new. An actor who manages only one resource still gets it automatically.
+ * An actor who manages several needs an explicit `?resource=` (the overview links to one URL per
+ * resource); without a matching one, this redirects back to the overview rather than silently defaulting
+ * to whichever resource happens to be first.
  */
 export class PermissionUserCreateOpenHandler {
   constructor(
@@ -28,7 +29,16 @@ export class PermissionUserCreateOpenHandler {
       return this.authorizationService.denyAccess(context, { resource: 'permissions', action: 'create' });
     }
 
-    const [resource] = manageable;
+    const requestedResource = queryStringParameters?.resource;
+    // An explicit ?resource= is always validated against manageableResources, even when the actor only manages one:
+    // a mismatched query never silently falls back to "the one resource I do manage" instead of rejecting it.
+    const resource = requestedResource
+      ? manageable.find((definition) => definition.resource === requestedResource)
+      : (manageable.length === 1 ? manageable[0] : undefined);
+    if (!resource) {
+      return Response.redirect('/permissions', 303);
+    }
+
     const csrfToken = issueCsrfToken();
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
 
