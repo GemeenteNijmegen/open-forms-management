@@ -1,5 +1,5 @@
 import { DynamoDBDocumentClient, GetCommand, QueryCommand, ScanCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
-import { PermissionAdministrationRepository, PermissionAdministrationUser } from './PermissionAdministrationRepository';
+import { PermissionAdministrationRepository, PermissionAdministrationUser, RemoveResourceGrantsResult } from './PermissionAdministrationRepository';
 import { logger } from '../../../observability/Logger';
 import { PermissionGrant } from '../../../shared/authorization/PermissionGrant';
 import { grantToItem, isSubjectItem, subjectToItem, SUBJECT_SORT_KEY, toPermissionGrant } from '../../../shared/authorization/PermissionTableItem';
@@ -58,11 +58,17 @@ export class DynamoDbPermissionAdministrationRepository implements PermissionAdm
     logger.debug('Permission resource grants replaced', { resource, replacedCount: existingKeys.length });
   }
 
-  async removeResourceGrants(email: string, resource: string): Promise<{ subjectRemoved: boolean }> {
+  async removeResourceGrants(email: string, resource: string): Promise<RemoveResourceGrantsResult> {
     const items = await this.queryAllItems(email);
     const resourceKeys = items
       .filter((item) => typeof item.sk === 'string' && item.sk.startsWith(`${resource}#`))
       .map((item) => ({ pk: email, sk: item.sk as string }));
+
+    if (resourceKeys.length === 0) {
+      logger.debug('Permission resource grants already absent', { resource });
+      return { resourceRemoved: false, subjectRemoved: false };
+    }
+
     const hasOtherResourceGrants = items.some((item) => !isSubjectItem(item) && typeof item.resource === 'string' && item.resource !== resource);
     const subjectRemoved = !hasOtherResourceGrants;
 
@@ -74,7 +80,7 @@ export class DynamoDbPermissionAdministrationRepository implements PermissionAdm
     }));
 
     logger.debug('Permission resource grants removed', { resource, removedCount: resourceKeys.length, subjectRemoved });
-    return { subjectRemoved };
+    return { resourceRemoved: true, subjectRemoved };
   }
 
   private async queryAllItems(email: string): Promise<Record<string, unknown>[]> {

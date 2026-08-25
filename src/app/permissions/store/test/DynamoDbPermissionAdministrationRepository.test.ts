@@ -137,7 +137,7 @@ describe('DynamoDbPermissionAdministrationRepository', () => {
 
     const result = await newRepository().removeResourceGrants('piet@nijmegen.nl', 'sport');
 
-    expect(result).toEqual({ subjectRemoved: true });
+    expect(result).toEqual({ resourceRemoved: true, subjectRemoved: true });
     const transactItems = documentMock.commandCalls(TransactWriteCommand)[0].args[0].input.TransactItems!;
     expect(transactItems).toEqual(expect.arrayContaining([
       { Delete: { TableName: 'test-permissions-table', Key: { pk: 'piet@nijmegen.nl', sk: 'sport#1' } } },
@@ -159,8 +159,33 @@ describe('DynamoDbPermissionAdministrationRepository', () => {
 
     const result = await newRepository().removeResourceGrants('piet@nijmegen.nl', 'sport');
 
-    expect(result).toEqual({ subjectRemoved: false });
+    expect(result).toEqual({ resourceRemoved: true, subjectRemoved: false });
     const transactItems = documentMock.commandCalls(TransactWriteCommand)[0].args[0].input.TransactItems!;
     expect(transactItems).toEqual([{ Delete: { TableName: 'test-permissions-table', Key: { pk: 'piet@nijmegen.nl', sk: 'sport#1' } } }]);
+  });
+
+  it('removes nothing and leaves the subject intact when the target has no grants for the requested resource', async () => {
+    documentMock.on(QueryCommand).resolves({
+      Items: [
+        { pk: 'piet@nijmegen.nl', sk: '_subject', createdAt: '2026-08-22T20:00:00.000Z' },
+        { pk: 'piet@nijmegen.nl', sk: 'app2#1', resource: 'app2', actions: ['view'] },
+      ],
+    });
+
+    const result = await newRepository().removeResourceGrants('piet@nijmegen.nl', 'sport');
+
+    expect(result).toEqual({ resourceRemoved: false, subjectRemoved: false });
+    expect(documentMock.commandCalls(TransactWriteCommand)).toHaveLength(0);
+  });
+
+  it('removes nothing for a subject-only target that has no grants at all', async () => {
+    documentMock.on(QueryCommand).resolves({
+      Items: [{ pk: 'piet@nijmegen.nl', sk: '_subject', createdAt: '2026-08-22T20:00:00.000Z' }],
+    });
+
+    const result = await newRepository().removeResourceGrants('piet@nijmegen.nl', 'sport');
+
+    expect(result).toEqual({ resourceRemoved: false, subjectRemoved: false });
+    expect(documentMock.commandCalls(TransactWriteCommand)).toHaveLength(0);
   });
 });
