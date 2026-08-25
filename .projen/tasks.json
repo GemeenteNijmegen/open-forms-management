@@ -101,6 +101,9 @@
         },
         {
           "spawn": "bundle:app/woonbehoefte/source/woonbehoefteSyncWorker.lambda"
+        },
+        {
+          "spawn": "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda"
         }
       ]
     },
@@ -263,6 +266,24 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda": {
+      "name": "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda",
+      "description": "Create a JavaScript bundle from src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda:watch": {
+      "name": "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

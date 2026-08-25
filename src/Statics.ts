@@ -51,6 +51,7 @@ export class Statics {
   // MARK: woonbehoefte
   static readonly woonbehoefteSourceCacheTableName = `${Statics.projectName}-woonbehoefte-source-cache`;
   static readonly woonbehoefteCasesTableName = `${Statics.projectName}-woonbehoefte-cases`;
+  static readonly woonbehoefteCaseVersionsTableName = `${Statics.projectName}-woonbehoefte-case-versions`;
 
   // MARK: OIDC (Microsoft Entra ID)
   static readonly ssmOidcIssuer = `/${Statics.projectName}/oidc/issuer`;

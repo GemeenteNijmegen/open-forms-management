@@ -27,6 +27,8 @@
     "bundle:app/sport/sport.lambda:watch": "projen bundle:app/sport/sport.lambda:watch",
     "bundle:app/woonbehoefte/source/woonbehoefteSyncWorker.lambda": "projen bundle:app/woonbehoefte/source/woonbehoefteSyncWorker.lambda",
     "bundle:app/woonbehoefte/source/woonbehoefteSyncWorker.lambda:watch": "projen bundle:app/woonbehoefte/source/woonbehoefteSyncWorker.lambda:watch",
+    "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda": "projen bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda",
+    "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda:watch": "projen bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda:watch",
     "bundle:app/woonbehoefte/woonbehoefte.lambda": "projen bundle:app/woonbehoefte/woonbehoefte.lambda",
     "bundle:app/woonbehoefte/woonbehoefte.lambda:watch": "projen bundle:app/woonbehoefte/woonbehoefte.lambda:watch",
     "bundle:copy-web-components": "projen bundle:copy-web-components",

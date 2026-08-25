@@ -1,13 +1,16 @@
 import { Duration } from 'aws-cdk-lib';
 import { HttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
-import { Tracing } from 'aws-cdk-lib/aws-lambda';
+import { StartingPosition, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import { WoonbehoefteCasesTable } from './WoonbehoefteCasesTable';
+import { WoonbehoefteCaseVersionsTable } from './WoonbehoefteCaseVersionsTable';
 import { applyWoonbehoefteDataSourceAccess } from './WoonbehoefteDataSourceAccess';
 import { WoonbehoefteSourceCacheTable } from './WoonbehoefteSourceCacheTable';
 import { WoonbehoefteTemporaryDownloadsBucket } from './WoonbehoefteTemporaryDownloadsBucket';
 import { WoonbehoefteSyncWorkerFunction } from '../../app/woonbehoefte/source/woonbehoefteSyncWorker-function';
+import { WoonbehoefteCaseVersionWorkerFunction } from '../../app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function';
 import { WoonbehoefteFunction } from '../../app/woonbehoefte/woonbehoefte-function';
 import { Configuration } from '../../Configuration';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from '../../observability/LambdaLogging';
@@ -35,14 +38,17 @@ export interface WoonbehoefteFeatureProps {
 export class WoonbehoefteFeature extends Construct {
   public readonly sourceCacheTable: WoonbehoefteSourceCacheTable;
   public readonly casesTable: WoonbehoefteCasesTable;
+  public readonly caseVersionsTable: WoonbehoefteCaseVersionsTable;
 
   constructor(scope: Construct, id: string, props: WoonbehoefteFeatureProps) {
     super(scope, id);
 
     const sourceCacheTable = new WoonbehoefteSourceCacheTable(this, 'source-cache-table');
     const casesTable = new WoonbehoefteCasesTable(this, 'cases-table');
+    const caseVersionsTable = new WoonbehoefteCaseVersionsTable(this, 'case-versions-table');
     this.sourceCacheTable = sourceCacheTable;
     this.casesTable = casesTable;
+    this.caseVersionsTable = caseVersionsTable;
 
     const syncWorkerFunction = new WoonbehoefteSyncWorkerFunction(this, 'sync-worker-function', {
       tracing: Tracing.ACTIVE,
@@ -78,6 +84,28 @@ export class WoonbehoefteFeature extends Construct {
     const temporaryDownloadsBucket = new WoonbehoefteTemporaryDownloadsBucket(this, 'temporary-downloads-bucket');
     temporaryDownloadsBucket.grantFrontendAccess(pageFunction);
     pageFunction.addEnvironment('WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET', temporaryDownloadsBucket.bucket.bucketName);
+
+    const caseVersionWorkerFunction = new WoonbehoefteCaseVersionWorkerFunction(this, 'case-version-worker-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'woonbehoefte-case-version-worker-function'),
+      // Ample for a batch of 10 small PutItems; not the page's HTTP-facing timeout or the sync worker's 15 minutes.
+      timeout: Duration.seconds(30),
+    });
+    applyLambdaLoggingDefaults(caseVersionWorkerFunction, props.configuration);
+    caseVersionWorkerFunction.addEnvironment('WOONBEHOEFTE_CASE_VERSIONS_TABLE', caseVersionsTable.table.tableName);
+    caseVersionsTable.grantWriterAccess(caseVersionWorkerFunction);
+    // Polls cases table. No extra cost, only invocations are billed.
+    caseVersionWorkerFunction.addEventSource(new DynamoEventSource(casesTable.table, {
+      // The stream is only enabled from this deploy onward; TRIM_HORIZON picks up the oldest records still
+      // available so nothing written between enabling the stream and this mapping going live is missed.
+      startingPosition: StartingPosition.TRIM_HORIZON,
+      batchSize: 10,
+      bisectBatchOnError: true,
+      // Keep retrying until the stream record itself expires; there is no DLQ for this worker.
+      // Max 24 hour retry and time between retries grows exponentially.
+      // Free tier or worst case 2 cents for everything if it retries everything
+      retryAttempts: -1,
+    }));
 
     const integration = new HttpLambdaIntegration('integration-woonbehoefte-function', pageFunction);
     props.managementApi.api.addRoutes({ path: '/woonbehoefte', methods: [HttpMethod.GET], integration });

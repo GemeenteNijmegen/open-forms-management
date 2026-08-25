@@ -69,7 +69,7 @@ describe('AppStack authentication and routing wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(10);
+    expect(Object.keys(logGroups)).toHaveLength(11);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
@@ -93,6 +93,52 @@ describe('AppStack authentication and routing wiring', () => {
       Properties: { AlarmName: 'increased-error-rate-home-function-error-alarm-low-lvl' },
     }));
     expect(Object.keys(alarms)).toHaveLength(0);
+  });
+
+  it('configures the case-version worker with active tracing, a 30s timeout and its table env var', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts',
+      TracingConfig: { Mode: 'Active' },
+      Timeout: 30,
+      Environment: Match.objectLike({ Variables: Match.objectLike({ WOONBEHOEFTE_CASE_VERSIONS_TABLE: Match.anyValue() }) }),
+    }));
+  });
+
+  it('maps the Cases stream to the case-version worker with TRIM_HORIZON, batch 10, bisect and unlimited retries', () => {
+    template.hasResourceProperties('AWS::Lambda::EventSourceMapping', Match.objectLike({
+      StartingPosition: 'TRIM_HORIZON',
+      BatchSize: 10,
+      BisectBatchOnFunctionError: true,
+      MaximumRetryAttempts: -1,
+    }));
+  });
+
+  it('does not add a dedicated error-rate alarm for the case-version worker', () => {
+    const alarms = template.findResources('AWS::CloudWatch::Alarm', Match.objectLike({
+      Properties: { AlarmName: Match.stringLikeRegexp('case-version-worker') },
+    }));
+    expect(Object.keys(alarms)).toHaveLength(0);
+  });
+
+  // The table's own PutItem-only grant is covered by WoonbehoefteCaseVersionsTable.test.ts; this only
+  // guards that page/sync worker never end up with a CaseVersions grant through the shared feature wiring.
+  it('gives the case-version worker only PutItem on CaseVersions, and gives that grant to no other role', () => {
+    const workerActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts'));
+    expect(workerActions).toContain('dynamodb:PutItem');
+    expect(workerActions).not.toEqual(expect.arrayContaining([
+      'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:TransactWriteItems', 'dynamodb:Scan', 'dynamodb:Query',
+    ]));
+
+    const [versionsTableLogicalId] = Object.keys(template.findResources('AWS::DynamoDB::Table', Match.objectLike({
+      Properties: { TableName: Match.stringLikeRegexp('woonbehoefte-case-versions') },
+    })));
+    const otherRoles = ['src/app/woonbehoefte/woonbehoefte.lambda.ts', 'src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts']
+      .map((description) => roleLogicalIdFor(template, description));
+    const policies = Object.values(template.findResources('AWS::IAM::Policy')) as any[];
+    const referencesVersionsTable = policies
+      .filter((policy) => (policy.Properties.Roles ?? []).some((role: any) => otherRoles.includes(role.Ref)))
+      .some((policy) => JSON.stringify(policy.Properties.PolicyDocument.Statement).includes(versionsTableLogicalId));
+    expect(referencesVersionsTable).toBe(false);
   });
 
   it('creates an AuditWriteFailure alarm that triggers on any failure', () => {

@@ -31,6 +31,7 @@ describe('WoonbehoefteCasesTable', () => {
       ],
       PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true },
       GlobalSecondaryIndexes: Match.absent(),
+      StreamSpecification: { StreamViewType: 'NEW_AND_OLD_IMAGES' },
     }));
   });
 

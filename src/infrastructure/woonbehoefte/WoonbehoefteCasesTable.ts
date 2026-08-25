@@ -1,5 +1,5 @@
 import { RemovalPolicy } from 'aws-cdk-lib';
-import { AttributeType, BillingMode, Table, TableEncryption } from 'aws-cdk-lib/aws-dynamodb';
+import { AttributeType, BillingMode, StreamViewType, Table, TableEncryption } from 'aws-cdk-lib/aws-dynamodb';
 import { Grant, IGrantable } from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { Statics } from '../../Statics';
@@ -23,6 +23,8 @@ export class WoonbehoefteCasesTable extends Construct {
       encryption: TableEncryption.AWS_MANAGED,
       pointInTimeRecoverySpecification: { pointInTimeRecoveryEnabled: true },
       removalPolicy: RemovalPolicy.RETAIN,
+      // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Streams.html
+      stream: StreamViewType.NEW_AND_OLD_IMAGES,
     });
   }
 

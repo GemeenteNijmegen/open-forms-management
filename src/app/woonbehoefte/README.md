@@ -11,15 +11,17 @@ beoordeling, status, interne updates en checks.
   bestand naar eigen opslag; een download haalt de inhoud live bij Open Zaak op.
 - De applicatie schrijft nooit terug naar Objects, Open Zaak of Open Forms.
 
-Twee volledig gescheiden DynamoDB-tabellen, ook fysiek en via IAM:
+Drie volledig gescheiden DynamoDB-tabellen, ook fysiek en via IAM:
 
 Tabel | Inhoud | Removal policy | Wie schrijft
 --- | --- | --- | ---
 `open-forms-management-woonbehoefte-source-cache` | genormaliseerde CSV-data, refresh-status | `DESTROY` (reproduceerbaar) | sync worker (Get/BatchGet/Put/Update), page Lambda alleen lezen + refresh claimen
 `open-forms-management-woonbehoefte-cases` | case, source-links, aantekeningen, activiteit | `RETAIN`, PITR aan | sync worker mag alleen conditioneel *aanmaken* (`GetItem` + `PutItem`, nooit `UpdateItem`/`Query`/`Scan`); page Lambda heeft de volledige menselijke-mutatietoegang
+`open-forms-management-woonbehoefte-case-versions` | immutable snapshots van het main CASE-item per versie | `RETAIN`, PITR aan | case-version worker, alleen conditionele `PutItem` (nooit `UpdateItem`/`DeleteItem`); geen enkele andere Lambda heeft hier toegang toe
 
 Een source-refresh kan daardoor nooit lopende menselijke verwerking overschrijven: de sync worker heeft
-er via IAM domweg geen rechten toe.
+er via IAM domweg geen rechten toe. Dezelfde scheiding geldt voor de case-versiehistorie: die schrijft de
+page Lambda en de sync worker nooit zelf, zie hieronder.
 
 ## Refreshflow
 
@@ -51,6 +53,47 @@ CSV, en initialiseert daarna voor **elke** actuele `READY`-submission (dus ook a
 primaire source-link, conditioneel. Zo herstelt een eerder afgebroken run zichzelf bij de volgende
 refresh, zonder ooit een bestaande case te overschrijven.
 
+## Case-versiehistorie
+
+Elke succesvolle wijziging van het main CASE-item krijgt een eigen immutable snapshot, downstream via een
+DynamoDB Stream op de Cases-tabel. `WoonbehoefteCaseRepository` en de bestaande handlers weten hier niets
+van en schrijven nooit rechtstreeks naar de versiehistorie.
+
+```mermaid
+flowchart LR
+    A[CASE write] --> B[(Cases)]
+    B --> C[DynamoDB Stream]
+    C --> D[Case version worker]
+    D --> E[(CaseVersions)]
+```
+
+De Cases-stream staat op `NEW_AND_OLD_IMAGES`. De worker verwerkt alleen streamrecords met `sk = CASE`;
+notes, activities en source-links negeert hij:
+
+- `INSERT` bewaart de NEW-image;
+- `MODIFY` bewaart eerst de OLD-image (als die nog ontbreekt) en daarna de NEW-image;
+- `REMOVE` bewaart de OLD-image, als die nog ontbreekt.
+
+Een version-item:
+
+```text
+PK = CASE#<OF-reference>
+SK = VERSION#000000000001
+```
+
+met een volledige raw kopie van het main CASE-item onder `snapshot`, inclusief toekomstige CASE-velden.
+Geen notes, activities, source-CSV of documenten: die zijn elders al immutable of hebben een andere
+ownership.
+
+Een case die al `version 5` was vóór de stream werd aangezet heeft geen historie voor v1-v4: bij de eerste
+wijziging erna legt de worker eerst v5 als baseline vast en dan v6. Een case die daarna nooit meer wijzigt
+krijgt geen version-rij; de live Cases-tabel met PITR blijft daarvoor de recoverylaag.
+
+Een toekomstige restore herstelt nooit het versienummer van een snapshot. Die kiest een snapshot, leest de
+huidige live case, zet de business state van het snapshot terug op de huidige live versie en schrijft dat
+als een nieuwe versie (v7 terugzetten op een live v12 wordt v13, niet v7). Er is nu geen restore-UI of
+-route: dit is alleen de opslag ervoor.
+
 ## Permissions
 
 Resource `woonbehoefte`, acties `view` en `manage`, geen scopes. Zoals overal in deze applicatie:
@@ -71,6 +114,7 @@ src/app/woonbehoefte/
 ├── domain/          case-/source-typen, Nederlandse labels, datum/periode-formattering
 ├── source/          CSV-parser, Objects-query, sync worker en de bijbehorende cache-store
 ├── cases/            de Cases-tabel-repository (ook de mutatielogica: claim, status, beoordeling, ...)
+├── versions/         case-versiehistorie: store, stream-runner, worker-Lambda en gegenereerde wrapper
 ├── overview/        werkvoorraad: filter, viewmodel, handler, refresh-actie
 ├── detail/           casedetail: viewmodel en handler
 ├── documents/         live documentmetadata en de beveiligde downloadroute
@@ -86,6 +130,7 @@ src/infrastructure/woonbehoefte/
 ├── WoonbehoefteFeature.ts             composition root: tabellen, Lambda's, IAM, routes
 ├── WoonbehoefteSourceCacheTable.ts
 ├── WoonbehoefteCasesTable.ts
+├── WoonbehoefteCaseVersionsTable.ts
 └── WoonbehoefteDataSourceAccess.ts    eigen kopie van het Objects/Open Zaak-credentialpatroon
 ```
 
@@ -100,7 +145,7 @@ afhankelijkheid.
 Als de aanvraagronde is afgerond, is de feature in principe met een paar deletes te verwijderen:
 
 1. `src/AppStack.ts` - de `WoonbehoefteFeature`-invocation en de bijbehorende import verwijderen.
-2. `src/Statics.ts` - de twee `woonbehoefte*TableName`-constanten verwijderen.
+2. `src/Statics.ts` - de drie `woonbehoefte*TableName`-constanten verwijderen.
 3. `src/shared/navigation/RegisteredFeatures.ts` - het `woonbehoefte`-item verwijderen.
 4. `src/app/permissions/catalog/RegisteredPermissionResources.ts` - de `woonbehoefte`-resource verwijderen.
 5. `src/shared/audit/AuditEvent.ts` - de `WOONBEHOEFTE_*`-eventtypes verwijderen (of laten staan als
@@ -114,9 +159,10 @@ Als de aanvraagronde is afgerond, is de feature in principe met een paar deletes
    volledig verwijderen.
 9. `npx projen build` draaien zodat de gegenereerde `assets/app/woonbehoefte/**` en Lambda-wrapper-code
    verdwijnen.
-10. De **Cases-tabel** heeft `RemovalPolicy.RETAIN`: die verdwijnt niet automatisch bij een deploy na
-    verwijdering van de CDK-constructs. Exporteer de inhoud (of besluit bewust dat bewaren niet nodig is)
-    en verwijder de tabel daarna handmatig.
+10. De **Cases-tabel** en de **CaseVersions-tabel** hebben beide `RemovalPolicy.RETAIN`: ze verdwijnen niet
+    automatisch bij een deploy na verwijdering van de CDK-constructs. Exporteer de inhoud van allebei (of
+    besluit bewust dat bewaren niet nodig is) en verwijder ze daarna handmatig. De SourceCache-tabel is
+    reproduceerbaar en mag volgens de huidige policy gewoon verdwijnen.
 
 Stap 9 en 10 zijn destructief/vereisen een bewuste keuze en horen bij een losse, expliciete
 opruimactie, niet bij een gewone code-PR.
