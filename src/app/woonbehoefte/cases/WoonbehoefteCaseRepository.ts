@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, ScanCommand, TransactWriteCommand } from '@aws-sdk/lib-dynamodb';
+import { NOTE_CATEGORY_LABELS } from '../domain/CaseLabels';
 import { CaseStatus } from '../domain/CaseStatus';
 import {
   CaseActivity, CaseActivityType, CaseAssessment, CaseCheck, CaseNote, CaseNoteCategory, CaseSourceLink, CaseSourceRelation, WoonbehoefteCase,
@@ -430,14 +431,18 @@ export class WoonbehoefteCaseRepository {
   ): Promise<CaseMutationResult> {
     const nowIso = now.toISOString();
     const set: Record<string, unknown> = { 'check.requested': true, 'check.requestedAt': nowIso, 'check.requestedBy': actorEmail };
+    const remove: string[] = [];
     const noteToAdd = noteText
       ? { noteId: randomUUID(), caseReference, category: 'CHECK' as const, text: noteText, createdAt: nowIso, createdBy: actorEmail }
       : undefined;
     if (noteToAdd) {
       set['check.requestNoteId'] = noteToAdd.noteId;
+    } else {
+      // A request without a toelichting never leaves a stale requestNoteId from an earlier check cycle pointing at it.
+      remove.push('check.requestNoteId');
     }
     return this.mutateCase(
-      caseReference, expectedVersion, { set }, { type: 'CHECK_REQUESTED', summary: `Check gevraagd door ${actorEmail}` }, actorEmail, now,
+      caseReference, expectedVersion, { set, remove }, { type: 'CHECK_REQUESTED', summary: `Check gevraagd door ${actorEmail}` }, actorEmail, now,
       { noteToAdd },
     );
   }
@@ -475,7 +480,7 @@ export class WoonbehoefteCaseRepository {
       actor: actorEmail,
       occurredAt: nowIso,
       type: 'NOTE_ADDED',
-      summary: `Interne aantekening toegevoegd (${category})`,
+      summary: `Interne aantekening toegevoegd (${NOTE_CATEGORY_LABELS[category]})`,
     };
 
     await this.documentClient.send(new TransactWriteCommand({

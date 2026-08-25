@@ -1,4 +1,4 @@
-import { WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
+import { CaseNote, WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { buildWoonbehoefteDetailViewModel } from '../WoonbehoefteDetailViewModel';
 
@@ -141,6 +141,16 @@ describe('buildWoonbehoefteDetailViewModel', () => {
     expect(viewModel.activities.map((a) => a.summary)).toEqual(['nieuw', 'oud']);
   });
 
+  it('labels a note category in Dutch, from the shared CaseLabels map, never the raw enum value', () => {
+    const viewModel = buildWoonbehoefteDetailViewModel(
+      makeCase(), makeSource(), 'READY', [],
+      [{ noteId: 'n1', caseReference: 'OF-1', category: 'CONTACT', text: 'Gebeld met aanvrager', createdAt: '2026-08-01T00:00:00.000Z', createdBy: 'a@example.nl' }],
+      [], true, 'medewerker@example.nl', '', 'csrf-token',
+    );
+
+    expect(viewModel.notes[0].categoryLabel).toBe('Contact');
+  });
+
   it('formats activity change lines in Dutch, never leaking raw English enum values', () => {
     const viewModel = buildWoonbehoefteDetailViewModel(
       makeCase(), makeSource(), 'READY', [], [],
@@ -183,5 +193,28 @@ describe('buildWoonbehoefteDetailViewModel', () => {
     for (const line of [statusLine, assessmentLine, checkLine]) {
       expect(line).not.toMatch(/[A-Z]{2,}_[A-Z]+/);
     }
+  });
+
+  it('shows the check request toelichting when the requested note is found among the case notes', () => {
+    const note: CaseNote = {
+      noteId: 'note-1', caseReference: 'OF-1', category: 'CHECK', text: 'Kun je de bewijsstukken nalopen?', createdAt: '2026-08-01T00:00:00.000Z', createdBy: 'medewerker@example.nl',
+    };
+    const woonbehoefteCase = makeCase({ check: { requested: true, requestedBy: 'medewerker@example.nl', requestNoteId: 'note-1' } });
+
+    const viewModel = buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase, makeSource(), 'READY', [], [note], [], true, 'medewerker@example.nl', '', 'csrf-token',
+    );
+
+    expect(viewModel.checkRequestNoteText).toBe('Kun je de bewijsstukken nalopen?');
+  });
+
+  it('has no checkRequestNoteText when the check has no requestNoteId: no empty placeholder', () => {
+    const woonbehoefteCase = makeCase({ check: { requested: true, requestedBy: 'medewerker@example.nl' } });
+
+    const viewModel = buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase, makeSource(), 'READY', [], [], [], true, 'medewerker@example.nl', '', 'csrf-token',
+    );
+
+    expect(viewModel.checkRequestNoteText).toBeUndefined();
   });
 });

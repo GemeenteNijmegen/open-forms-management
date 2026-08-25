@@ -45,6 +45,17 @@ export class WoonbehoefteCheckHandler {
       return Response.error(400);
     }
 
+    const existingCase = await this.caseRepository.getCase(caseReference);
+    if (!existingCase) {
+      return Response.error(404);
+    }
+    if (handling === 'request' && existingCase.check.requested) {
+      return Response.error(409);
+    }
+    if (handling === 'complete' && !existingCase.check.requested) {
+      return Response.error(409);
+    }
+
     // The optional toelichting is written in the same transaction as the check mutation itself
     // (WoonbehoefteCaseRepository), so a failed check mutation can never leave an orphan note behind.
     const noteText = form.get('note')?.trim() || undefined;

@@ -1,4 +1,14 @@
 import { CaseStatus } from './CaseStatus';
+import { CaseNoteCategory } from './WoonbehoefteCase';
+
+export const NOTE_CATEGORY_LABELS: Record<CaseNoteCategory, string> = {
+  GENERAL: 'Algemeen',
+  CONTACT: 'Contact',
+  ASSESSMENT: 'Beoordeling',
+  ADDITIONAL_INFORMATION: 'Aanvullende informatie',
+  ADMISSIBILITY: 'Ontvankelijkheid',
+  CHECK: 'Check',
+};
 
 export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   NEW: 'Nieuw',

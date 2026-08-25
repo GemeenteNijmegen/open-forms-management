@@ -230,7 +230,7 @@ describe('WoonbehoefteCaseRepository', () => {
     expect(note).toMatchObject({ caseReference: 'OF-1', category: 'CONTACT', text: 'Gebeld met aanvrager' });
     const items = documentMock.commandCalls(TransactWriteCommand)[0].args[0].input.TransactItems;
     expect(items?.[0].Put?.Item).toMatchObject({ text: 'Gebeld met aanvrager' });
-    expect(items?.[1].Put?.Item).toMatchObject({ type: 'NOTE_ADDED' });
+    expect(items?.[1].Put?.Item).toMatchObject({ type: 'NOTE_ADDED', summary: 'Interne aantekening toegevoegd (Contact)' });
   });
 
   it('requestCheck writes the optional toelichting as a CHECK note in the same transaction as opening the check', async () => {
@@ -251,5 +251,14 @@ describe('WoonbehoefteCaseRepository', () => {
 
     const items = documentMock.commandCalls(TransactWriteCommand)[0].args[0].input.TransactItems;
     expect(items).toHaveLength(2);
+  });
+
+  it('requestCheck without a toelichting removes a stale requestNoteId from an earlier check cycle', async () => {
+    documentMock.on(TransactWriteCommand).resolves({});
+
+    await newRepository().requestCheck('OF-1', 'medewerker@example.nl', 3, undefined);
+
+    const update = documentMock.commandCalls(TransactWriteCommand)[0].args[0].input.TransactItems?.[0].Update;
+    expect(update?.UpdateExpression).toMatch(/REMOVE .*#check\.#requestNoteId/);
   });
 });

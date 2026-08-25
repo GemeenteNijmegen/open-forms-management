@@ -161,6 +161,9 @@
     <h2 class="utrecht-heading-4">Check</h2>
     {{#checkRequested}}
     <p class="woonbehoefte-badge woonbehoefte-badge--check">{{checkRequestedInfo}}</p>
+    {{#checkRequestNoteText}}
+    <p class="utrecht-paragraph">{{checkRequestNoteText}}</p>
+    {{/checkRequestNoteText}}
     {{/checkRequested}}
     {{^checkRequested}}
     <p class="utrecht-paragraph">Geen check gevraagd.</p>

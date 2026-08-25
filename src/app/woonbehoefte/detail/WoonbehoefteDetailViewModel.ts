@@ -1,6 +1,6 @@
 import { WoonbehoefteDocumentRow } from '../documents/WoonbehoefteDocumentsLoader';
 import {
-  APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, CHECK_OUTCOME_LABELS, PROJECT_READINESS_LABELS, TERNARY_ASSESSMENT_LABELS,
+  APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, CHECK_OUTCOME_LABELS, NOTE_CATEGORY_LABELS, PROJECT_READINESS_LABELS, TERNARY_ASSESSMENT_LABELS,
   TERNARY_ASSESSMENT_UNASSESSED_LABEL,
 } from '../domain/CaseLabels';
 import { CaseStatus } from '../domain/CaseStatus';
@@ -15,14 +15,6 @@ export type WoonbehoefteSourceAvailability = 'READY' | 'FAILED' | 'MISSING';
 const TERNARY_VALUES: TernaryAssessment[] = ['YES', 'NO', 'NOT_APPLICABLE', 'UNKNOWN'];
 /** Statuses a medewerker can freely switch between via the generic select; `PROPOSED_INADMISSIBLE`/`INADMISSIBLE` each need their own dedicated action instead. */
 const GENERIC_STATUSES: CaseStatus[] = ['NEW', 'IN_PROGRESS', 'WAITING_FOR_ADDITIONAL_INFORMATION', 'READY_FOR_RANKING'];
-const NOTE_CATEGORY_LABELS: Record<CaseNoteCategory, string> = {
-  GENERAL: 'Algemeen',
-  CONTACT: 'Contactmoment',
-  ASSESSMENT: 'Beoordeling',
-  ADDITIONAL_INFORMATION: 'Aanvullende informatie',
-  ADMISSIBILITY: 'Ontvankelijkheid',
-  CHECK: 'Check',
-};
 const MONTH_OPTION_LABELS = [
   'januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december',
 ];
@@ -118,6 +110,7 @@ export interface WoonbehoefteDetailViewModel {
   isUnclaimed: boolean;
   checkRequested: boolean;
   checkRequestedInfo?: string;
+  checkRequestNoteText?: string;
   receivedLabel: string;
   statusSinceLabel: string;
 
@@ -243,6 +236,9 @@ export function buildWoonbehoefteDetailViewModel(
   const sortedNotes = [...notes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const sortedActivities = [...activities].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
   const canUseGenericStatusSelect = (GENERIC_STATUSES as string[]).includes(woonbehoefteCase.status);
+  const checkRequestNoteText = woonbehoefteCase.check.requested && woonbehoefteCase.check.requestNoteId
+    ? notes.find((note) => note.noteId === woonbehoefteCase.check.requestNoteId)?.text
+    : undefined;
 
   return {
     caseReference: woonbehoefteCase.caseReference,
@@ -258,6 +254,7 @@ export function buildWoonbehoefteDetailViewModel(
           + (woonbehoefteCase.check.requestedAt ? ` op ${formatDutchDateTime(woonbehoefteCase.check.requestedAt)}` : ''),
       }
       : {}),
+    ...withOptional('checkRequestNoteText', checkRequestNoteText),
     receivedLabel: source ? formatDutchDateTime(source.registrationAt) : '-',
     statusSinceLabel: formatDutchDateOnly(woonbehoefteCase.statusChangedAt),
 
