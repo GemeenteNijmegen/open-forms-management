@@ -34,15 +34,6 @@ export function formatDutchDateTime(isoDateTime: string): string {
   return `${day} ${monthLabel} ${year} ${hours}:${minutes}`;
 }
 
-/** A full ISO timestamp, formatted as date only: `24 augustus 2026`. Used for "Status sinds", where the time of day adds nothing. */
-export function formatDutchDateOnly(isoDateTime: string): string {
-  const date = new Date(isoDateTime);
-  const day = date.getUTCDate();
-  const monthLabel = DUTCH_MONTHS_FULL[date.getUTCMonth()];
-  const year = date.getUTCFullYear();
-  return `${day} ${monthLabel} ${year}`;
-}
-
 export function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
     return `${bytes} B`;

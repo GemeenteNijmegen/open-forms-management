@@ -375,16 +375,23 @@ footer {
 }
 
 /*
- * Fixed 3-column grid, not auto-fit: with exactly 5 fields in this DOM order (status, project,
- * behandelaar, ontvangen, statusSinds), a 3-column grid's own auto-placement fills row 1 with the first
- * three and wraps ontvangen/statusSinds onto row 2 - two compact rows instead of one field per row.
+ * Fixed 2-column grid, not auto-fit: with exactly 4 fields in this DOM order (project, behandelaar,
+ * ontvangen, statusSinds - status itself moved next to the OF-nummer, see .woonbehoefte-record__status-badge),
+ * a 2-column grid's own auto-placement pairs project/behandelaar on row 1 and the two dates
+ * (ontvangen/statusSinds) together on row 2.
  */
 .woonbehoefte-record__summary {
   display: grid;
-  grid-template-columns: minmax(6rem, 0.7fr) minmax(9rem, 1.6fr) minmax(7rem, 1fr);
+  grid-template-columns: minmax(9rem, 1.6fr) minmax(7rem, 1fr);
   column-gap: var(--nijmegen-space-100);
   row-gap: var(--nijmegen-space-50);
   align-items: start;
+}
+
+/* Status moved out of the summary grid, next to the OF-nummer link, so it no longer competes for column width with Project. */
+.woonbehoefte-record__status-badge {
+  margin-inline-start: var(--nijmegen-space-100);
+  vertical-align: middle;
 }
 
 .woonbehoefte-more {

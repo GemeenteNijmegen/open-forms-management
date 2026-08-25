@@ -106,12 +106,9 @@
       <div class="nijmegen-search-results__content">
         <h2 class="nijmegen-search-results__heading utrecht-heading-4">
           <a class="utrecht-link" href="{{detailHref}}">{{caseReference}}</a>
+          <span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}} woonbehoefte-record__status-badge">{{statusLabel}}</span>
         </h2>
         <div class="woonbehoefte-record__summary">
-          <div class="woonbehoefte-record__field">
-            <span class="woonbehoefte-record__field-label">Status</span>
-            <span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}}">{{statusLabel}}</span>
-          </div>
           <div class="woonbehoefte-record__field">
             <span class="woonbehoefte-record__field-label">Project</span>
             <span{{#hasSourceConflict}} class="woonbehoefte-badge woonbehoefte-badge--inadmissible"{{/hasSourceConflict}}>{{projectName}}</span>

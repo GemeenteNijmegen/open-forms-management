@@ -3,7 +3,7 @@ import { logger } from '../../../observability/Logger';
 import { APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, PROJECT_READINESS_LABELS } from '../domain/CaseLabels';
 import { CASE_STATUSES, CaseStatus } from '../domain/CaseStatus';
 import { WoonbehoefteCase } from '../domain/WoonbehoefteCase';
-import { formatDutchDateOnly, formatDutchDateTime, formatPeriodLabel, periodYear } from '../domain/WoonbehoefteFormatting';
+import { formatDutchDateTime, formatPeriodLabel, periodYear } from '../domain/WoonbehoefteFormatting';
 import { APPLICANT_TYPES, ApplicantType, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
 
 export interface WoonbehoefteCaseWithSource {
@@ -123,7 +123,7 @@ export function buildOverviewRow(entry: WoonbehoefteCaseWithSource, backQuery: s
       : source?.projectName ?? 'Onbekend project (bron nog niet beschikbaar)',
     hasSourceConflict: hasSourceConflict === true,
     receivedLabel: source ? formatDutchDateTime(source.registrationAt) : '-',
-    statusSinceLabel: formatDutchDateOnly(woonbehoefteCase.statusChangedAt),
+    statusSinceLabel: formatDutchDateTime(woonbehoefteCase.statusChangedAt),
     applicantTypeLabel: APPLICANT_TYPE_LABELS[source?.applicantType ?? 'UNKNOWN'],
     isCollectiveHousing: source?.isCollectiveHousing === true,
     assigneeLabel: woonbehoefteCase.claimedBy ?? 'Ongeclaimd',

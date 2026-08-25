@@ -7,7 +7,7 @@ import { CaseStatus } from '../domain/CaseStatus';
 import {
   CaseActivity, CaseActivityChange, CaseAssessment, CaseNote, CaseNoteCategory, TernaryAssessment, WoonbehoefteCase,
 } from '../domain/WoonbehoefteCase';
-import { formatDutchDate, formatDutchDateOnly, formatDutchDateTime, formatPeriodLabel, periodYear } from '../domain/WoonbehoefteFormatting';
+import { formatDutchDate, formatDutchDateTime, formatPeriodLabel, periodYear } from '../domain/WoonbehoefteFormatting';
 import { WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
 
 export type WoonbehoefteSourceAvailability = 'READY' | 'FAILED' | 'MISSING';
@@ -260,7 +260,7 @@ export function buildWoonbehoefteDetailViewModel(
       : {}),
     ...withOptional('checkRequestNoteText', checkRequestNoteText),
     receivedLabel: source ? formatDutchDateTime(source.registrationAt) : '-',
-    statusSinceLabel: formatDutchDateOnly(woonbehoefteCase.statusChangedAt),
+    statusSinceLabel: formatDutchDateTime(woonbehoefteCase.statusChangedAt),
 
     backHref: `/woonbehoefte${backQuery ? `?${backQuery}` : ''}`,
     backQuery,
