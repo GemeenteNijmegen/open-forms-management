@@ -5,7 +5,7 @@ import { AuthorizationService } from '../../../../shared/authorization/Authoriza
 import { PermissionEvaluator } from '../../../../shared/authorization/PermissionEvaluator';
 import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
 import { WoonbehoefteCaseRepository, WoonbehoefteCaseItems } from '../../cases/WoonbehoefteCaseRepository';
-import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
+import { WoonbehoefteSourceFailure, WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteDocumentDownloadHandler } from '../WoonbehoefteDocumentDownloadHandler';
 
@@ -27,6 +27,19 @@ function makeSource(overrides: Partial<WoonbehoefteSourceRecord> = {}): Woonbeho
     applicantType: 'UNKNOWN',
     attachments: [{ documentId: 'doc-a', url: 'https://example.invalid/doc-a', role: 'ATTACHMENT' }],
     cachedAt: '2026-08-01T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+function makeFailedSource(overrides: Partial<WoonbehoefteSourceFailure> = {}): WoonbehoefteSourceFailure {
+  return {
+    status: 'FAILED',
+    objectUuid: 'uuid-1',
+    reference: 'OF-A',
+    submissionType: 'PRIMARY_APPLICATION',
+    failureReasonCode: 'CSV_FETCH_ERROR',
+    lastAttemptAt: '2026-08-01T10:00:00.000Z',
+    attachments: [{ documentId: 'doc-a', url: 'https://example.invalid/doc-a', role: 'ATTACHMENT' }],
     ...overrides,
   };
 }
@@ -184,6 +197,45 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     expect(response.statusCode).toBe(404);
     expect(openZaakClient.getDocumentContent).not.toHaveBeenCalled();
     expect(s3Client.send).not.toHaveBeenCalled();
+  });
+
+  it('allows downloading a document a FAILED source still carries (Object envelope was valid, only the CSV failed)', async () => {
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-A', 'uuid-1')) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = {
+      getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', makeFailedSource()]])),
+    } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {
+      getDocumentContent: jest.fn().mockResolvedValue({ body: new Uint8Array([1, 2, 3]) }),
+      getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijsstuk.jpeg', formaat: 'image/jpeg' }),
+    } as unknown as OpenZaakClient;
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
+
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
+
+    expect(response.statusCode).toBe(302);
+    expect(openZaakClient.getDocumentContent).toHaveBeenCalled();
+  });
+
+  it('refuses an unknown documentId on a FAILED source: still 404, no content fetched', async () => {
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-A', 'uuid-1')) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = {
+      getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', makeFailedSource()]])),
+    } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = { getDocumentContent: jest.fn() } as unknown as OpenZaakClient;
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
+
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+    );
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-unknown');
+
+    expect(response.statusCode).toBe(404);
+    expect(openZaakClient.getDocumentContent).not.toHaveBeenCalled();
   });
 
   it('returns 500 and skips the success audit when staging in S3 fails', async () => {

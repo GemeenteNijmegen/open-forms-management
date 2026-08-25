@@ -10,7 +10,7 @@ import { issueCsrfToken } from '../../../shared/security/csrf/CsrfProtection';
 import notFoundTemplate from '../../home/templates/notFound.mustache';
 import { visiblePermissionsFeature } from '../../permissions/PermissionsNavigationFeature';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
-import { loadWoonbehoefteDocuments } from '../documents/WoonbehoefteDocumentsLoader';
+import { loadWoonbehoefteDocuments, WoonbehoefteDocumentSource } from '../documents/WoonbehoefteDocumentsLoader';
 import { isFailedSource, isReadySource, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
 import { sanitizeWoonbehoefteFilterQuery } from '../overview/WoonbehoefteOverviewFilter';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
@@ -64,6 +64,9 @@ export class WoonbehoefteDetailHandler {
     const primaryLink = caseItems.sourceLinks.find((link) => link.relation === 'PRIMARY');
     let source: WoonbehoefteSourceRecord | undefined;
     let availability: WoonbehoefteSourceAvailability = 'MISSING';
+    // A FAILED source still carries a documentSource when the Object envelope itself was valid (only the CSV failed), so the
+    // medewerker keeps access to the PDF/attachments they already had, even while the case shows a bronfout.
+    let documentSource: WoonbehoefteDocumentSource | undefined;
 
     if (primaryLink) {
       const sourceItems = await this.sourceCacheStore.getItems([primaryLink.submissionId]);
@@ -71,12 +74,16 @@ export class WoonbehoefteDetailHandler {
       if (item && isReadySource(item)) {
         source = item;
         availability = 'READY';
+        documentSource = item;
       } else if (item && isFailedSource(item)) {
         availability = 'FAILED';
+        if (item.pdfDocument || item.attachments?.length) {
+          documentSource = { pdfDocument: item.pdfDocument, attachments: item.attachments ?? [] };
+        }
       }
     }
 
-    const documents = source ? await loadWoonbehoefteDocuments(this.openZaakClient, source, caseReference, identity) : [];
+    const documents = documentSource ? await loadWoonbehoefteDocuments(this.openZaakClient, documentSource, caseReference, identity) : [];
     const canManage = context.evaluator.evaluate(WOONBEHOEFTE_MANAGE_CHECK) === 'ALLOW';
     const csrf = canManage ? issueCsrfToken() : undefined;
     const backQuery = sanitizeWoonbehoefteFilterQuery(queryStringParameters?.back);

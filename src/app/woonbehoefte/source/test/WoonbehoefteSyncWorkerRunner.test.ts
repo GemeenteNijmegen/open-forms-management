@@ -96,6 +96,52 @@ describe('runWoonbehoefteSyncRefresh', () => {
     expect(sourceCacheStore.finalizeRefresh).toHaveBeenCalledWith('run-1', 'READY_WITH_ERRORS', expect.any(Date), { failedCount: 1 });
   });
 
+  it('keeps a FAILED marker\'s PDF/attachments downloadable when only the CSV fetch failed, without leaking contact data or the CSV itself', async () => {
+    const objectsClient = {
+      collectObjects: jest.fn().mockResolvedValue([{
+        uuid: 'uuid-broken',
+        record: {
+          data: {
+            formName: WOONBEHOEFTE_PRIMARY_FORM_NAME,
+            reference: 'OF-broken',
+            csv: 'csv://broken',
+            pdf: 'https://open-zaak.example/pdf-1',
+            attachments: ['https://open-zaak.example/att-1'],
+          },
+          registrationAt: '2026-08-01',
+        },
+      }] as unknown as ObjectResource[]),
+    } as unknown as ObjectsClient;
+    const openZaakClient = { getDocumentText: jest.fn().mockRejectedValue(new Error('Open Zaak unavailable')) } as unknown as OpenZaakClient;
+    const sourceCacheStore = {
+      getState: jest.fn().mockResolvedValue({ runId: 'run-1', status: 'REFRESHING', startedAt: new Date().toISOString() }),
+      getItems: jest.fn().mockResolvedValue(new Map()),
+      putReady: jest.fn().mockResolvedValue(undefined),
+      putFailed: jest.fn().mockResolvedValue(undefined),
+      finalizeRefresh: jest.fn().mockResolvedValue(true),
+    };
+    const caseRepository = { createCaseIfMissing: jest.fn().mockResolvedValue(true), createPrimarySourceLinkIfMissing: jest.fn().mockResolvedValue('CREATED') };
+    const deps: WoonbehoefteSyncWorkerDependencies = {
+      objectsClient,
+      openZaakClient,
+      sourceCacheStore: sourceCacheStore as unknown as WoonbehoefteSourceCacheStore,
+      caseRepository: caseRepository as unknown as WoonbehoefteCaseRepository,
+    };
+
+    await runWoonbehoefteSyncRefresh('run-1', deps, () => false, 'trigger-1');
+
+    const marker = sourceCacheStore.putFailed.mock.calls[0][0];
+    expect(marker).toMatchObject({
+      status: 'FAILED',
+      pdfDocument: { documentId: 'pdf-1', url: 'https://open-zaak.example/pdf-1', role: 'APPLICATION_PDF' },
+      attachments: [{ documentId: 'att-1', url: 'https://open-zaak.example/att-1', role: 'ATTACHMENT' }],
+    });
+    expect(marker).not.toHaveProperty('csvDocument');
+    expect(marker).not.toHaveProperty('contactName');
+    expect(marker).not.toHaveProperty('contactEmail');
+    expect(marker).not.toHaveProperty('contactPhone');
+  });
+
   it('initializes a case and primary source-link for every READY record, cached and freshly fetched alike', async () => {
     const { deps, caseRepository } = makeDeps();
 

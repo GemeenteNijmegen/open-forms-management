@@ -10,16 +10,20 @@ import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
-import { isReadySource, SourceDocumentReference, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
+import { SourceDocumentReference, WoonbehoefteSourceItem } from '../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
 const PRESIGN_EXPIRY_SECONDS = 60;
 
-/** Only these roles are ever offered for download; the CSV export itself is a sync input, not a medewerker document. */
-function findDownloadableDocument(sources: WoonbehoefteSourceRecord[], documentId: string): SourceDocumentReference | undefined {
+/**
+ * Only `pdfDocument`/`attachments` are ever offered for download; the CSV export itself is a sync input,
+ * not a medewerker document. Searches READY and FAILED sources alike: a FAILED source (CSV parse/fetch
+ * error) can still carry a `pdfDocument`/`attachments` it kept from a valid Object envelope.
+ */
+function findDownloadableDocument(sources: WoonbehoefteSourceItem[], documentId: string): SourceDocumentReference | undefined {
   for (const source of sources) {
-    const candidates = [...(source.pdfDocument ? [source.pdfDocument] : []), ...source.attachments];
+    const candidates = [...(source.pdfDocument ? [source.pdfDocument] : []), ...(source.attachments ?? [])];
     const match = candidates.find((document) => document.documentId === documentId);
     if (match) {
       return match;
@@ -72,7 +76,7 @@ export class WoonbehoefteDocumentDownloadHandler {
 
     const submissionIds = caseItems.sourceLinks.map((link) => link.submissionId);
     const sourceItems = await this.sourceCacheStore.getItems(submissionIds);
-    const sources = [...sourceItems.values()].filter(isReadySource);
+    const sources = [...sourceItems.values()];
 
     const document = findDownloadableDocument(sources, documentId);
     if (!document) {

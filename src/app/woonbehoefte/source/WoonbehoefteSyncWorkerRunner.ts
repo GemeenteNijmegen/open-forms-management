@@ -112,7 +112,7 @@ export async function runWoonbehoefteSyncRefresh(
         readyRecords.push(record);
       } catch (error) {
         failedCount += 1;
-        await putFailedMarker(deps.sourceCacheStore, document.objectUuid, document.objectData.reference, 'CSV_PARSE_ERROR', now);
+        await putFailedMarker(deps.sourceCacheStore, document.objectUuid, document.objectData.reference, 'CSV_PARSE_ERROR', now, document.objectData);
         minimalCaseCandidates.push({ objectUuid: document.objectUuid, objectData: document.objectData });
         logger.warn('Woonbehoefte submission failed to parse/validate', { runId, objectUuid: document.objectUuid, reason: errorReason(error) });
       }
@@ -120,7 +120,9 @@ export async function runWoonbehoefteSyncRefresh(
 
     for (const failedDocument of fetchResult.failedDocuments) {
       failedCount += 1;
-      await putFailedMarker(deps.sourceCacheStore, failedDocument.objectUuid, failedDocument.reference, failedDocument.failureReasonCode, now);
+      await putFailedMarker(
+        deps.sourceCacheStore, failedDocument.objectUuid, failedDocument.reference, failedDocument.failureReasonCode, now, failedDocument.objectData,
+      );
       if (failedDocument.objectData) {
         minimalCaseCandidates.push({ objectUuid: failedDocument.objectUuid, objectData: failedDocument.objectData });
       }
@@ -146,6 +148,7 @@ export async function runWoonbehoefteSyncRefresh(
 
 async function putFailedMarker(
   store: WoonbehoefteSourceCacheStore, objectUuid: string, reference: string | undefined, failureReasonCode: string, now: Date,
+  objectData?: WoonbehoefteObjectData,
 ): Promise<void> {
   const marker: WoonbehoefteSourceFailure = {
     status: 'FAILED',
@@ -154,6 +157,10 @@ async function putFailedMarker(
     submissionType: 'PRIMARY_APPLICATION',
     failureReasonCode,
     lastAttemptAt: now.toISOString(),
+    // The Object envelope is known/valid here (only the CSV itself failed), so the PDF/attachments it
+    // already points at stay downloadable even though the case is showing a bronfout.
+    ...(objectData?.pdf ? { pdfDocument: toDocumentReference(objectData.pdf, 'APPLICATION_PDF') } : {}),
+    ...(objectData?.attachments?.length ? { attachments: objectData.attachments.map((url) => toDocumentReference(url, 'ATTACHMENT')) } : {}),
   };
   await store.putFailed(marker);
 }

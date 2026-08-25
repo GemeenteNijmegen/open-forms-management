@@ -72,7 +72,8 @@ export interface WoonbehoefteSourceRecord {
 
 /**
  * No name/email/phone/CSV content ever ends up in a failure marker, only what's needed to
- * retry and to show a technical warning.
+ * retry, to show a technical warning, and (if the Object envelope was itself valid) to keep the
+ * medewerker-facing PDF/attachments downloadable despite the CSV failure.
  */
 export interface WoonbehoefteSourceFailure {
   status: 'FAILED';
@@ -81,6 +82,8 @@ export interface WoonbehoefteSourceFailure {
   submissionType?: WoonbehoefteSubmissionType;
   failureReasonCode: string;
   lastAttemptAt: string;
+  pdfDocument?: SourceDocumentReference;
+  attachments?: SourceDocumentReference[];
 }
 
 export type WoonbehoefteSourceItem = WoonbehoefteSourceRecord | WoonbehoefteSourceFailure;

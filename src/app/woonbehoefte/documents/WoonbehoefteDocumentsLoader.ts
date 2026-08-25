@@ -1,7 +1,13 @@
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
 import { formatFileSize } from '../domain/WoonbehoefteFormatting';
-import { SourceDocumentReference, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
+import { SourceDocumentReference } from '../domain/WoonbehoefteSource';
+
+/** The only two fields a document listing needs; satisfied by both a READY source and a FAILED one that still carries document refs. */
+export interface WoonbehoefteDocumentSource {
+  pdfDocument?: SourceDocumentReference;
+  attachments: SourceDocumentReference[];
+}
 
 export interface WoonbehoefteDocumentRow {
   documentId: string;
@@ -23,7 +29,7 @@ function fallbackFilename(document: SourceDocumentReference, attachmentIndex: nu
  * fails still gets a safe fallback name, never a broken detail page.
  */
 export async function loadWoonbehoefteDocuments(
-  client: OpenZaakClient, source: WoonbehoefteSourceRecord, caseReference: string, actor: EmployeeIdentity,
+  client: OpenZaakClient, source: WoonbehoefteDocumentSource, caseReference: string, actor: EmployeeIdentity,
 ): Promise<WoonbehoefteDocumentRow[]> {
   const documents: SourceDocumentReference[] = [
     ...(source.pdfDocument ? [source.pdfDocument] : []),
