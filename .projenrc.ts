@@ -64,6 +64,10 @@ const project = new GemeenteNijmegenCdkApp({
     '@utrecht/textbox-css@4.0.1',
     '@utrecht/form-field-description-css@3.0.1',
     '@utrecht/form-field-error-message-css@3.0.1',
+    '@utrecht/select-css@3.0.1',
+    '@utrecht/textarea-css@4.0.1',
+    '@utrecht/accordion-css@4.0.1',
+    '@utrecht/checkbox-css@3.0.1',
   ],
   tsconfig: {
     compilerOptions: {

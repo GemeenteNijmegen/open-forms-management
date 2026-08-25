@@ -164,8 +164,11 @@
           "src/app/logout/logout.lambda.ts",
           "src/app/permissions/permissions.lambda.ts",
           "src/app/sport/sport.lambda.ts",
+          "src/app/woonbehoefte/woonbehoefte.lambda.ts",
           "src/app/sport/cache/sportCacheWorker.lambda.ts",
           "src/app/sport/reporter/sportExcelWorker.lambda.ts",
+          "src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
+          "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
           ".projenrc.ts",
           "projenrc/**/*.ts"
         ],

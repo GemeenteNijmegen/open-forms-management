@@ -10,7 +10,9 @@
   </div>
   {{/message}}
 
-  <p><a class="utrecht-button utrecht-button--primary-action" href="/permissions/users/new">Gebruiker toevoegen</a></p>
+  {{#newUserLinks}}
+  <p><a class="utrecht-button utrecht-button--primary-action" href="{{href}}">{{label}}</a></p>
+  {{/newUserLinks}}
 
   {{#records}}
   <article class="nijmegen-search-results permissions-record">

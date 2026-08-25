@@ -90,6 +90,17 @@ describe('PermissionUserCreateHandler', () => {
     expect(auditTrail.events).toContainEqual(expect.objectContaining({ eventType: 'ACCESS_DENIED', resource: 'app2' }));
   });
 
+  it('redirects an invalid submission back with the submitted resource preserved, so the create form re-renders for the right resource', async () => {
+    const { handler, permissionRepository } = newHandler();
+    permissionRepository.seedGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);
+    const { cookieHeader, body } = csrfBody({ targetEmail: 'niet-een-email-adres', resource: 'sport', action: 'view' });
+
+    const response = await handler.handleRequest({ principalId: 'sportadmin-1', email: 'sportadmin@nijmegen.nl' }, cookieHeader, body, false);
+
+    expect(response.statusCode).toBe(303);
+    expect(response.headers?.Location).toBe('/permissions/users/new?status=invalid&resource=sport');
+  });
+
   it('rejects a mismatched CSRF token without writing anything', async () => {
     const { handler, permissionRepository, permissionAdministrationRepository } = newHandler();
     permissionRepository.seedGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);

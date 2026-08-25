@@ -52,10 +52,15 @@ export class PermissionsOverviewHandler {
     const alertVariant = status === 'invalid' ? 'error' : 'ok';
     const alertRole = status === 'invalid' ? 'alert' : 'status';
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
+    const newUserLinks = manageable.length > 1
+      ? manageable.map((definition) => ({
+        href: `/permissions/users/new?resource=${encodeURIComponent(definition.resource)}`, label: `Gebruiker toevoegen voor ${definition.label}`,
+      }))
+      : [{ href: '/permissions/users/new', label: 'Gebruiker toevoegen' }];
     const html = render(
       permissionsTemplate,
       { title: 'Gebruikers en rechten', features, currentPath: '/permissions', actorEmail: identity.email },
-      { records, message, alertVariant, alertRole },
+      { records, message, alertVariant, alertRole, newUserLinks },
     );
     return Response.html(html);
   }

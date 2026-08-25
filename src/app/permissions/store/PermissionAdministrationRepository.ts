@@ -28,7 +28,13 @@ export interface PermissionAdministrationRepository {
    * Atomically removes every grant of one resource for one medewerker. Also removes the subject record in the
    * same write, but only when no other resource's grants remain. subjectRemoved tells the caller which
    * happened, for audit purposes only: the actor-facing response never reveals which other resource kept the
-   * subject record alive.
+   * subject record alive. resourceRemoved is false when the target had no grants for this resource at all, in
+   * which case nothing is written and subjectRemoved is always false too.
    */
-  removeResourceGrants(email: string, resource: string): Promise<{ subjectRemoved: boolean }>;
+  removeResourceGrants(email: string, resource: string): Promise<RemoveResourceGrantsResult>;
+}
+
+export interface RemoveResourceGrantsResult {
+  resourceRemoved: boolean;
+  subjectRemoved: boolean;
 }

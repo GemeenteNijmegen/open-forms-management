@@ -66,7 +66,11 @@ describe('PermissionsOverviewHandler', () => {
     const body = response.body ?? '';
 
     expect(response.statusCode).toBe(200);
-    expect(body).toContain('href="/permissions/users/new"');
+    // Mustache HTML-escapes `/` and `=` in interpolated attribute values; browsers decode entities in attributes fine.
+    expect(body).toContain('href="&#x2F;permissions&#x2F;users&#x2F;new?resource&#x3D;sport"');
+    expect(body).toContain('Gebruiker toevoegen voor Sport');
+    expect(body).toContain('href="&#x2F;permissions&#x2F;users&#x2F;new?resource&#x3D;app2"');
+    expect(body).toContain('Gebruiker toevoegen voor App2');
     expect(body).toContain('subject-only@nijmegen.nl');
     expect(body).toContain('Geen rechten');
     expect(body).toContain('multi@nijmegen.nl');
@@ -74,6 +78,19 @@ describe('PermissionsOverviewHandler', () => {
     expect(body).toContain('Dukenburg');
     expect(body).toContain('App2');
     expect(body).toContain('Organisatie A');
+  });
+
+  it('shows a single plain "Gebruiker toevoegen" link for an actor who manages only one resource, no resource picker needed', async () => {
+    const repository = new FakePermissionAdministrationRepository();
+    const authorizationService = seedActorGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);
+    const administrationService = new PermissionAdministrationService(catalog, new PermissionAdministrationPolicy(catalog));
+    const handler = new PermissionsOverviewHandler(authorizationService, administrationService, repository);
+
+    const response = await handler.handleRequest({ principalId: 'sportadmin-1', email: 'sportadmin@nijmegen.nl' });
+    const body = response.body ?? '';
+
+    expect(body).toContain('href="&#x2F;permissions&#x2F;users&#x2F;new"');
+    expect(body).not.toContain('?resource');
   });
 
   it('lets a superadmin see another superadmin read-only, without an edit action, while a regular user still gets one', async () => {

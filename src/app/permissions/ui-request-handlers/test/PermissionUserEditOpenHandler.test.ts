@@ -53,6 +53,20 @@ describe('PermissionUserEditOpenHandler', () => {
     expect(response.cookies?.[0]).toContain('__Host-csrf=');
   });
 
+  it('offers to add Sport but not to remove it when the target has no Sport grants yet', async () => {
+    const { handler, administrationRepository, permissionRepository } = newHandler();
+    permissionRepository.seedGrants('globaladmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }, { resource: 'app2', actions: ['*'] }]);
+    administrationRepository.seedUsers({ email: 'medewerker@nijmegen.nl', hasSubject: true, grants: [{ resource: 'app2', actions: ['view'] }] });
+    const form = new URLSearchParams({ targetEmail: 'medewerker@nijmegen.nl' });
+
+    const response = await handler.handleRequest({ principalId: 'globaladmin-1', email: 'globaladmin@nijmegen.nl' }, form.toString(), false);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('Rechten voor Sport opslaan');
+    expect(response.body).not.toContain('Verwijderen uit Sport');
+    expect(response.body).toContain('Verwijderen uit App2');
+  });
+
   it('redirects instead of leaking whether a target exists when it only has a resource the actor cannot manage', async () => {
     const { handler, administrationRepository, permissionRepository } = newHandler();
     permissionRepository.seedGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);

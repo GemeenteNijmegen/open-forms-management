@@ -25,6 +25,7 @@ export interface PermissionEditScopeViewModel {
 export interface PermissionEditResourceViewModel {
   resource: string;
   label: string;
+  hasExistingGrants: boolean;
   isResourceAdmin: boolean;
   actions: PermissionEditValueViewModel[];
   scopes: PermissionEditScopeViewModel[];
@@ -80,6 +81,7 @@ export function buildEditResources(
     return {
       resource: definition.resource,
       label: definition.label,
+      hasExistingGrants: resourceGrants.length > 0,
       isResourceAdmin,
       actions: definition.actions.map((action) => ({ value: action.action, label: action.label, checked: selectedActions.has(action.action) })),
       scopes: definition.scopes.map((scope) => ({

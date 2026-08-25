@@ -60,7 +60,10 @@ export class PermissionUserRemoveHandler {
       return this.renderConfirmation(identity, context, targetEmail, resource);
     }
 
-    const { subjectRemoved } = await this.repository.removeResourceGrants(targetEmail, resource);
+    const { resourceRemoved, subjectRemoved } = await this.repository.removeResourceGrants(targetEmail, resource);
+    if (!resourceRemoved) {
+      return Response.redirect('/permissions?status=invalid', 303);
+    }
 
     await recordAudit(this.auditTrail, {
       eventType: subjectRemoved ? 'PERMISSION_SUBJECT_REMOVED' : 'PERMISSION_RESOURCE_REMOVED',

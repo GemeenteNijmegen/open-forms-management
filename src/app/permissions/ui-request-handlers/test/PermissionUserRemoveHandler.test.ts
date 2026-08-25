@@ -62,6 +62,20 @@ describe('PermissionUserRemoveHandler', () => {
     expect(auditTrail.events).toContainEqual(expect.objectContaining({ eventType: 'PERMISSION_RESOURCE_REMOVED', targetEmail: 'medewerker@nijmegen.nl' }));
   });
 
+  it('redirects as invalid without writing or auditing when the target has no grants for the requested resource', async () => {
+    const { handler, permissionRepository, permissionAdministrationRepository, auditTrail } = newHandler();
+    permissionRepository.seedGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);
+    permissionAdministrationRepository.seedUsers({ email: 'medewerker@nijmegen.nl', hasSubject: true, grants: [{ resource: 'app2', actions: ['view'] }] });
+    const { cookieHeader, body } = csrfBody({ targetEmail: 'medewerker@nijmegen.nl', resource: 'sport', confirmed: '1' });
+
+    const response = await handler.handleRequest({ principalId: 'sportadmin-1', email: 'sportadmin@nijmegen.nl' }, cookieHeader, body, false);
+
+    expect(response.statusCode).toBe(303);
+    expect(response.headers?.Location).toBe('/permissions?status=invalid');
+    expect(await permissionAdministrationRepository.listAllUsers()).toEqual([{ email: 'medewerker@nijmegen.nl', hasSubject: true, grants: [{ resource: 'app2', actions: ['view'] }] }]);
+    expect(auditTrail.events).toEqual([]);
+  });
+
   it('renders a confirmation page without removing anything when confirmed is not set yet', async () => {
     const { handler, permissionRepository, permissionAdministrationRepository, auditTrail } = newHandler();
     permissionRepository.seedGrants('sportadmin@nijmegen.nl', [{ resource: 'sport', actions: ['*'] }]);

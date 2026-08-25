@@ -1,0 +1,162 @@
+{{>header}}
+<main id="main-content" class="woonbehoefte-overview">
+  <h1 class="utrecht-heading-2">Woonbehoefte</h1>
+
+  {{#refreshStarted}}
+  <div class="utrecht-alert utrecht-alert--success" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Verversen gestart. Dit kan enkele minuten duren, ververs deze pagina zo nu en dan.</p>
+    </div>
+  </div>
+  {{/refreshStarted}}
+  {{#refreshAlreadyRunning}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Er loopt al een verversing.</p>
+    </div>
+  </div>
+  {{/refreshAlreadyRunning}}
+  {{#refreshFailed}}
+  <div class="utrecht-alert utrecht-alert--error" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Verversen kon niet worden gestart. Probeer het opnieuw.</p>
+    </div>
+  </div>
+  {{/refreshFailed}}
+  {{#isRefreshing}}
+  <p class="woonbehoefte-loading">Bezig met verversen…</p>
+  {{/isRefreshing}}
+
+  <div class="woonbehoefte-refresh-bar">
+    <form method="post" action="/woonbehoefte/refresh">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verversen</button>
+    </form>
+  </div>
+
+  <details class="woonbehoefte-filter">
+    <summary class="utrecht-form-label">Zoeken en filteren</summary>
+    <form method="get" action="/woonbehoefte">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="search">Zoeken op OF-nummer, project of contactgegevens</label>
+        <input type="text" class="utrecht-textbox" id="search" name="search" value="{{search}}">
+      </div>
+
+      <fieldset>
+        <legend class="utrecht-form-label">Status</legend>
+        {{#statusOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="status-{{value}}" name="status" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="status-{{value}}">{{label}}</label>
+        </div>
+        {{/statusOptions}}
+      </fieldset>
+
+      <fieldset>
+        <legend class="utrecht-form-label">Type aanvrager</legend>
+        {{#applicantTypeOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="applicanttype-{{value}}" name="applicantType" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="applicanttype-{{value}}">{{label}}</label>
+        </div>
+        {{/applicantTypeOptions}}
+      </fieldset>
+
+      {{#hasStartYearOptions}}
+      <fieldset>
+        <legend class="utrecht-form-label">Vastgesteld startjaar</legend>
+        {{#startYearOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="startyear-{{value}}" name="startYear" value="{{value}}" {{#checked}}checked{{/checked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="startyear-{{value}}">{{label}}</label>
+        </div>
+        {{/startYearOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="startyear-none" name="startYear" value="nog-niet-vastgesteld" {{#startYearNotSetChecked}}checked{{/startYearNotSetChecked}}>
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="startyear-none">Nog niet vastgesteld</label>
+        </div>
+      </fieldset>
+      {{/hasStartYearOptions}}
+
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="assignment">Behandelaar</label>
+        <select class="utrecht-select utrecht-select--html-select" id="assignment" name="assignment">
+          <option value="all" {{#assignmentAll}}selected{{/assignmentAll}}>Alle</option>
+          <option value="mine" {{#assignmentMine}}selected{{/assignmentMine}}>Door mij</option>
+          <option value="unclaimed" {{#assignmentUnclaimed}}selected{{/assignmentUnclaimed}}>Ongeclaimd</option>
+        </select>
+      </div>
+
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="check-requested" name="check" value="requested" {{#checkRequestedOnly}}checked{{/checkRequestedOnly}}>
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="check-requested">Alleen check gevraagd</label>
+      </div>
+
+      <button type="submit" class="utrecht-button utrecht-button--primary-action woonbehoefte-filter__submit">Filteren</button>
+    </form>
+  </details>
+
+  <p class="woonbehoefte-count">{{totalCountLabel}}</p>
+
+  {{#hasRows}}
+  <div>
+    {{#rows}}
+    <article class="nijmegen-search-results woonbehoefte-record">
+      <div class="nijmegen-search-results__content">
+        <h2 class="nijmegen-search-results__heading utrecht-heading-4">
+          <a class="utrecht-link" href="{{detailHref}}">{{caseReference}}</a>
+          <span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}} woonbehoefte-record__status-badge">{{statusLabel}}</span>
+        </h2>
+        <div class="woonbehoefte-record__summary">
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Project</span>
+            <span{{#hasSourceConflict}} class="woonbehoefte-badge woonbehoefte-badge--inadmissible"{{/hasSourceConflict}}>{{projectName}}</span>
+          </div>
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Behandelaar</span>
+            <span{{#isUnclaimed}} class="woonbehoefte-unclaimed"{{/isUnclaimed}}>{{assigneeLabel}}</span>
+          </div>
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Ontvangen</span>
+            <span>{{receivedLabel}}</span>
+          </div>
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Status sinds</span>
+            <span>{{statusSinceLabel}}</span>
+          </div>
+        </div>
+        {{#checkRequested}}
+        <p class="woonbehoefte-badge woonbehoefte-badge--check">Check gevraagd</p>
+        {{/checkRequested}}
+
+        <details class="woonbehoefte-details">
+          <summary>Meer gegevens</summary>
+          <ul class="nijmegen-metadata">
+            <li class="nijmegen-metadata__item">Type aanvrager: {{applicantTypeLabel}}</li>
+            {{#isCollectiveHousing}}
+            <li class="nijmegen-metadata__item">Collectieve woonvorm: Ja</li>
+            {{/isCollectiveHousing}}
+            <li class="nijmegen-metadata__item">Start vastgesteld: {{startPeriodLabel}}</li>
+            <li class="nijmegen-metadata__item">Projectrijpheid vastgesteld: {{readinessLabel}}</li>
+          </ul>
+        </details>
+      </div>
+    </article>
+    {{/rows}}
+  </div>
+  {{#hasMore}}
+  <p class="woonbehoefte-more">
+    <a class="utrecht-link" href="{{nextHref}}">Meer tonen</a>
+  </p>
+  {{/hasMore}}
+  {{/hasRows}}
+  {{^hasRows}}
+  <div class="nijmegen-action-card">
+    <div class="nijmegen-action-card__content">
+      <p class="utrecht-paragraph">Er zijn geen aanvragen die aan het huidige filter voldoen.</p>
+    </div>
+  </div>
+  {{/hasRows}}
+</main>
+{{>footer}}

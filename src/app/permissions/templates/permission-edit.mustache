@@ -60,12 +60,14 @@
       <button type="submit" class="utrecht-button utrecht-button--primary-action">Rechten voor {{label}} opslaan</button>
     </form>
 
+    {{#hasExistingGrants}}
     <form method="post" action="/permissions/users/remove">
       <input type="hidden" name="targetEmail" value="{{targetEmail}}">
       <input type="hidden" name="resource" value="{{resource}}">
       <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
       <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen uit {{label}}</button>
     </form>
+    {{/hasExistingGrants}}
   </section>
   {{/resources}}
 

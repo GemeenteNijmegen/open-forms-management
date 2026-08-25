@@ -1,5 +1,5 @@
 import { PermissionGrant } from '../../../../shared/authorization/PermissionGrant';
-import { PermissionAdministrationRepository, PermissionAdministrationUser } from '../PermissionAdministrationRepository';
+import { PermissionAdministrationRepository, PermissionAdministrationUser, RemoveResourceGrantsResult } from '../PermissionAdministrationRepository';
 
 /**
  * In-memory PermissionAdministrationRepository for tests of code that depends on it, without talking to
@@ -39,10 +39,15 @@ export class FakePermissionAdministrationRepository implements PermissionAdminis
     this.users.set(email, { ...existing, grants: [...otherResourceGrants, ...grants] });
   }
 
-  async removeResourceGrants(email: string, resource: string): Promise<{ subjectRemoved: boolean }> {
+  async removeResourceGrants(email: string, resource: string): Promise<RemoveResourceGrantsResult> {
     const existing = this.users.get(email);
     if (!existing) {
-      return { subjectRemoved: false };
+      return { resourceRemoved: false, subjectRemoved: false };
+    }
+
+    const resourceGrants = existing.grants.filter((grant) => grant.resource === resource);
+    if (resourceGrants.length === 0) {
+      return { resourceRemoved: false, subjectRemoved: false };
     }
 
     const remainingGrants = existing.grants.filter((grant) => grant.resource !== resource);
@@ -52,6 +57,6 @@ export class FakePermissionAdministrationRepository implements PermissionAdminis
     } else {
       this.users.set(email, { ...existing, grants: remainingGrants });
     }
-    return { subjectRemoved };
+    return { resourceRemoved: true, subjectRemoved };
   }
 }

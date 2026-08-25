@@ -26,6 +26,9 @@
     "src/app/sport/cache/sportCacheWorker-function.ts",
     "src/app/sport/reporter/sportExcelWorker-function.ts",
     "src/app/sport/sport-function.ts",
+    "src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts",
+    "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function.ts",
+    "src/app/woonbehoefte/woonbehoefte-function.ts",
     "test/tsconfig.json",
     "tsconfig.json"
   ],

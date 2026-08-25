@@ -28,6 +28,7 @@ import { SportReportsBucket } from './infrastructure/sport/SportReportsBucket';
 import { SportReportsTable } from './infrastructure/sport/SportReportsTable';
 import { addSportRoute } from './infrastructure/sport/SportRoute';
 import { resolveUsEastOutputs } from './infrastructure/UsEastOutputs';
+import { WoonbehoefteFeature } from './infrastructure/woonbehoefte/WoonbehoefteFeature';
 import { applyLambdaLoggingDefaults, createLambdaLogGroup } from './observability/LambdaLogging';
 import { Statics } from './Statics';
 
@@ -135,6 +136,14 @@ export class AppStack extends Stack {
     addPermissionsRoute(
       this, managementApi, permissionsFunction, this.permissionsTable, this.auditTrailTable, this.sessionsTable, this.props.configuration,
     );
+
+    new WoonbehoefteFeature(this, 'woonbehoefte', {
+      managementApi,
+      permissionsTable: this.permissionsTable,
+      auditTrailTable: this.auditTrailTable,
+      sessionsTable: this.sessionsTable,
+      configuration: this.props.configuration,
+    });
 
     addApplicationAlarms(this, managementApi.api, this.props.configuration);
 
