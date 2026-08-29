@@ -38,6 +38,7 @@ export class ParameterStack extends Stack {
     this.oidcParameters();
     this.objectsParameters();
     this.openZaakParameters();
+    this.keycloakParameters();
   }
 
   private oidcParameters() {
@@ -80,6 +81,38 @@ export class ParameterStack extends Stack {
       secretName: Statics.secretOpenZaakCredentials,
       description: 'Open Zaak credentials (JSON met clientId en clientSecret)',
       secretStringValue: SecretValue.unsafePlainText(JSON.stringify({ clientId: '', clientSecret: '' })),
+    });
+  }
+
+  private keycloakParameters() {
+    new StringParameter(this, 'keycloak-base-url', {
+      parameterName: Statics.ssmKeycloakBaseUrl,
+      stringValue: '-',
+      description: 'Root van de Keycloak-server, met trailing slash, bijvoorbeeld https://keycloak.example.com/',
+    });
+    new StringParameter(this, 'keycloak-issuer', {
+      parameterName: Statics.ssmKeycloakIssuer,
+      stringValue: '-',
+      description: 'Keycloak realm issuer URL zonder trailing slash, bijvoorbeeld https://keycloak.example.com/realms/open-forms-management. Te vinden via Realm settings > General > OpenID Endpoint Configuration in de Keycloak Admin Console (het issuer-veld)',
+    });
+    new StringParameter(this, 'keycloak-realm', {
+      parameterName: Statics.ssmKeycloakRealm,
+      stringValue: '-',
+      description: 'Keycloak realm naam, bijvoorbeeld open-forms-management',
+    });
+    new Secret(this, 'keycloak-oidc-client', {
+      secretName: Statics.secretKeycloakOidcClient,
+      description: 'Keycloak OIDC client credentials (JSON met clientId en clientSecret), te vinden in Keycloak onder Clients > (client) > Credentials',
+      secretStringValue: SecretValue.unsafePlainText(JSON.stringify({ clientId: '', clientSecret: '' })),
+    });
+    new Secret(this, 'keycloak-permission-admin-client', {
+      secretName: Statics.secretKeycloakPermissionAdminClient,
+      description: 'Keycloak permission-admin client credentials voor de Admin REST API (JSON met clientId en clientSecret), te vinden in Keycloak onder Clients > (client) > Credentials',
+      secretStringValue: SecretValue.unsafePlainText(JSON.stringify({ clientId: '', clientSecret: '' })),
+    });
+    new Secret(this, 'keycloak-auth-cookie-key', {
+      secretName: Statics.secretKeycloakAuthCookieKey,
+      description: 'Sleutel voor het versleutelen van de auth-cookie. Niet van Keycloak: zelf genereren met openssl rand -base64 32. Rouleren gebeurt handmatig en logt alle actieve sessies uit.',
     });
   }
 }

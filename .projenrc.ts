@@ -33,6 +33,8 @@ const project = new GemeenteNijmegenCdkApp({
     'csv-parse',
     // Small XLSX writer with minimal runtime dependencies and no pre/postinstall scripts; preferred over heavier Excel libraries.
     'write-excel-file',
+    // JWT
+    'jose',
   ],
   devDeps: [
     '@types/aws-lambda',
