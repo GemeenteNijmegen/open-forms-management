@@ -5,6 +5,7 @@ import {
   KeycloakAuthorizationRequestInput, KeycloakAuthorizationRequestResult, KeycloakLogoutRequest,
   KeycloakRefreshResult, KeycloakTokenClaims, KeycloakTokens,
 } from './KeycloakAuthenticationModels';
+import { toKeycloakTokenClaims } from './KeycloakTokenClaimsMapper';
 import { OidcTransactionState } from './OidcTransactionState';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
@@ -159,31 +160,4 @@ function toKeycloakTokens(tokenResponse: client.TokenEndpointResponse & client.T
     refreshTokenExpiresAt: typeof refreshExpiresIn === 'number' ? Math.floor(Date.now() / 1000) + refreshExpiresIn : undefined,
     idToken: tokenResponse.id_token,
   };
-}
-
-function toKeycloakTokenClaims(idToken: client.IDToken, oidcClientId: string): KeycloakTokenClaims {
-  if (typeof idToken.email !== 'string' || idToken.email.length === 0) {
-    throw new Error('ID token is missing the email claim');
-  }
-
-  return {
-    iss: idToken.iss,
-    sub: idToken.sub,
-    aud: idToken.aud,
-    exp: idToken.exp,
-    email: idToken.email,
-    roles: extractRoles(idToken.resource_access, oidcClientId),
-  };
-}
-
-function extractRoles(resourceAccess: unknown, oidcClientId: string): string[] {
-  if (typeof resourceAccess !== 'object' || resourceAccess === null) {
-    return [];
-  }
-  const entry = (resourceAccess as Record<string, unknown>)[oidcClientId];
-  if (typeof entry !== 'object' || entry === null) {
-    return [];
-  }
-  const roles = (entry as Record<string, unknown>).roles;
-  return Array.isArray(roles) ? roles.filter((role): role is string => typeof role === 'string') : [];
 }
