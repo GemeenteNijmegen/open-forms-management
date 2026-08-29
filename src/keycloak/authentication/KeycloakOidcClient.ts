@@ -1,7 +1,10 @@
 import { randomUUID } from 'crypto';
 import * as client from 'openid-client';
 import { KeycloakAuthenticationConfiguration } from './KeycloakAuthenticationConfiguration';
-import { KeycloakAuthorizationRequestInput, KeycloakAuthorizationRequestResult, KeycloakTokenClaims, KeycloakTokens } from './KeycloakAuthenticationModels';
+import {
+  KeycloakAuthorizationRequestInput, KeycloakAuthorizationRequestResult, KeycloakLogoutRequest,
+  KeycloakRefreshResult, KeycloakTokenClaims, KeycloakTokens,
+} from './KeycloakAuthenticationModels';
 import { OidcTransactionState } from './OidcTransactionState';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
@@ -86,6 +89,37 @@ export class KeycloakOidcClient {
       tokens: toKeycloakTokens(tokenResponse),
       claims: toKeycloakTokenClaims(idTokenClaims, this.settings.oidcClient.clientId),
     };
+  }
+
+  /**
+   * Keycloak rotates refresh tokens by default, so a fresh refresh_token is expected on every
+   * refresh; toKeycloakTokens() below fails closed when one is missing rather than silently reusing
+   * the old value, which would risk continuing on a token Keycloak already considers spent.
+   */
+  async refreshTokens(refreshToken: string): Promise<KeycloakRefreshResult> {
+    const configuration = await this.discover();
+
+    logger.debug('Refreshing Keycloak tokens');
+    let tokenResponse;
+    try {
+      tokenResponse = await client.refreshTokenGrant(configuration, refreshToken);
+    } catch (error) {
+      logger.error('Keycloak token refresh failed', { reason: errorReason(error) });
+      throw error;
+    }
+
+    return toKeycloakTokens(tokenResponse);
+  }
+
+  async buildLogoutUrl(logoutRequest: KeycloakLogoutRequest): Promise<string> {
+    const configuration = await this.discover();
+
+    const url = client.buildEndSessionUrl(configuration, {
+      id_token_hint: logoutRequest.idTokenHint,
+      post_logout_redirect_uri: logoutRequest.postLogoutRedirectUri,
+      ...(logoutRequest.state ? { state: logoutRequest.state } : {}),
+    });
+    return url.toString();
   }
 
   private async discover(): Promise<client.Configuration> {

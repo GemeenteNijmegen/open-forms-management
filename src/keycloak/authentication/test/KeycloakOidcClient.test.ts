@@ -6,6 +6,8 @@ const mockBuildAuthorizationUrl = jest.fn();
 const mockAuthorizationCodeGrant = jest.fn();
 const mockRandomPKCECodeVerifier = jest.fn();
 const mockCalculatePKCECodeChallenge = jest.fn();
+const mockRefreshTokenGrant = jest.fn();
+const mockBuildEndSessionUrl = jest.fn();
 
 jest.mock('openid-client', () => ({
   discovery: (...args: unknown[]) => mockDiscovery(...args),
@@ -13,6 +15,8 @@ jest.mock('openid-client', () => ({
   authorizationCodeGrant: (...args: unknown[]) => mockAuthorizationCodeGrant(...args),
   randomPKCECodeVerifier: (...args: unknown[]) => mockRandomPKCECodeVerifier(...args),
   calculatePKCECodeChallenge: (...args: unknown[]) => mockCalculatePKCECodeChallenge(...args),
+  refreshTokenGrant: (...args: unknown[]) => mockRefreshTokenGrant(...args),
+  buildEndSessionUrl: (...args: unknown[]) => mockBuildEndSessionUrl(...args),
 }));
 
 describe('KeycloakOidcClient', () => {
@@ -139,5 +143,71 @@ describe('KeycloakOidcClient', () => {
     await expect(oidcClient.exchangeAuthorizationCode(callbackUrl, {
       state: 'the-state', nonce: 'the-nonce', codeVerifier: 'the-code-verifier', issuedAt: 0, expiresAt: 600,
     })).rejects.toThrow('email claim');
+  });
+
+  it('refreshes using the refresh token and returns the new token state', async () => {
+    mockRefreshTokenGrant.mockResolvedValue({
+      access_token: 'new-access-token',
+      refresh_token: 'new-refresh-token',
+      id_token: 'new-id-token',
+      expiresIn: () => 300,
+    });
+
+    const oidcClient = new KeycloakOidcClient(settings, redirectUrl);
+    const result = await oidcClient.refreshTokens('old-refresh-token');
+
+    expect(mockRefreshTokenGrant).toHaveBeenCalledWith(discoveredConfiguration, 'old-refresh-token');
+    expect(result).toEqual({
+      accessToken: 'new-access-token',
+      accessTokenExpiresAt: expect.any(Number),
+      refreshToken: 'new-refresh-token',
+      refreshTokenExpiresAt: undefined,
+      idToken: 'new-id-token',
+    });
+  });
+
+  it('fails closed when Keycloak does not rotate the refresh token', async () => {
+    const errorSpy = jest.spyOn(logger, 'error');
+    mockRefreshTokenGrant.mockResolvedValue({
+      access_token: 'new-access-token',
+      id_token: 'new-id-token',
+      expiresIn: () => 300,
+      // no refresh_token in the response
+    });
+
+    const oidcClient = new KeycloakOidcClient(settings, redirectUrl);
+
+    await expect(oidcClient.refreshTokens('old-refresh-token')).rejects.toThrow('refresh_token');
+    // toKeycloakTokens() throws directly, outside the try/catch that logs; nothing to log here.
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('propagates a refresh failure as a safe error, without leaking the refresh token', async () => {
+    const errorSpy = jest.spyOn(logger, 'error');
+    mockRefreshTokenGrant.mockRejectedValue(new Error('invalid_grant'));
+
+    const oidcClient = new KeycloakOidcClient(settings, redirectUrl);
+
+    await expect(oidcClient.refreshTokens('old-refresh-token')).rejects.toThrow('invalid_grant');
+    expect(errorSpy).toHaveBeenCalledWith('Keycloak token refresh failed', { reason: 'invalid_grant' });
+    expect(JSON.stringify(errorSpy.mock.calls)).not.toContain('old-refresh-token');
+  });
+
+  it('builds the logout URL from the discovered end-session endpoint and trusted redirect config', async () => {
+    mockBuildEndSessionUrl.mockReturnValue(new URL('https://keycloak.example.com/realms/example-realm/protocol/openid-connect/logout?state=s'));
+
+    const oidcClient = new KeycloakOidcClient(settings, redirectUrl);
+    const url = await oidcClient.buildLogoutUrl({
+      idTokenHint: 'the-id-token',
+      postLogoutRedirectUri: 'https://management.example.com/logout',
+      state: 'the-logout-state',
+    });
+
+    expect(mockBuildEndSessionUrl).toHaveBeenCalledWith(discoveredConfiguration, {
+      id_token_hint: 'the-id-token',
+      post_logout_redirect_uri: 'https://management.example.com/logout',
+      state: 'the-logout-state',
+    });
+    expect(url).toBe('https://keycloak.example.com/realms/example-realm/protocol/openid-connect/logout?state=s');
   });
 });
