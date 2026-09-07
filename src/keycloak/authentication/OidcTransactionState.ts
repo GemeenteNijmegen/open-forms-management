@@ -6,7 +6,7 @@ export interface OidcTransactionState {
   state: string;
   nonce: string;
   codeVerifier: string;
-  /** Local OFM path to return to after login, e.g. /woonbehoefte/123. Never an absolute external URL. */
+  /** Local Oopen forms management path to return to after login, e.g. /woonbehoefte/123. Never an absolute external URL. */
   returnUrl?: string;
   issuedAt: number;
   expiresAt: number;
