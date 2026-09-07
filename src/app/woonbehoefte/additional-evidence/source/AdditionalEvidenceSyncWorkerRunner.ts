@@ -10,7 +10,7 @@ import { ObjectResource } from '../../../../shared/clients/objects/ObjectsRespon
 import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
 import { toDocumentReference, WoonbehoefteObjectData } from '../../source/WoonbehoefteObjectRecord';
 import { ADDITIONAL_EVIDENCE_SOURCE_CACHE_VERSION, AdditionalEvidenceSourceFailure, AdditionalEvidenceSourceItem, AdditionalEvidenceSourceRecord, isReadyAdditionalEvidenceSource } from '../domain/AdditionalEvidenceSource';
-import { AdditionalEvidenceRepository, AdditionalEvidenceWorkItem } from '../persistence/AdditionalEvidenceRepository';
+import { AdditionalEvidenceRepository } from '../persistence/AdditionalEvidenceRepository';
 
 export interface AdditionalEvidenceSyncWorkerDependencies {
   objectsClient: ObjectsClient;
@@ -167,27 +167,15 @@ async function putFailedMarker(
 /**
  * Re-runs workitem initialization for every currently READY record, including ones this run didn't
  * re-fetch: a workitem whose creation failed on a previous run (e.g. a mid-run cutoff) gets healed here
- * without ever overwriting a workitem a medewerker already moved to UNKNOWN/LINKED.
+ * without ever overwriting a workitem a medewerker already moved to UNKNOWN/LINKED. The workitem itself
+ * stores no CSV content (see `AdditionalEvidenceRepository`); projectnaam/origineleKenmerk/contactgegevens
+ * are read fresh from the source cache whenever the overview/detail renders.
  */
 async function initializeWorkItems(
   repository: AdditionalEvidenceRepository, records: AdditionalEvidenceSourceRecord[], now: Date, runId: string,
 ): Promise<void> {
   for (const record of records) {
-    const workItem: AdditionalEvidenceWorkItem = {
-      objectUuid: record.objectUuid,
-      submissionReference: record.reference,
-      status: 'NEW',
-      originalCaseReference: record.originalCaseReference,
-      submittedAt: record.submittedAt,
-      ...(record.submittedProjectName ? { submittedProjectName: record.submittedProjectName } : {}),
-      ...(record.contactEmail ? { contactEmail: record.contactEmail } : {}),
-      ...(record.contactPhone ? { contactPhone: record.contactPhone } : {}),
-      ...(record.evidenceDescription ? { evidenceDescription: record.evidenceDescription } : {}),
-      ...(record.remarks ? { remarks: record.remarks } : {}),
-      createdAt: now.toISOString(),
-      createdBy: WORKER_ACTOR.principalId,
-    };
-    await repository.createWorkItemIfMissing(workItem);
+    await repository.createWorkItemIfMissing(record.objectUuid, record.reference, WORKER_ACTOR.principalId, now);
     logger.debug('Additional Evidence workitem initialization attempted', { runId, objectUuid: record.objectUuid });
   }
 }
@@ -195,18 +183,13 @@ async function initializeWorkItems(
 /**
  * A workitem whose CSV could not be read still gets created, as long as the Object itself is known and
  * valid (uuid + own OF-reference). The detail page shows the source-error message from its FAILED source
- * marker; the medewerker never loses sight of the submission.
+ * marker; the medewerker never loses sight of the submission. Once a later refresh successfully reads the
+ * CSV, the source cache heals to READY on its own; nothing about the workitem itself needs to change.
  */
 async function initializeMinimalWorkItem(
   repository: AdditionalEvidenceRepository, objectUuid: string, objectData: WoonbehoefteObjectData, now: Date, runId: string,
 ): Promise<void> {
-  await repository.createWorkItemIfMissing({
-    objectUuid,
-    submissionReference: objectData.reference,
-    status: 'NEW',
-    createdAt: now.toISOString(),
-    createdBy: WORKER_ACTOR.principalId,
-  });
+  await repository.createWorkItemIfMissing(objectUuid, objectData.reference, WORKER_ACTOR.principalId, now);
   logger.debug('Additional Evidence minimal workitem initialization attempted (source-error)', { runId, objectUuid });
 }
 

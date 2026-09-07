@@ -14,21 +14,17 @@ function isConditionalCheckFailed(error: unknown): boolean {
 export type AdditionalEvidenceWorkItemStatus = 'NEW' | 'UNKNOWN' | 'LINKED';
 
 /**
- * Durable extra-bewijzen submission record. `originalCaseReference`/`submittedAt`/the CSV-derived fields
- * are absent for a minimal workitem created when the Object envelope was valid but its CSV could not be
- * read: the submission still exists and is visible, just without CSV content until a later refresh heals it.
+ * Durable extra-bewijzen identity/status record. Deliberately lean: no CSV-derived content
+ * (projectnaam/origineleKenmerk/contactgegevens) lives here. Those come from
+ * `AdditionalEvidenceSourceCacheStore`, read fresh on every render, the same case+source separation the
+ * primary Woonbehoefte case/source already uses. `createWorkItemIfMissing` is a conditional create only
+ * (no `UpdateItem`), so embedding CSV content here would freeze it forever on the very first sync attempt
+ * (e.g. a transient CSV fetch failure) with no way to ever heal it on a later successful refresh.
  */
 export interface AdditionalEvidenceWorkItem {
   objectUuid: string;
   submissionReference: string;
   status: AdditionalEvidenceWorkItemStatus;
-  originalCaseReference?: string;
-  submittedAt?: string;
-  submittedProjectName?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  evidenceDescription?: string;
-  remarks?: string;
   createdAt: string;
   createdBy: string;
 }
@@ -43,11 +39,12 @@ export class AdditionalEvidenceRepository {
   constructor(private readonly documentClient: DynamoDBDocumentClient, private readonly tableName: string) { }
 
   /** Initializes a workitem the first time its Object is seen. Never overwrites an existing one, regardless of its current status. */
-  async createWorkItemIfMissing(workItem: AdditionalEvidenceWorkItem): Promise<boolean> {
+  async createWorkItemIfMissing(objectUuid: string, submissionReference: string, createdBy: string, now: Date = new Date()): Promise<boolean> {
+    const workItem: AdditionalEvidenceWorkItem = { objectUuid, submissionReference, status: 'NEW', createdAt: now.toISOString(), createdBy };
     try {
       await this.documentClient.send(new PutCommand({
         TableName: this.tableName,
-        Item: { pk: PARTITION_KEY, sk: workItemSortKey(workItem.objectUuid), ...workItem },
+        Item: { pk: PARTITION_KEY, sk: workItemSortKey(objectUuid), ...workItem },
         ConditionExpression: 'attribute_not_exists(pk)',
       }));
       return true;

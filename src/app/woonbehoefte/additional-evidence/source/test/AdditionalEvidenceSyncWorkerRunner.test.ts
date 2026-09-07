@@ -138,17 +138,13 @@ describe('runAdditionalEvidenceSyncRefresh', () => {
     expect(marker).not.toHaveProperty('originalCaseReference');
   });
 
-  it('creates a NEW workitem for every READY record, cached and freshly fetched alike', async () => {
+  it('creates a NEW workitem for every READY record, cached and freshly fetched alike, without any CSV content', async () => {
     const { deps, repository } = makeDeps();
 
     await runAdditionalEvidenceSyncRefresh('run-1', deps, () => false, 'trigger-1');
 
-    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith(expect.objectContaining({
-      objectUuid: 'uuid-cached', submissionReference: 'OF-EXTRA-cached', status: 'NEW',
-    }));
-    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith(expect.objectContaining({
-      objectUuid: 'uuid-new', submissionReference: 'OF-EXTRA-new', status: 'NEW', originalCaseReference: 'OF-HOOFD01',
-    }));
+    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith('uuid-cached', 'OF-EXTRA-cached', 'additional-evidence-sync-worker', expect.any(Date));
+    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith('uuid-new', 'OF-EXTRA-new', 'additional-evidence-sync-worker', expect.any(Date));
   });
 
   it('keeps two submissions naming the same origineleKenmerk as two independent workitems, never merged', async () => {
@@ -164,8 +160,8 @@ describe('runAdditionalEvidenceSyncRefresh', () => {
 
     await runAdditionalEvidenceSyncRefresh('run-1', deps, () => false, 'trigger-1');
 
-    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith(expect.objectContaining({ objectUuid: 'uuid-a', originalCaseReference: 'OF-HOOFD01' }));
-    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith(expect.objectContaining({ objectUuid: 'uuid-b', originalCaseReference: 'OF-HOOFD01' }));
+    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith('uuid-a', 'OF-EXTRA-a', 'additional-evidence-sync-worker', expect.any(Date));
+    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith('uuid-b', 'OF-EXTRA-b', 'additional-evidence-sync-worker', expect.any(Date));
     expect(repository.createWorkItemIfMissing).toHaveBeenCalledTimes(2);
   });
 
@@ -174,9 +170,7 @@ describe('runAdditionalEvidenceSyncRefresh', () => {
 
     await runAdditionalEvidenceSyncRefresh('run-1', deps, () => false, 'trigger-1');
 
-    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith(expect.objectContaining({
-      objectUuid: 'uuid-broken', submissionReference: 'OF-EXTRA-broken', status: 'NEW',
-    }));
+    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith('uuid-broken', 'OF-EXTRA-broken', 'additional-evidence-sync-worker', expect.any(Date));
   });
 
   it('still creates a minimal workitem for a submission whose CSV content failed to parse (missing origineleKenmerk)', async () => {
@@ -191,9 +185,7 @@ describe('runAdditionalEvidenceSyncRefresh', () => {
 
     await runAdditionalEvidenceSyncRefresh('run-1', deps, () => false, 'trigger-1');
 
-    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith(expect.objectContaining({
-      objectUuid: 'uuid-corrupt', submissionReference: 'OF-EXTRA-corrupt', status: 'NEW',
-    }));
+    expect(repository.createWorkItemIfMissing).toHaveBeenCalledWith('uuid-corrupt', 'OF-EXTRA-corrupt', 'additional-evidence-sync-worker', expect.any(Date));
   });
 
   it('does nothing when the runId is no longer the active refresh (superseded by a newer claim)', async () => {

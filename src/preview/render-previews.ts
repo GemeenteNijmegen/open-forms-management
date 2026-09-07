@@ -11,7 +11,8 @@ import {
 } from './fixtures/sport';
 import { sportReporterActiveAndReady, sportReporterEmpty, sportReporterTooLargeAndFailed } from './fixtures/sportReporter';
 import {
-  woonbehoefteAdditionalEvidenceOverview, woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
+  woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
+  woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
   woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
 } from './fixtures/woonbehoefte';
@@ -26,6 +27,7 @@ import permissionsTemplate from '../app/permissions/templates/permissions.mustac
 import sportReportsTemplate from '../app/sport/templates/sport-reports.mustache';
 import sportSubmissionsTemplate from '../app/sport/templates/sport-submissions.mustache';
 import sportTemplate from '../app/sport/templates/sport.mustache';
+import additionalEvidenceDetailTemplate from '../app/woonbehoefte/additional-evidence/templates/woonbehoefte-additional-evidence-detail.mustache';
 import additionalEvidenceOverviewTemplate from '../app/woonbehoefte/additional-evidence/templates/woonbehoefte-additional-evidence-overview.mustache';
 import woonbehoefteDetailTemplate from '../app/woonbehoefte/templates/woonbehoefte-detail.mustache';
 import woonbehoefteOverviewTemplate from '../app/woonbehoefte/templates/woonbehoefte-overview.mustache';
@@ -143,7 +145,15 @@ export async function renderAll(): Promise<void> {
     'woonbehoefte-overview-view-only': render(
       woonbehoefteOverviewTemplate, woonbehoefteOverviewViewOnly.page, { ...woonbehoefteOverviewViewOnly.data, isAanvragenTab: true },
     ),
-    'woonbehoefte-additional-evidence-overview': render(additionalEvidenceOverviewTemplate, woonbehoefteAdditionalEvidenceOverview.page),
+    'woonbehoefte-additional-evidence-overview': render(
+      additionalEvidenceOverviewTemplate, woonbehoefteAdditionalEvidenceOverview.page, woonbehoefteAdditionalEvidenceOverview.data,
+    ),
+    'woonbehoefte-additional-evidence-detail-normal': render(
+      additionalEvidenceDetailTemplate, woonbehoefteAdditionalEvidenceDetailNormal.page, woonbehoefteAdditionalEvidenceDetailNormal.data,
+    ),
+    'woonbehoefte-additional-evidence-detail-source-error': render(
+      additionalEvidenceDetailTemplate, woonbehoefteAdditionalEvidenceDetailSourceError.page, woonbehoefteAdditionalEvidenceDetailSourceError.data,
+    ),
     'woonbehoefte-detail-normal': render(woonbehoefteDetailTemplate, woonbehoefteDetailNormal.page, woonbehoefteDetailNormal.data),
     'woonbehoefte-detail-source-error': render(woonbehoefteDetailTemplate, woonbehoefteDetailSourceError.page, woonbehoefteDetailSourceError.data),
     'woonbehoefte-detail-many-documents': render(woonbehoefteDetailTemplate, woonbehoefteDetailManyDocuments.page, woonbehoefteDetailManyDocuments.data),

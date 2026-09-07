@@ -1,8 +1,11 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { LambdaClient } from '@aws-sdk/client-lambda';
+import { S3Client } from '@aws-sdk/client-s3';
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { environmentVariables } from '@gemeentenijmegen/utils';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
+import { AdditionalEvidenceDetailHandler } from './detail/AdditionalEvidenceDetailHandler';
+import { AdditionalEvidenceDocumentDownloadHandler } from './documents/AdditionalEvidenceDocumentDownloadHandler';
 import { AdditionalEvidenceOverviewHandler } from './overview/AdditionalEvidenceOverviewHandler';
 import { AdditionalEvidenceRefreshHandler } from './overview/AdditionalEvidenceRefreshHandler';
 import { createAdditionalEvidenceRepository } from './persistence/createAdditionalEvidenceRepository';
@@ -17,6 +20,7 @@ import { requireSession } from '../../../shared/auth/requireSession';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
 import { createPermissionRepository } from '../../../shared/authorization/createPermissionRepository';
 import { PermissionCheck } from '../../../shared/authorization/PermissionEvaluator';
+import { getOpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClientFactory';
 import { render } from '../../../shared/rendering/Renderer';
 import notFoundTemplate from '../../home/templates/notFound.mustache';
 
@@ -25,20 +29,29 @@ const WOONBEHOEFTE_MANAGE_CHECK: PermissionCheck = { resource: 'woonbehoefte', a
 
 const dynamoDBClient = new DynamoDBClient({});
 const lambdaClient = new LambdaClient({});
+const s3Client = new S3Client({});
 const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const repository = createAdditionalEvidenceRepository(dynamoDBClient);
 const sourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
 const overviewHandler = new AdditionalEvidenceOverviewHandler(authorizationService, repository, sourceCacheStore);
 
-/** Nothing has been implemented yet for a specific submission, so any submissionId is 404 for now. */
 async function respondSubmissionNotFound(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
   const html = render(notFoundTemplate, { title: 'Extra bewijzen niet gevonden', features: [], currentPath, actorEmail: identity.email });
   return Response.html(html, 404);
 }
 
-/** Authorizes, then reports the submission as not (yet) found; shared by every submissionId-scoped stub route. */
-async function requireAuthorizationThenNotFound(
+/** Search/status/link are not built yet; a known submission gets an honest "not available" instead of a misleading 404. */
+async function respondActionNotAvailable(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
+  const html = render(notFoundTemplate, { title: 'Nog niet beschikbaar', features: [], currentPath, actorEmail: identity.email });
+  return Response.html(html, 404);
+}
+
+/**
+ * Authorizes, then reports either "not found" (no such submission) or "not available" (submission exists,
+ * the action itself isn't built yet) for a submissionId-scoped stub route. Never mutates anything.
+ */
+async function requireAuthorizationThenStubResponse(
   identity: EmployeeIdentity, check: PermissionCheck, submissionId: string | undefined,
 ): Promise<ApiGatewayV2Response> {
   const authContext = await authorizationService.loadContext(identity);
@@ -46,13 +59,15 @@ async function requireAuthorizationThenNotFound(
   if (denied) {
     return denied;
   }
-  return respondSubmissionNotFound(identity, `/woonbehoefte/additional-evidence/${submissionId}`);
+  const currentPath = `/woonbehoefte/additional-evidence/${submissionId}`;
+  const workItem = submissionId ? await repository.getWorkItem(submissionId) : undefined;
+  return workItem ? respondActionNotAvailable(identity, currentPath) : respondSubmissionNotFound(identity, currentPath);
 }
 
 /**
- * Dispatches every Additional Evidence route. Overview and refresh are functionally real; the rest is
- * permission-checked and reports the submission as not (yet) found, honestly true since koppelen/status/
- * detail/documenten are not built yet. Nothing here mutates data outside the Additional Evidence sync/cache.
+ * Dispatches every Additional Evidence route. Overview, refresh, detail and document download are
+ * functionally real. Search-hoofdzaak/status/koppelen are permission-checked stubs: the koppelvlak is
+ * visually prepared on the detail page, but posting to these routes never mutates anything yet.
  */
 export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Context): Promise<ApiGatewayV2Response> {
   const correlationId = bindRequestLogging(lambdaContext);
@@ -84,19 +99,26 @@ export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Cont
       return await refreshHandler.handleRequest(identity, cookieHeader, event.body, isBase64Encoded, correlationId);
     }
     if (event.routeKey === 'GET /woonbehoefte/additional-evidence/{submissionId}') {
-      return await requireAuthorizationThenNotFound(identity, WOONBEHOEFTE_VIEW_CHECK, submissionId);
-    }
-    if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/search-case') {
-      return await requireAuthorizationThenNotFound(identity, WOONBEHOEFTE_VIEW_CHECK, submissionId);
-    }
-    if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/status') {
-      return await requireAuthorizationThenNotFound(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);
-    }
-    if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/link') {
-      return await requireAuthorizationThenNotFound(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);
+      const openZaakClient = await getOpenZaakClient();
+      const detailHandler = new AdditionalEvidenceDetailHandler(authorizationService, repository, sourceCacheStore, openZaakClient);
+      return await detailHandler.handleRequest(identity, submissionId, event.queryStringParameters);
     }
     if (event.routeKey === 'GET /woonbehoefte/additional-evidence/{submissionId}/documents/{documentId}') {
-      return await requireAuthorizationThenNotFound(identity, WOONBEHOEFTE_VIEW_CHECK, submissionId);
+      const openZaakClient = await getOpenZaakClient();
+      const env = environmentVariables(['WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET'] as const);
+      const downloadHandler = new AdditionalEvidenceDocumentDownloadHandler(
+        authorizationService, repository, sourceCacheStore, openZaakClient, auditTrail, s3Client, env.WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET,
+      );
+      return await downloadHandler.handleRequest(identity, submissionId, documentId);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/search-case') {
+      return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_VIEW_CHECK, submissionId);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/status') {
+      return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/link') {
+      return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);
     }
 
     const html = render(notFoundTemplate, { title: 'Pagina niet gevonden', features: [], currentPath: event.rawPath, actorEmail: identity.email });

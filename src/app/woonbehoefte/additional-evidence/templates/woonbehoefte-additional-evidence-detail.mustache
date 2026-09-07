@@ -1,0 +1,96 @@
+{{>header}}
+<main id="main-content" class="woonbehoefte-detail">
+  <p><a class="utrecht-link" href="{{backHref}}">Terug naar Extra bewijzen</a></p>
+
+  <div class="woonbehoefte-detail-header">
+    <p class="woonbehoefte-detail-header__reference">
+      {{submissionReference}}
+      <span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}}">{{statusLabel}}</span>
+    </p>
+    <h1 class="utrecht-heading-2">{{projectNameLabel}}</h1>
+    <p class="utrecht-paragraph">Projectnaam opgegeven bij extra bewijzen</p>
+  </div>
+
+  {{#hasSourceError}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{sourceErrorMessage}}</p>
+    </div>
+  </div>
+  {{/hasSourceError}}
+
+  <section id="basisgegevens" class="woonbehoefte-section">
+    <h2 class="utrecht-heading-4">Ingezonden</h2>
+    <p class="utrecht-paragraph">{{submittedAtLabel}}</p>
+
+    <h2 class="utrecht-heading-4">Contact</h2>
+    <ul class="nijmegen-metadata">
+      {{#contactEmail}}<li class="nijmegen-metadata__item">E-mailadres: {{contactEmail}}</li>{{/contactEmail}}
+      {{#contactPhone}}<li class="nijmegen-metadata__item">Telefoonnummer: {{contactPhone}}</li>{{/contactPhone}}
+    </ul>
+
+    {{#evidenceDescription}}
+    <h2 class="utrecht-heading-4">Welke extra bewijzen heeft u toegevoegd?</h2>
+    <p class="utrecht-paragraph">{{evidenceDescription}}</p>
+    {{/evidenceDescription}}
+
+    {{#remarks}}
+    <h2 class="utrecht-heading-4">Heeft u nog opmerkingen?</h2>
+    <p class="utrecht-paragraph">{{remarks}}</p>
+    {{/remarks}}
+  </section>
+
+  <details id="koppelen" class="woonbehoefte-details woonbehoefte-details--section" open>
+    <summary class="utrecht-heading-4">Koppelen aan hoofdzaak</summary>
+
+    <h3 class="utrecht-heading-5">Kenmerk door indiener in formulier</h3>
+    <p class="utrecht-paragraph">{{originalCaseReferenceLabel}}</p>
+
+    <form method="post" action="/woonbehoefte/additional-evidence/{{submissionId}}/search-case">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="search-case-reference">Kenmerk om te zoeken</label>
+        <input type="text" class="utrecht-textbox" id="search-case-reference" name="searchCaseReference" value="{{searchCaseReferenceValue}}">
+      </div>
+      <p class="utrecht-paragraph">Zoek of er binnen Woonbehoefte een hoofdzaak bestaat met dit kenmerk.</p>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Zoek hoofdzaak bij kenmerk</button>
+    </form>
+  </details>
+
+  <details id="bestanden" class="woonbehoefte-details woonbehoefte-details--section" open>
+    <summary class="utrecht-heading-4">Bestanden</summary>
+
+    <h3 class="utrecht-heading-5">Extra-bewijzenformulier</h3>
+    {{#applicationDocument}}
+    <ul class="woonbehoefte-documents">
+      <li class="woonbehoefte-documents__item woonbehoefte-documents__item--pdf">
+        <a class="utrecht-link" href="{{downloadHref}}">{{filenameLabel}}</a>
+        <span class="woonbehoefte-documents__meta">
+          {{#formatLabel}}{{formatLabel}}{{/formatLabel}}{{#sizeLabel}} · {{sizeLabel}}{{/sizeLabel}}
+        </span>
+      </li>
+    </ul>
+    {{/applicationDocument}}
+    {{^applicationDocument}}
+    <p class="utrecht-paragraph">Geen PDF beschikbaar voor deze inzending.</p>
+    {{/applicationDocument}}
+
+    <h3 class="utrecht-heading-5">Bijlagen</h3>
+    {{#hasAttachments}}
+    <ul class="woonbehoefte-documents">
+      {{#attachments}}
+      <li class="woonbehoefte-documents__item">
+        <a class="utrecht-link" href="{{downloadHref}}">{{filenameLabel}}</a>
+        <span class="woonbehoefte-documents__meta">
+          {{#formatLabel}}{{formatLabel}}{{/formatLabel}}{{#sizeLabel}} · {{sizeLabel}}{{/sizeLabel}}
+        </span>
+      </li>
+      {{/attachments}}
+    </ul>
+    {{/hasAttachments}}
+    {{^hasAttachments}}
+    <p class="utrecht-paragraph">Geen bijlagen beschikbaar voor deze inzending.</p>
+    {{/hasAttachments}}
+  </details>
+</main>
+{{>footer}}

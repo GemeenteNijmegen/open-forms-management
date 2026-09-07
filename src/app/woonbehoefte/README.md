@@ -144,21 +144,27 @@ afhankelijkheid.
 
 ## Extra bewijzen (additional-evidence)
 
-Tweede tab naast Aanvragen, voor losse "extra bewijzen"-inzendingen die een burger achteraf koppelt aan
-een bestaande Woonbehoefte-hoofdzaak. Volledig gescheiden pad van de primary sync: eigen page Lambda
-(`additional-evidence/additionalEvidence.lambda.ts`) en eigen sync worker
-(`additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts`), beide genest onder
-`WoonbehoefteAdditionalEvidenceFeature`. De primary Objects-query, CSV-guard en sync worker verwerken
-nooit een extra-bewijzeninzending; die krijgt nooit een `SOURCE#PRIMARY`-link.
+Tweede tab naast Aanvragen. Een burger kan achteraf nog "extra bewijzen" indienen voor een aanvraag die
+al loopt, via een apart Open Forms-formulier. Zo'n inzending heeft een eigen OF-kenmerk en een door de
+burger zelf ingetypt (en dus niet zomaar te vertrouwen) kenmerk van de hoofdzaak waar het bij hoort.
 
-De page Lambda hergebruikt de bestaande source-cache-tabel, Cases-tabel en tijdelijke downloadbucket
-(geen eigen tabellen), maar krijgt alleen Open Zaak-credentials, geen Objects-credentials: alleen de
-sync worker praat met Objects.
+Deze subfeature draait helemaal los van de primary sync: eigen formuliernaam-filter, eigen CSV-parser,
+eigen page Lambda en eigen sync worker. Een extra-bewijzeninzending komt dus nooit in de primary
+pijplijn terecht en wordt nooit per ongeluk een eigen hoofdzaak.
 
-Alle 7 routes uit de architectuur zijn geregistreerd. Op dit moment is alleen het overzicht functioneel
-(altijd leeg, want de sync worker haalt nog niets op); de overige routes (`refresh`, detail,
-`search-case`, `status`, `link`, documentdownload) zijn permissie-gecontroleerd maar geven nog een
-nette "niet gevonden"/"niet beschikbaar"-pagina.
+De page Lambda deelt de bestaande source-cache-tabel, Cases-tabel en tijdelijke downloadbucket met
+primary, maar heeft zelf geen Objects-toegang nodig - alleen de sync worker praat met Objects.
+
+Binnen die gedeelde tabellen blijft de opslag gescheiden van primary: de source-cache krijgt een eigen
+partitie, en een inzending wordt in de Cases-tabel een "workitem" (status Nieuw, Onbekend of Gekoppeld)
+in een eigen vaste partitie, nooit een hoofdzaak-item. De sync worker mag zo'n workitem alleen aanmaken,
+nooit bijwerken. Projectnaam, opgegeven hoofdzaakkenmerk en contactgegevens komen daarom bij elke
+weergave vers uit de source-cache, niet uit het workitem zelf - anders zou een eenmalig mislukte
+CSV-ophaling een inzending voorgoed met halve gegevens laten staan.
+
+Wat al werkt: overzicht met filter en statusbadge, verversen, en de volledige detailpagina inclusief
+documenten. Het koppelvlak staat visueel al op de detailpagina, maar zoeken en koppelen zelf zijn er nog
+niet.
 
 ## Verwijderen
 
