@@ -5,9 +5,17 @@ import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { AdditionalEvidenceDocumentRow } from '../documents/AdditionalEvidenceDocumentsLoader';
 import { ADDITIONAL_EVIDENCE_STATUS_LABELS } from '../domain/AdditionalEvidenceLabels';
 import { AdditionalEvidenceSourceRecord } from '../domain/AdditionalEvidenceSource';
-import { AdditionalEvidenceWorkItem } from '../persistence/AdditionalEvidenceRepository';
+import { AdditionalEvidenceWorkItem, AdditionalEvidenceWorkItemStatus } from '../persistence/AdditionalEvidenceRepository';
 
 export type AdditionalEvidenceSourceAvailability = 'READY' | 'FAILED' | 'MISSING';
+
+export interface SelectOption {
+  value: string;
+  label: string;
+  selected: boolean;
+}
+
+const CHANGEABLE_STATUSES: AdditionalEvidenceWorkItemStatus[] = ['NEW', 'UNKNOWN'];
 
 /**
  * `hoofdzaak*` fields describe the target primary case, deliberately named apart from `projectNameLabel`
@@ -45,7 +53,12 @@ export interface AdditionalEvidenceDetailViewModel {
   originalCaseReferenceLabel: string;
   searchCaseReferenceValue: string;
   csrfToken?: string;
+  backQuery: string;
   caseLookup: AdditionalEvidenceCaseLookupViewModel;
+
+  canManage: boolean;
+  isLinked: boolean;
+  statusOptions: SelectOption[];
 
   applicationDocument?: AdditionalEvidenceDocumentRow;
   attachments: AdditionalEvidenceDocumentRow[];
@@ -94,6 +107,7 @@ export function buildAdditionalEvidenceDetailViewModel(
   source: AdditionalEvidenceSourceRecord | undefined,
   sourceAvailability: AdditionalEvidenceSourceAvailability,
   documents: AdditionalEvidenceDocumentRow[],
+  canManage: boolean,
   backQuery: string,
   csrfToken?: string,
   caseLookup: AdditionalEvidenceCaseLookupViewModel = emptyCaseLookup(),
@@ -121,7 +135,14 @@ export function buildAdditionalEvidenceDetailViewModel(
     originalCaseReferenceLabel: source?.originalCaseReference ?? '-',
     searchCaseReferenceValue: caseLookup.searched ? caseLookup.searchedReference : (source?.originalCaseReference ?? ''),
     ...(csrfToken ? { csrfToken } : {}),
+    backQuery,
     caseLookup,
+
+    canManage,
+    isLinked: workItem.status === 'LINKED',
+    statusOptions: CHANGEABLE_STATUSES.map((status) => ({
+      value: status, label: ADDITIONAL_EVIDENCE_STATUS_LABELS[status], selected: status === workItem.status,
+    })),
 
     ...(applicationDocument ? { applicationDocument } : {}),
     attachments,

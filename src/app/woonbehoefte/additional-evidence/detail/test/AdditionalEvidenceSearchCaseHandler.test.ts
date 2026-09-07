@@ -29,7 +29,7 @@ describe('AdditionalEvidenceSearchCaseHandler', () => {
     );
 
     expect(response.statusCode).toBe(303);
-    expect(response.headers?.Location).toBe('/woonbehoefte/additional-evidence/uuid-1?searchCaseReference=OF-HOOFD01');
+    expect(response.headers?.Location).toBe('/woonbehoefte/additional-evidence/uuid-1?searchCaseReference=OF-HOOFD01#koppelen');
   });
 
   it('trims the searched kenmerk', async () => {
@@ -39,7 +39,7 @@ describe('AdditionalEvidenceSearchCaseHandler', () => {
       { principalId: 'medewerker' }, 'uuid-1', cookieHeader, form({ csrfToken, searchCaseReference: '  OF-HOOFD01  ' }), false,
     );
 
-    expect(response.headers?.Location).toBe('/woonbehoefte/additional-evidence/uuid-1?searchCaseReference=OF-HOOFD01');
+    expect(response.headers?.Location).toBe('/woonbehoefte/additional-evidence/uuid-1?searchCaseReference=OF-HOOFD01#koppelen');
   });
 
   it('denies without woonbehoefte:view', async () => {

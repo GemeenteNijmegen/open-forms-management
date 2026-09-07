@@ -23,6 +23,12 @@ import { AdditionalEvidenceSourceCacheStore } from '../source/AdditionalEvidence
 import detailTemplate from '../templates/woonbehoefte-additional-evidence-detail.mustache';
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
+const WOONBEHOEFTE_MANAGE_CHECK = { resource: 'woonbehoefte', action: 'manage' } as const;
+
+/** Keyed by the `saved` redirect marker `AdditionalEvidenceStatusHandler` sets on a successful (or no-op) status change. */
+const SAVED_MESSAGES: Record<string, string> = {
+  status: 'Status gewijzigd.',
+};
 
 /**
  * Handles `GET /woonbehoefte/additional-evidence/{submissionId}`. A normal read, so no ACCESS_GRANTED
@@ -78,9 +84,10 @@ export class AdditionalEvidenceDetailHandler {
       ? await this.lookupCase(queryStringParameters.searchCaseReference)
       : emptyCaseLookup();
 
+    const canManage = context.evaluator.evaluate(WOONBEHOEFTE_MANAGE_CHECK) === 'ALLOW';
     const csrf = issueCsrfToken();
     const backQuery = sanitizeAdditionalEvidenceFilterQuery(queryStringParameters?.back);
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem, source, availability, documents, backQuery, csrf.value, caseLookup);
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem, source, availability, documents, canManage, backQuery, csrf.value, caseLookup);
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
@@ -91,7 +98,13 @@ export class AdditionalEvidenceDetailHandler {
         currentPath: `/woonbehoefte/additional-evidence/${submissionId}`,
         actorEmail: identity.email,
       },
-      { ...viewModel },
+      {
+        ...viewModel,
+        showLinkedConflictWarning: queryStringParameters?.status === 'linked-conflict',
+        ...(queryStringParameters?.saved && SAVED_MESSAGES[queryStringParameters.saved]
+          ? { savedMessage: SAVED_MESSAGES[queryStringParameters.saved] }
+          : {}),
+      },
     );
     return Response.html(html, 200, csrf.cookie);
   }

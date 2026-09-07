@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { AdditionalEvidenceRepository, AdditionalEvidenceWorkItem } from '../AdditionalEvidenceRepository';
 
@@ -66,6 +66,56 @@ describe('AdditionalEvidenceRepository', () => {
     const call = documentMock.commandCalls(QueryCommand)[0];
     expect(call.args[0].input.ExpressionAttributeValues).toMatchObject({
       ':pk': 'ADDITIONAL_EVIDENCE#WORKITEMS', ':workItemPrefix': 'WORKITEM#',
+    });
+  });
+
+  describe('changeStatus', () => {
+    it('moves NEW to UNKNOWN, guarded by a status <> LINKED condition on the write itself', async () => {
+      documentMock.on(GetCommand).resolves({ Item: workItem });
+      documentMock.on(UpdateCommand).resolves({});
+
+      const outcome = await newRepository().changeStatus('uuid-1', 'UNKNOWN');
+
+      expect(outcome).toEqual({ result: 'OK', fromStatus: 'NEW', submissionReference: 'OF-EXTRA01' });
+      const call = documentMock.commandCalls(UpdateCommand)[0];
+      expect(call.args[0].input.Key).toEqual({ pk: 'ADDITIONAL_EVIDENCE#WORKITEMS', sk: 'WORKITEM#uuid-1' });
+      expect(call.args[0].input.ConditionExpression).toBe('#status <> :linked');
+      expect(call.args[0].input.ExpressionAttributeValues).toEqual({ ':targetStatus': 'UNKNOWN', ':linked': 'LINKED' });
+    });
+
+    it('is a no-op, without writing, when the target equals the current status', async () => {
+      documentMock.on(GetCommand).resolves({ Item: workItem });
+
+      const outcome = await newRepository().changeStatus('uuid-1', 'NEW');
+
+      expect(outcome).toEqual({ result: 'NOOP', fromStatus: 'NEW', submissionReference: 'OF-EXTRA01' });
+      expect(documentMock.commandCalls(UpdateCommand)).toHaveLength(0);
+    });
+
+    it('refuses to move an already-LINKED workitem back, without writing', async () => {
+      documentMock.on(GetCommand).resolves({ Item: { ...workItem, status: 'LINKED' } });
+
+      const outcome = await newRepository().changeStatus('uuid-1', 'UNKNOWN');
+
+      expect(outcome).toEqual({ result: 'LINKED', fromStatus: 'LINKED', submissionReference: 'OF-EXTRA01' });
+      expect(documentMock.commandCalls(UpdateCommand)).toHaveLength(0);
+    });
+
+    it('reports LINKED when the write races against a concurrent link action (condition failure)', async () => {
+      documentMock.on(GetCommand).resolves({ Item: workItem });
+      documentMock.on(UpdateCommand).rejects(conditionalCheckFailed());
+
+      const outcome = await newRepository().changeStatus('uuid-1', 'UNKNOWN');
+
+      expect(outcome).toEqual({ result: 'LINKED', fromStatus: 'NEW', submissionReference: 'OF-EXTRA01' });
+    });
+
+    it('reports NOT_FOUND for an unknown objectUuid', async () => {
+      documentMock.on(GetCommand).resolves({});
+
+      const outcome = await newRepository().changeStatus('uuid-missing', 'UNKNOWN');
+
+      expect(outcome).toEqual({ result: 'NOT_FOUND' });
     });
   });
 });

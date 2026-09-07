@@ -6,6 +6,7 @@ import { environmentVariables } from '@gemeentenijmegen/utils';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import { AdditionalEvidenceDetailHandler } from './detail/AdditionalEvidenceDetailHandler';
 import { AdditionalEvidenceSearchCaseHandler } from './detail/AdditionalEvidenceSearchCaseHandler';
+import { AdditionalEvidenceStatusHandler } from './detail/AdditionalEvidenceStatusHandler';
 import { AdditionalEvidenceDocumentDownloadHandler } from './documents/AdditionalEvidenceDocumentDownloadHandler';
 import { AdditionalEvidenceOverviewHandler } from './overview/AdditionalEvidenceOverviewHandler';
 import { AdditionalEvidenceRefreshHandler } from './overview/AdditionalEvidenceRefreshHandler';
@@ -41,13 +42,14 @@ const primaryCaseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const primarySourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
 const overviewHandler = new AdditionalEvidenceOverviewHandler(authorizationService, repository, sourceCacheStore);
 const searchCaseHandler = new AdditionalEvidenceSearchCaseHandler(authorizationService);
+const statusHandler = new AdditionalEvidenceStatusHandler(authorizationService, repository, auditTrail);
 
 async function respondSubmissionNotFound(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
   const html = render(notFoundTemplate, { title: 'Extra bewijzen niet gevonden', features: [], currentPath, actorEmail: identity.email });
   return Response.html(html, 404);
 }
 
-/** Search/status/link are not built yet; a known submission gets an honest "not available" instead of a misleading 404. */
+/** Koppelen is not built yet; a known submission gets an honest "not available" instead of a misleading 404. */
 async function respondActionNotAvailable(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
   const html = render(notFoundTemplate, { title: 'Nog niet beschikbaar', features: [], currentPath, actorEmail: identity.email });
   return Response.html(html, 404);
@@ -71,9 +73,9 @@ async function requireAuthorizationThenStubResponse(
 }
 
 /**
- * Dispatches every Additional Evidence route. Overview, refresh, detail, zoek-hoofdzaak and document
- * download are functionally real. Status/koppelen are still permission-checked stubs: the koppelvlak is
- * visually prepared on the detail page, but posting to koppelen itself never mutates anything yet.
+ * Dispatches every Additional Evidence route. Overview, refresh, detail, zoek-hoofdzaak, status and document
+ * download are functionally real. Koppelen is still a permission-checked stub: the koppelvlak is visually
+ * prepared on the detail page, but posting to koppelen itself never mutates anything yet.
  */
 export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Context): Promise<ApiGatewayV2Response> {
   const correlationId = bindRequestLogging(lambdaContext);
@@ -123,7 +125,7 @@ export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Cont
       return await searchCaseHandler.handleRequest(identity, submissionId, cookieHeader, event.body, isBase64Encoded);
     }
     if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/status') {
-      return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);
+      return await statusHandler.handleRequest(identity, submissionId, cookieHeader, event.body, isBase64Encoded);
     }
     if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/link') {
       return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);

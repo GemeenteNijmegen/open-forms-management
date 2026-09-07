@@ -163,8 +163,11 @@ weergave vers uit de source-cache, niet uit het workitem zelf - anders zou een e
 CSV-ophaling een inzending voorgoed met halve gegevens laten staan.
 
 Wat al werkt: overzicht met filter en statusbadge, verversen, de volledige detailpagina inclusief
-documenten, en het zoeken van de hoofdzaak (leest daarvoor de bestaande primary `WoonbehoefteCaseRepository`
-en source-cache read-only, schrijft er niets naartoe). Koppelen zelf staat er nog niet.
+documenten, het zoeken van de hoofdzaak (leest daarvoor de bestaande primary `WoonbehoefteCaseRepository`
+en source-cache read-only, schrijft er niets naartoe), en het handmatig wijzigen van de status tussen
+Nieuw en Onbekend. Gekoppeld is nooit een handmatig te kiezen status: die zet alleen de koppelactie zelf,
+en zowel de handler als de write zelf weigeren een gekoppeld workitem terug te zetten. Koppelen zelf
+staat er nog niet.
 
 ## Verwijderen
 

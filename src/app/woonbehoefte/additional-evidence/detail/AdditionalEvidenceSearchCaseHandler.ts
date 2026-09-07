@@ -32,6 +32,7 @@ export class AdditionalEvidenceSearchCaseHandler {
 
     const searchCaseReference = (form.get('searchCaseReference') ?? '').trim();
     const query = new URLSearchParams({ searchCaseReference });
-    return Response.redirect(`/woonbehoefte/additional-evidence/${submissionId}?${query.toString()}`, 303);
+    // #koppelen scrolls the medewerker straight back to the zoekresultaat, not to the top of the page.
+    return Response.redirect(`/woonbehoefte/additional-evidence/${submissionId}?${query.toString()}#koppelen`, 303);
   }
 }

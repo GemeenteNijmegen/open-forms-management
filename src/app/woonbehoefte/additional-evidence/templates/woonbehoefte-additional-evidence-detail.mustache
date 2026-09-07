@@ -11,6 +11,24 @@
     <p class="utrecht-paragraph">Projectnaam opgegeven bij extra bewijzen</p>
   </div>
 
+  {{#canManage}}
+  {{^isLinked}}
+  <form method="post" action="/woonbehoefte/additional-evidence/{{submissionId}}/status" class="woonbehoefte-inline-form">
+    <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+    <input type="hidden" name="back" value="{{backQuery}}">
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="status-select">Status wijzigen</label>
+      <select class="utrecht-select utrecht-select--html-select" id="status-select" name="status">
+        {{#statusOptions}}
+        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+        {{/statusOptions}}
+      </select>
+    </div>
+    <button type="submit" class="utrecht-button utrecht-button--secondary-action">Opslaan</button>
+  </form>
+  {{/isLinked}}
+  {{/canManage}}
+
   {{#hasSourceError}}
   <div class="utrecht-alert utrecht-alert--warning" role="status">
     <div class="utrecht-alert__content">
@@ -18,6 +36,20 @@
     </div>
   </div>
   {{/hasSourceError}}
+
+  {{#savedMessage}}
+  <div class="utrecht-alert utrecht-alert--success" role="status">
+    <div class="utrecht-alert__content"><p class="utrecht-alert__message">{{savedMessage}}</p></div>
+  </div>
+  {{/savedMessage}}
+
+  {{#showLinkedConflictWarning}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Dit workitem is inmiddels gekoppeld en kan niet meer handmatig van status wisselen.</p>
+    </div>
+  </div>
+  {{/showLinkedConflictWarning}}
 
   <section id="basisgegevens" class="woonbehoefte-section">
     <h2 class="utrecht-heading-4">Ingezonden</h2>

@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 const PARTITION_KEY = 'ADDITIONAL_EVIDENCE#WORKITEMS';
 const WORKITEM_SORT_KEY_PREFIX = 'WORKITEM#';
@@ -12,6 +12,15 @@ function isConditionalCheckFailed(error: unknown): boolean {
 }
 
 export type AdditionalEvidenceWorkItemStatus = 'NEW' | 'UNKNOWN' | 'LINKED';
+
+/** Only these two are ever reachable through a manual status change; `LINKED` only ever comes from the link action itself. */
+export type AdditionalEvidenceChangeableStatus = 'NEW' | 'UNKNOWN';
+
+export type AdditionalEvidenceStatusChangeResult = 'OK' | 'NOOP' | 'LINKED' | 'NOT_FOUND';
+
+export type AdditionalEvidenceStatusChangeOutcome =
+  | { result: 'NOT_FOUND' }
+  | { result: 'OK' | 'NOOP' | 'LINKED'; fromStatus: AdditionalEvidenceWorkItemStatus; submissionReference: string };
 
 /**
  * Durable extra-bewijzen identity/status record. Deliberately lean: no CSV-derived content
@@ -62,6 +71,42 @@ export class AdditionalEvidenceRepository {
       Key: { pk: PARTITION_KEY, sk: workItemSortKey(objectUuid) },
     }));
     return result.Item as AdditionalEvidenceWorkItem | undefined;
+  }
+
+  /**
+   * NEW <-> UNKNOWN only. Reads the current status first purely to short-circuit a same-status resave as a
+   * no-op and to report `fromStatus` for the audit event; the actual concurrency guard is the write's own
+   * `status <> LINKED` condition, so a request that raced against a just-completed link action can never
+   * pull a workitem back out of LINKED.
+   */
+  async changeStatus(objectUuid: string, targetStatus: AdditionalEvidenceChangeableStatus): Promise<AdditionalEvidenceStatusChangeOutcome> {
+    const workItem = await this.getWorkItem(objectUuid);
+    if (!workItem) {
+      return { result: 'NOT_FOUND' };
+    }
+    if (workItem.status === 'LINKED') {
+      return { result: 'LINKED', fromStatus: workItem.status, submissionReference: workItem.submissionReference };
+    }
+    if (workItem.status === targetStatus) {
+      return { result: 'NOOP', fromStatus: workItem.status, submissionReference: workItem.submissionReference };
+    }
+
+    try {
+      await this.documentClient.send(new UpdateCommand({
+        TableName: this.tableName,
+        Key: { pk: PARTITION_KEY, sk: workItemSortKey(objectUuid) },
+        UpdateExpression: 'SET #status = :targetStatus',
+        ConditionExpression: '#status <> :linked',
+        ExpressionAttributeNames: { '#status': 'status' },
+        ExpressionAttributeValues: { ':targetStatus': targetStatus, ':linked': 'LINKED' },
+      }));
+      return { result: 'OK', fromStatus: workItem.status, submissionReference: workItem.submissionReference };
+    } catch (error) {
+      if (isConditionalCheckFailed(error)) {
+        return { result: 'LINKED', fromStatus: workItem.status, submissionReference: workItem.submissionReference };
+      }
+      throw error;
+    }
   }
 
   /** Every workitem in one Query pass; used by the overview. */

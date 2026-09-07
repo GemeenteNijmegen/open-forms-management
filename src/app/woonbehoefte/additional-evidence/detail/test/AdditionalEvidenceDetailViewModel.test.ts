@@ -67,7 +67,7 @@ function source(overrides: Partial<AdditionalEvidenceSourceRecord> = {}): Additi
 
 describe('buildAdditionalEvidenceDetailViewModel', () => {
   it('defaults the search kenmerk to origineleKenmerk, keeping it visually distinct from the own submission reference', () => {
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), source({ originalCaseReference: 'OF-HOOFD99' }), 'READY', [], '');
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), source({ originalCaseReference: 'OF-HOOFD99' }), 'READY', [], true, '');
 
     expect(viewModel.submissionReference).toBe('OF-EXTRA01');
     expect(viewModel.originalCaseReferenceLabel).toBe('OF-HOOFD99');
@@ -75,7 +75,7 @@ describe('buildAdditionalEvidenceDetailViewModel', () => {
   });
 
   it('shows a technical bronfout, not a workflow status, when the source failed', () => {
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), undefined, 'FAILED', [], '');
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), undefined, 'FAILED', [], true, '');
 
     expect(viewModel.hasSourceError).toBe(true);
     expect(viewModel.sourceErrorMessage).toContain('konden niet volledig worden gelezen');
@@ -89,7 +89,7 @@ describe('buildAdditionalEvidenceDetailViewModel', () => {
       { documentId: 'att-1', filenameLabel: 'bijlage.pdf', downloadHref: '/y', isApplicationPdf: false },
     ];
 
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), source(), 'READY', documents, '');
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), source(), 'READY', documents, true, '');
 
     expect(viewModel.applicationDocument?.documentId).toBe('pdf-1');
     expect(viewModel.attachments.map((a) => a.documentId)).toEqual(['att-1']);
@@ -97,7 +97,7 @@ describe('buildAdditionalEvidenceDetailViewModel', () => {
   });
 
   it('carries the objectUuid separately as submissionId, distinct from the medewerker-facing submissionReference', () => {
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem({ objectUuid: 'uuid-abc', submissionReference: 'OF-EXTRA09' }), source(), 'READY', [], '');
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem({ objectUuid: 'uuid-abc', submissionReference: 'OF-EXTRA09' }), source(), 'READY', [], true, '');
 
     expect(viewModel.submissionId).toBe('uuid-abc');
     expect(viewModel.submissionReference).toBe('OF-EXTRA09');
@@ -107,11 +107,35 @@ describe('buildAdditionalEvidenceDetailViewModel', () => {
     const caseLookup = buildAdditionalEvidenceCaseLookup('OF-ANDERS02', woonbehoefteCase({ caseReference: 'OF-ANDERS02' }), primarySource(), true);
 
     const viewModel = buildAdditionalEvidenceDetailViewModel(
-      workItem(), source({ originalCaseReference: 'OF-HOOFD01' }), 'READY', [], '', undefined, caseLookup,
+      workItem(), source({ originalCaseReference: 'OF-HOOFD01' }), 'READY', [], true, '', undefined, caseLookup,
     );
 
     expect(viewModel.searchCaseReferenceValue).toBe('OF-ANDERS02');
     expect(viewModel.originalCaseReferenceLabel).toBe('OF-HOOFD01');
+  });
+
+  it('offers NEW/UNKNOWN as the only reachable status options, never LINKED', () => {
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem({ status: 'UNKNOWN' }), source(), 'READY', [], true, '');
+
+    expect(viewModel.statusOptions).toEqual([
+      { value: 'NEW', label: 'Nieuw', selected: false },
+      { value: 'UNKNOWN', label: 'Onbekend', selected: true },
+    ]);
+    expect(viewModel.isLinked).toBe(false);
+  });
+
+  it('flags a LINKED workitem so the status form can be hidden, without offering it as a selectable option', () => {
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem({ status: 'LINKED' }), source(), 'READY', [], true, '');
+
+    expect(viewModel.isLinked).toBe(true);
+    expect(viewModel.statusOptions.map((option) => option.value)).toEqual(['NEW', 'UNKNOWN']);
+    expect(viewModel.statusOptions.some((option) => option.selected)).toBe(false);
+  });
+
+  it('carries canManage through as given', () => {
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem(), source(), 'READY', [], false, '');
+
+    expect(viewModel.canManage).toBe(false);
   });
 });
 

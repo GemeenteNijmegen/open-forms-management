@@ -18,6 +18,14 @@ function makeAuthorizationService(): AuthorizationService {
   } as unknown as AuthorizationService;
 }
 
+function makeManagingAuthorizationService(): AuthorizationService {
+  const evaluator = new PermissionEvaluator([{ resource: 'woonbehoefte', actions: ['view', 'manage'] }]);
+  return {
+    loadContext: jest.fn().mockResolvedValue({ identity: { principalId: 'medewerker' }, evaluator }),
+    requireAuthorization: jest.fn().mockResolvedValue(undefined),
+  } as unknown as AuthorizationService;
+}
+
 function workItem(overrides: Partial<AdditionalEvidenceWorkItem> = {}): AdditionalEvidenceWorkItem {
   return {
     objectUuid: 'uuid-1',
@@ -233,5 +241,59 @@ describe('AdditionalEvidenceDetailHandler', () => {
 
     expect(response.body).toContain('Hoofdzaak gevonden');
     expect(response.body).toContain('OF-GECORRIGEERD');
+  });
+
+  it('offers the status-wijzigen select to a medewerker with woonbehoefte:manage', async () => {
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(workItem()) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const handler = new AdditionalEvidenceDetailHandler(
+      makeManagingAuthorizationService(), repository, sourceCacheStore, openZaakClient, noPrimaryCaseRepository(), noPrimarySourceCacheStore(),
+    );
+
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', undefined);
+
+    expect(response.body).toContain('id="status-select"');
+  });
+
+  it('does not offer the status-wijzigen select to a medewerker without woonbehoefte:manage', async () => {
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(workItem()) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const handler = new AdditionalEvidenceDetailHandler(
+      makeAuthorizationService(), repository, sourceCacheStore, openZaakClient, noPrimaryCaseRepository(), noPrimarySourceCacheStore(),
+    );
+
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', undefined);
+
+    expect(response.body).not.toContain('id="status-select"');
+  });
+
+  it('never offers the status-wijzigen select for an already-LINKED workitem, even with manage', async () => {
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(workItem({ status: 'LINKED' })) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const handler = new AdditionalEvidenceDetailHandler(
+      makeManagingAuthorizationService(), repository, sourceCacheStore, openZaakClient, noPrimaryCaseRepository(), noPrimarySourceCacheStore(),
+    );
+
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', undefined);
+
+    expect(response.body).not.toContain('id="status-select"');
+  });
+
+  it('shows the saved-status message and the linked-conflict warning based on redirect query params', async () => {
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(workItem()) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const handler = new AdditionalEvidenceDetailHandler(
+      makeManagingAuthorizationService(), repository, sourceCacheStore, openZaakClient, noPrimaryCaseRepository(), noPrimarySourceCacheStore(),
+    );
+
+    const saved = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { saved: 'status' });
+    expect(saved.body).toContain('Status gewijzigd.');
+
+    const conflict = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { status: 'linked-conflict' });
+    expect(conflict.body).toContain('kan niet meer handmatig van status wisselen');
   });
 });
