@@ -1,6 +1,7 @@
 import {
   buildAdditionalEvidenceCaseLookup, buildAdditionalEvidenceDetailViewModel,
 } from '../../app/woonbehoefte/additional-evidence/detail/AdditionalEvidenceDetailViewModel';
+import { AdditionalEvidenceCaseDocumentGroup } from '../../app/woonbehoefte/additional-evidence/documents/AdditionalEvidenceCaseDocumentsLoader';
 import { AdditionalEvidenceDocumentRow } from '../../app/woonbehoefte/additional-evidence/documents/AdditionalEvidenceDocumentsLoader';
 import { ADDITIONAL_EVIDENCE_SOURCE_CACHE_VERSION, AdditionalEvidenceSourceItem, AdditionalEvidenceSourceRecord } from '../../app/woonbehoefte/additional-evidence/domain/AdditionalEvidenceSource';
 import { resolveAdditionalEvidenceOverviewFilter } from '../../app/woonbehoefte/additional-evidence/overview/AdditionalEvidenceOverviewFilter';
@@ -451,6 +452,41 @@ export const woonbehoefteDetailInadmissible = {
     woonbehoefteCase({ caseReference: 'OF-2026-00033', status: 'INADMISSIBLE', claimedBy: 'medewerker@example.invalid' }),
     source({ caseReference: 'OF-2026-00033', projectName: 'Aanvraag zonder rechtsgeldige onderbouwing', applicantType: 'PROJECT_APPLICANT' }),
     'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+  ),
+};
+
+function additionalDocumentGroup(
+  overrides: Partial<AdditionalEvidenceCaseDocumentGroup> & { submissionReference: string },
+): AdditionalEvidenceCaseDocumentGroup {
+  return {
+    submittedAtLabel: '7 september 2026 17:54',
+    linkedAtLabel: '9 september 2026 10:32',
+    linkedByLabel: 'medewerker@example.invalid',
+    hasSourceError: false,
+    documents: [
+      { documentId: 'extra-pdf-1', filenameLabel: 'Extra-bewijzenformulier (PDF)', formatLabel: 'application/pdf', downloadHref: '/woonbehoefte/cases/OF-2026-00142/documents/extra-pdf-1' },
+    ],
+    hasDocuments: true,
+    ...overrides,
+  };
+}
+
+export const woonbehoefteDetailWithAdditionalEvidence = {
+  page: detailPage('OF-2026-00142'),
+  data: buildWoonbehoefteDetailViewModel(
+    detailCase, detailSource, 'READY',
+    [documentRow({ documentId: 'pdf-1', filenameLabel: 'Aanvraagformulier (PDF)', isApplicationPdf: true, formatLabel: 'application/pdf', sizeLabel: '842 KB' })],
+    [detailNote], [detailActivity], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    [
+      additionalDocumentGroup({ submissionReference: 'OF-EXTRA01' }),
+      additionalDocumentGroup({
+        submissionReference: 'OF-EXTRA02',
+        hasSourceError: true,
+        sourceErrorMessage: 'De brongegevens van deze extra-bewijzeninzending konden niet volledig worden gelezen. Ververs Extra bewijzen later opnieuw.',
+        documents: [],
+        hasDocuments: false,
+      }),
+    ],
   ),
 };
 

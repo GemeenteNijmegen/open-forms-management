@@ -146,35 +146,47 @@ afhankelijkheid.
 
 Tweede tab naast Aanvragen. Een burger kan achteraf nog "extra bewijzen" indienen voor een aanvraag die
 al loopt, via een apart Open Forms-formulier. Zo'n inzending heeft een eigen OF-kenmerk en een door de
-burger zelf ingetypt (en dus niet zomaar te vertrouwen) kenmerk van de hoofdzaak waar het bij hoort.
+burger zelf ingetypt kenmerk van de hoofdzaak waar het bij hoort, en dat laatste kenmerk kun je dus niet
+zomaar vertrouwen.
 
-Deze subfeature draait helemaal los van de primary sync: eigen formuliernaam-filter, eigen CSV-parser,
-eigen page Lambda en eigen sync worker. Een extra-bewijzeninzending komt dus nooit in de primary
-pijplijn terecht en wordt nooit per ongeluk een eigen hoofdzaak.
+Deze subfeature draait helemaal los van de primary sync, met een eigen formuliernaam-filter, eigen
+CSV-parser, eigen page Lambda en eigen sync worker. Een extra-bewijzeninzending komt daardoor nooit in de
+primary pijplijn terecht en wordt nooit per ongeluk zelf een hoofdzaak.
 
 De page Lambda deelt de bestaande source-cache-tabel, Cases-tabel en tijdelijke downloadbucket met
-primary, maar heeft zelf geen Objects-toegang nodig - alleen de sync worker praat met Objects.
+primary, maar heeft zelf geen toegang tot Objects nodig. Alleen de sync worker praat met Objects.
 
-Binnen die gedeelde tabellen blijft de opslag gescheiden van primary: de source-cache krijgt een eigen
-partitie, en een inzending wordt in de Cases-tabel een "workitem" (status Nieuw, Onbekend of Gekoppeld)
-in een eigen vaste partitie, nooit een hoofdzaak-item. De sync worker mag zo'n workitem alleen aanmaken,
+Binnen die gedeelde tabellen blijft de opslag gescheiden van primary. De source-cache krijgt een eigen
+partitie, en een inzending wordt in de Cases-tabel een workitem (status Nieuw, Onbekend of Gekoppeld) in
+een eigen vaste partitie, nooit een hoofdzaak-item. De sync worker mag zo'n workitem alleen aanmaken en
 nooit bijwerken. Projectnaam, opgegeven hoofdzaakkenmerk en contactgegevens komen daarom bij elke
-weergave vers uit de source-cache, niet uit het workitem zelf - anders zou een eenmalig mislukte
+weergave vers uit de source-cache in plaats van uit het workitem zelf. Anders zou een eenmalig mislukte
 CSV-ophaling een inzending voorgoed met halve gegevens laten staan.
 
-Wat al werkt: overzicht met filter en statusbadge, verversen, de volledige detailpagina inclusief
-documenten, het zoeken van de hoofdzaak (leest daarvoor de bestaande primary `WoonbehoefteCaseRepository`
-en source-cache read-only, schrijft er niets naartoe), het handmatig wijzigen van de status tussen Nieuw
-en Onbekend, en het daadwerkelijk koppelen aan een gevonden hoofdzaak.
+Wat al werkt: overzicht met filter en statusbadge, verversen, de hele detailpagina inclusief documenten,
+het zoeken van de hoofdzaak, het handmatig wijzigen van de status tussen Nieuw en Onbekend, en het
+daadwerkelijk koppelen aan een gevonden hoofdzaak. Het zoeken leest alleen de bestaande primary
+WoonbehoefteCaseRepository en source-cache, en schrijft er niets naar terug.
 
-Koppelen zelf is één atomaire DynamoDB-transactie over twee partities in dezelfde Cases-tabel: het
-workitem gaat naar Gekoppeld, de hoofdzaak krijgt een nieuwe `SOURCE#ADDITIONAL`-link, een automatische
-interne aantekening (categorie `ADDITIONAL_INFORMATION`, met de door de burger opgegeven toelichting) en
-een case-activity. Alles commit samen of niets. Gekoppeld is nooit een handmatig te kiezen status: die
-zet alleen de koppeltransactie zelf, geborgd door een conditie op de write van het workitem, niet door een
-eerdere lezing - een racende tweede koppelpoging voor dezelfde inzending kan dus nooit twee verschillende
-hoofdzaken raken. Zowel de statushandler als de koppelactie weigeren een al gekoppeld workitem terug te
-zetten of opnieuw te koppelen.
+Koppelen zelf is één atomaire DynamoDB-transactie over twee partities in dezelfde Cases-tabel. Het
+workitem gaat naar Gekoppeld, de hoofdzaak krijgt een nieuwe SOURCE#ADDITIONAL-link, er komt een
+automatische interne aantekening bij met categorie ADDITIONAL_INFORMATION (met de toelichting die de
+burger zelf heeft opgegeven), en een case-activity. Alles commit samen of niets. Gekoppeld is nooit een
+status die je handmatig kunt kiezen, die wordt alleen door de koppeltransactie zelf gezet. Dat is geborgd
+met een conditie op de write van het workitem, niet op basis van een eerdere lezing, dus een racende
+tweede koppelpoging voor dezelfde inzending kan nooit bij twee verschillende hoofdzaken uitkomen. Zowel de
+statushandler als de koppelactie weigeren om een al gekoppeld workitem terug te zetten of opnieuw te
+koppelen.
+
+Na het koppelen verschijnen de documenten van de extra-bewijzeninzending ook op de bestaande
+hoofdzaak-detailpagina, als eigen groep naast de oorspronkelijke aanvraagdocumenten. Die logica staat
+bewust apart in additional-evidence/documents/AdditionalEvidenceCaseDocumentsLoader.ts. De primary
+detailhandler en het bijbehorende viewmodel geven het resultaat alleen door, zonder er zelf iets mee te
+doen. De downloadlink van zo'n document loopt gewoon via de bestaande documentroute van de hoofdzaak
+zelf. Daarvoor zoekt de documentdownloadhandler nu niet meer alleen in de primary source-cache, maar ook
+in die van extra bewijzen, en alleen voor links die daadwerkelijk aan de opgevraagde hoofdzaak gekoppeld
+zijn, precies zoals dat al gold voor primary documenten. Iemand kan dus nog steeds geen document van een
+andere hoofdzaak opvragen door alleen een documentId te raden.
 
 ## Verwijderen
 

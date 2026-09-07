@@ -16,6 +16,7 @@ import {
   woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
+  woonbehoefteDetailWithAdditionalEvidence,
   woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
 } from './fixtures/woonbehoefte';
 import homeTemplate from '../app/home/templates/home.mustache';
@@ -173,6 +174,9 @@ export async function renderAll(): Promise<void> {
     ),
     'woonbehoefte-detail-inadmissible': render(woonbehoefteDetailTemplate, woonbehoefteDetailInadmissible.page, woonbehoefteDetailInadmissible.data),
     'woonbehoefte-detail-view-only': render(woonbehoefteDetailTemplate, woonbehoefteDetailViewOnly.page, woonbehoefteDetailViewOnly.data),
+    'woonbehoefte-detail-with-additional-evidence': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailWithAdditionalEvidence.page, woonbehoefteDetailWithAdditionalEvidence.data,
+    ),
     'woonbehoefte-detail-saved': render(woonbehoefteDetailTemplate, woonbehoefteDetailSaved.page, woonbehoefteDetailSaved.data),
   };
 

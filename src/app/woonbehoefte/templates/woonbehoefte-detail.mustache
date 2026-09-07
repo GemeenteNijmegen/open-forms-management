@@ -295,6 +295,33 @@
     {{^hasAttachments}}
     <p class="utrecht-paragraph">Geen bijlagen beschikbaar voor deze aanvraag.</p>
     {{/hasAttachments}}
+
+    {{#additionalDocumentGroups}}
+    <h3 class="utrecht-heading-5">Extra bewijzen - {{submissionReference}}</h3>
+    <p class="woonbehoefte-documents__meta">Ingezonden: {{submittedAtLabel}} · Gekoppeld: {{linkedAtLabel}} door {{linkedByLabel}}</p>
+    {{#hasSourceError}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content"><p class="utrecht-alert__message">{{sourceErrorMessage}}</p></div>
+    </div>
+    {{/hasSourceError}}
+    {{#hasDocuments}}
+    <ul class="woonbehoefte-documents">
+      {{#documents}}
+      <li class="woonbehoefte-documents__item">
+        <a class="utrecht-link" href="{{downloadHref}}">{{filenameLabel}}</a>
+        <span class="woonbehoefte-documents__meta">
+          {{#formatLabel}}{{formatLabel}}{{/formatLabel}}{{#sizeLabel}} · {{sizeLabel}}{{/sizeLabel}}
+        </span>
+      </li>
+      {{/documents}}
+    </ul>
+    {{/hasDocuments}}
+    {{^hasDocuments}}
+    {{^hasSourceError}}
+    <p class="utrecht-paragraph">Geen documenten beschikbaar voor deze extra-bewijzeninzending.</p>
+    {{/hasSourceError}}
+    {{/hasDocuments}}
+    {{/additionalDocumentGroups}}
   </details>
 
   <details id="beoordeling" class="woonbehoefte-details woonbehoefte-details--section" open>

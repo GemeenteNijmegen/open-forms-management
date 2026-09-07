@@ -9,6 +9,8 @@ import { render } from '../../../shared/rendering/Renderer';
 import { issueCsrfToken } from '../../../shared/security/csrf/CsrfProtection';
 import notFoundTemplate from '../../home/templates/notFound.mustache';
 import { visiblePermissionsFeature } from '../../permissions/PermissionsNavigationFeature';
+import { loadAdditionalEvidenceCaseDocumentGroups } from '../additional-evidence/documents/AdditionalEvidenceCaseDocumentsLoader';
+import { AdditionalEvidenceSourceCacheStore } from '../additional-evidence/source/AdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
 import { loadWoonbehoefteDocuments, WoonbehoefteDocumentSource } from '../documents/WoonbehoefteDocumentsLoader';
 import { isFailedSource, isReadySource, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
@@ -31,13 +33,19 @@ const SAVED_MESSAGES: Record<string, string> = {
   'assessment': 'Beoordeling opgeslagen. Controleer of de status van de aanvraag nog klopt.',
 };
 
-/** Handles `GET /woonbehoefte/cases/{caseReference}`. A normal read, so no ACCESS_GRANTED audit. */
+/**
+ * Handles `GET /woonbehoefte/cases/{caseReference}`. A normal read, so no ACCESS_GRANTED audit. Primary
+ * aanvraaggegevens/documenten come exclusively from the PRIMARY source, unchanged; any gekoppelde extra
+ * bewijzen are read separately and only ever added as their own documentgroepen, never merged into the
+ * primary data itself.
+ */
 export class WoonbehoefteDetailHandler {
   constructor(
     private readonly authorizationService: AuthorizationService,
     private readonly caseRepository: WoonbehoefteCaseRepository,
     private readonly sourceCacheStore: WoonbehoefteSourceCacheStore,
     private readonly openZaakClient: OpenZaakClient,
+    private readonly additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore,
   ) { }
 
   async handleRequest(
@@ -84,6 +92,14 @@ export class WoonbehoefteDetailHandler {
     }
 
     const documents = documentSource ? await loadWoonbehoefteDocuments(this.openZaakClient, documentSource, caseReference, identity) : [];
+
+    // Extra bewijzen worden nooit onderdeel van de primary aanvraaggegevens; dit levert alleen aparte documentgroepen op.
+    const additionalLinks = caseItems.sourceLinks.filter((link) => link.relation === 'ADDITIONAL');
+    const additionalSourceItems = await this.additionalSourceCacheStore.getItems(additionalLinks.map((link) => link.submissionId));
+    const additionalDocumentGroups = await loadAdditionalEvidenceCaseDocumentGroups(
+      this.openZaakClient, caseReference, additionalLinks, additionalSourceItems, identity,
+    );
+
     const canManage = context.evaluator.evaluate(WOONBEHOEFTE_MANAGE_CHECK) === 'ALLOW';
     const csrf = canManage ? issueCsrfToken() : undefined;
     const backQuery = sanitizeWoonbehoefteFilterQuery(queryStringParameters?.back);
@@ -91,7 +107,7 @@ export class WoonbehoefteDetailHandler {
     const actorId = identity.email ?? identity.principalId;
     const viewModel = buildWoonbehoefteDetailViewModel(
       caseItems.woonbehoefteCase, source, availability, documents, caseItems.notes, caseItems.activities, canManage, actorId, backQuery,
-      csrf?.value,
+      csrf?.value, additionalDocumentGroups,
     );
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];

@@ -4,6 +4,7 @@ import { AuditTrail } from '../../../../shared/audit/AuditTrail';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { PermissionEvaluator } from '../../../../shared/authorization/PermissionEvaluator';
 import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
+import { AdditionalEvidenceSourceCacheStore } from '../../additional-evidence/source/AdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteCaseRepository, WoonbehoefteCaseItems } from '../../cases/WoonbehoefteCaseRepository';
 import { WoonbehoefteSourceFailure, WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
@@ -76,6 +77,10 @@ function makeS3Client(): S3Client {
   return { send: jest.fn().mockResolvedValue({}) } as unknown as S3Client;
 }
 
+function noAdditionalSourceCacheStore(): AdditionalEvidenceSourceCacheStore {
+  return { getItems: jest.fn().mockResolvedValue(new Map()) } as unknown as AdditionalEvidenceSourceCacheStore;
+}
+
 describe('WoonbehoefteDocumentDownloadHandler', () => {
   beforeEach(() => {
     (getSignedUrl as jest.Mock).mockReset().mockResolvedValue('https://signed.example.invalid/downloads/doc-a');
@@ -93,7 +98,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-B', 'doc-a');
 
@@ -117,7 +122,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
 
@@ -150,7 +155,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-missing', 'doc-a');
 
@@ -171,7 +176,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
 
@@ -190,7 +195,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'csv-1');
 
@@ -212,7 +217,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
 
@@ -230,7 +235,7 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = makeS3Client();
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-unknown');
 
@@ -252,11 +257,78 @@ describe('WoonbehoefteDocumentDownloadHandler', () => {
     const s3Client = { send: jest.fn().mockRejectedValue(new Error('s3 unavailable')) } as unknown as S3Client;
 
     const handler = new WoonbehoefteDocumentDownloadHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
     );
     const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'doc-a');
 
     expect(response.statusCode).toBe(500);
     expect(record).not.toHaveBeenCalled();
+  });
+
+  it('downloads a document from a gekoppelde extra-bewijzeninzending (ADDITIONAL source link)', async () => {
+    const caseItemsWithAdditionalLink: WoonbehoefteCaseItems = {
+      ...caseItems('OF-A', 'uuid-1'),
+      sourceLinks: [
+        { caseReference: 'OF-A', submissionId: 'uuid-1', submissionReference: 'OF-A', relation: 'PRIMARY', linkedAt: '2026-08-01T00:00:00.000Z' },
+        {
+          caseReference: 'OF-A',
+          submissionId: 'uuid-extra-01',
+          submissionReference: 'OF-EXTRA01',
+          relation: 'ADDITIONAL',
+          linkedAt: '2026-09-09T10:32:00.000Z',
+          linkedBy: 'medewerker@example.invalid',
+        },
+      ],
+    };
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItemsWithAdditionalLink) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map()) } as unknown as WoonbehoefteSourceCacheStore;
+    const additionalSourceCacheStore = {
+      getItems: jest.fn().mockResolvedValue(new Map([
+        ['uuid-extra-01', {
+          status: 'READY',
+          cacheVersion: 1,
+          objectUuid: 'uuid-extra-01',
+          submissionId: 'uuid-extra-01',
+          reference: 'OF-EXTRA01',
+          formName: 'Extra bewijzen stroomaansluiting woningbouw',
+          submittedAt: '2026-09-07T17:54:04.702Z',
+          originalCaseReference: 'OF-A',
+          attachments: [{ documentId: 'extra-doc-a', url: 'https://example.invalid/extra-doc-a', role: 'ATTACHMENT' }],
+          cachedAt: '2026-09-07T18:00:00.000Z',
+        }],
+      ])),
+    } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = {
+      getDocumentContent: jest.fn().mockResolvedValue({ body: new Uint8Array([1, 2, 3]) }),
+      getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijs.pdf', formaat: 'application/pdf' }),
+    } as unknown as OpenZaakClient;
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
+
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, additionalSourceCacheStore,
+    );
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'extra-doc-a');
+
+    expect(response.statusCode).toBe(302);
+    expect(openZaakClient.getDocumentContent).toHaveBeenCalled();
+  });
+
+  it('refuses a document from an extra-bewijzeninzending that is not linked to this case', async () => {
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems('OF-A', 'uuid-1')) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = {
+      getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', makeSource({ attachments: [] })]])),
+    } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = { getDocumentContent: jest.fn() } as unknown as OpenZaakClient;
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const s3Client = makeS3Client();
+
+    const handler = new WoonbehoefteDocumentDownloadHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, auditTrail, s3Client, bucketName, noAdditionalSourceCacheStore(),
+    );
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-A', 'extra-doc-a');
+
+    expect(response.statusCode).toBe(404);
+    expect(openZaakClient.getDocumentContent).not.toHaveBeenCalled();
   });
 });
