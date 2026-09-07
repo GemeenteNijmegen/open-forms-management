@@ -124,14 +124,16 @@ src/app/woonbehoefte/
 ├── checks/            check vragen/afronden
 ├── templates/         de twee Mustache-pagina's (overzicht, detail)
 ├── woonbehoefte.lambda.ts             route-dispatcher van de page Lambda
-└── woonbehoefte-function.ts           door projen gegenereerde Lambda-wrapper
+├── woonbehoefte-function.ts           door projen gegenereerde Lambda-wrapper
+└── additional-evidence/               "Extra bewijzen"-subfeature, zie hieronder
 
 src/infrastructure/woonbehoefte/
 ├── WoonbehoefteFeature.ts             composition root: tabellen, Lambda's, IAM, routes
 ├── WoonbehoefteSourceCacheTable.ts
 ├── WoonbehoefteCasesTable.ts
 ├── WoonbehoefteCaseVersionsTable.ts
-└── WoonbehoefteDataSourceAccess.ts    eigen kopie van het Objects/Open Zaak-credentialpatroon
+├── WoonbehoefteDataSourceAccess.ts    eigen kopie van het Objects/Open Zaak-credentialpatroon
+└── additional-evidence/               nested feature, zie hieronder
 ```
 
 `AppStack.ts` kent alleen `WoonbehoefteFeature` en geeft de gedeelde platformresources door
@@ -139,6 +141,24 @@ src/infrastructure/woonbehoefte/
 uit `src/app/sport/**` of `src/infrastructure/sport/**`; waar hetzelfde patroon nuttig was (cache-worker,
 refresh-state, documentdownload) is het overgenomen als eigen Woonbehoefte-code, niet als gedeelde
 afhankelijkheid.
+
+## Extra bewijzen (additional-evidence)
+
+Tweede tab naast Aanvragen, voor losse "extra bewijzen"-inzendingen die een burger achteraf koppelt aan
+een bestaande Woonbehoefte-hoofdzaak. Volledig gescheiden pad van de primary sync: eigen page Lambda
+(`additional-evidence/additionalEvidence.lambda.ts`) en eigen sync worker
+(`additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts`), beide genest onder
+`WoonbehoefteAdditionalEvidenceFeature`. De primary Objects-query, CSV-guard en sync worker verwerken
+nooit een extra-bewijzeninzending; die krijgt nooit een `SOURCE#PRIMARY`-link.
+
+De page Lambda hergebruikt de bestaande source-cache-tabel, Cases-tabel en tijdelijke downloadbucket
+(geen eigen tabellen), maar krijgt alleen Open Zaak-credentials, geen Objects-credentials: alleen de
+sync worker praat met Objects.
+
+Alle 7 routes uit de architectuur zijn geregistreerd. Op dit moment is alleen het overzicht functioneel
+(altijd leeg, want de sync worker haalt nog niets op); de overige routes (`refresh`, detail,
+`search-case`, `status`, `link`, documentdownload) zijn permissie-gecontroleerd maar geven nog een
+nette "niet gevonden"/"niet beschikbaar"-pagina.
 
 ## Verwijderen
 

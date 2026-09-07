@@ -7,10 +7,70 @@
     <a class="woonbehoefte-tabs__link woonbehoefte-tabs__link--active" href="/woonbehoefte/additional-evidence" aria-current="page">Extra bewijzen</a>
   </nav>
 
+  {{#refreshStarted}}
+  <div class="utrecht-alert utrecht-alert--success" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Verversen gestart. Dit kan enkele minuten duren, ververs deze pagina zo nu en dan.</p>
+    </div>
+  </div>
+  {{/refreshStarted}}
+  {{#refreshAlreadyRunning}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Er loopt al een verversing.</p>
+    </div>
+  </div>
+  {{/refreshAlreadyRunning}}
+  {{#refreshFailed}}
+  <div class="utrecht-alert utrecht-alert--error" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Verversen kon niet worden gestart. Probeer het opnieuw.</p>
+    </div>
+  </div>
+  {{/refreshFailed}}
+  {{#isRefreshing}}
+  <p class="woonbehoefte-loading">Bezig met verversen…</p>
+  {{/isRefreshing}}
+
+  <div class="woonbehoefte-refresh-bar">
+    <form method="post" action="/woonbehoefte/additional-evidence/refresh">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verversen</button>
+    </form>
+  </div>
+
+  {{#hasRows}}
+  <div class="nijmegen-search-results">
+    {{#rows}}
+    <article class="woonbehoefte-record">
+      <div class="woonbehoefte-record__summary">
+        <div class="woonbehoefte-record__field">
+          <span class="woonbehoefte-record__field-label">Extra-bewijzenkenmerk</span>
+          <span>{{submissionReference}}</span>
+        </div>
+        <div class="woonbehoefte-record__field">
+          <span class="woonbehoefte-record__field-label">Opgegeven hoofdzaakkenmerk</span>
+          <span>{{originalCaseReferenceLabel}}</span>
+        </div>
+        <div class="woonbehoefte-record__field">
+          <span class="woonbehoefte-record__field-label">Ingezonden op</span>
+          <span>{{submittedAtLabel}}</span>
+        </div>
+        <div class="woonbehoefte-record__field">
+          <span class="woonbehoefte-record__field-label">Status</span>
+          <span>{{statusLabel}}</span>
+        </div>
+      </div>
+    </article>
+    {{/rows}}
+  </div>
+  {{/hasRows}}
+  {{^hasRows}}
   <div class="nijmegen-action-card">
     <div class="nijmegen-action-card__content">
       <p class="utrecht-paragraph">Nog geen extra bewijzen bekend.</p>
     </div>
   </div>
+  {{/hasRows}}
 </main>
 {{>footer}}
