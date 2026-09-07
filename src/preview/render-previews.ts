@@ -11,6 +11,7 @@ import {
 } from './fixtures/sport';
 import { sportReporterActiveAndReady, sportReporterEmpty, sportReporterTooLargeAndFailed } from './fixtures/sportReporter';
 import {
+  woonbehoefteAdditionalEvidenceDetailCaseFound, woonbehoefteAdditionalEvidenceDetailCaseNotFound,
   woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
@@ -153,6 +154,12 @@ export async function renderAll(): Promise<void> {
     ),
     'woonbehoefte-additional-evidence-detail-source-error': render(
       additionalEvidenceDetailTemplate, woonbehoefteAdditionalEvidenceDetailSourceError.page, woonbehoefteAdditionalEvidenceDetailSourceError.data,
+    ),
+    'woonbehoefte-additional-evidence-detail-case-found': render(
+      additionalEvidenceDetailTemplate, woonbehoefteAdditionalEvidenceDetailCaseFound.page, woonbehoefteAdditionalEvidenceDetailCaseFound.data,
+    ),
+    'woonbehoefte-additional-evidence-detail-case-not-found': render(
+      additionalEvidenceDetailTemplate, woonbehoefteAdditionalEvidenceDetailCaseNotFound.page, woonbehoefteAdditionalEvidenceDetailCaseNotFound.data,
     ),
     'woonbehoefte-detail-normal': render(woonbehoefteDetailTemplate, woonbehoefteDetailNormal.page, woonbehoefteDetailNormal.data),
     'woonbehoefte-detail-source-error': render(woonbehoefteDetailTemplate, woonbehoefteDetailSourceError.page, woonbehoefteDetailSourceError.data),

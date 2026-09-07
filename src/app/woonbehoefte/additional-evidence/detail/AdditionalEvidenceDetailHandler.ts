@@ -1,5 +1,8 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
-import { AdditionalEvidenceSourceAvailability, buildAdditionalEvidenceDetailViewModel } from './AdditionalEvidenceDetailViewModel';
+import {
+  AdditionalEvidenceCaseLookupViewModel, AdditionalEvidenceSourceAvailability,
+  buildAdditionalEvidenceCaseLookup, buildAdditionalEvidenceDetailViewModel, emptyCaseLookup,
+} from './AdditionalEvidenceDetailViewModel';
 import { EmployeeIdentity } from '../../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
@@ -9,6 +12,9 @@ import { render } from '../../../../shared/rendering/Renderer';
 import { issueCsrfToken } from '../../../../shared/security/csrf/CsrfProtection';
 import notFoundTemplate from '../../../home/templates/notFound.mustache';
 import { visiblePermissionsFeature } from '../../../permissions/PermissionsNavigationFeature';
+import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
+import { isFailedSource, isReadySource } from '../../domain/WoonbehoefteSource';
+import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { loadAdditionalEvidenceDocuments } from '../documents/AdditionalEvidenceDocumentsLoader';
 import { isFailedAdditionalEvidenceSource, isReadyAdditionalEvidenceSource } from '../domain/AdditionalEvidenceSource';
 import { sanitizeAdditionalEvidenceFilterQuery } from '../overview/AdditionalEvidenceOverviewFilter';
@@ -18,13 +24,19 @@ import detailTemplate from '../templates/woonbehoefte-additional-evidence-detail
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
 
-/** Handles `GET /woonbehoefte/additional-evidence/{submissionId}`. A normal read, so no ACCESS_GRANTED audit. */
+/**
+ * Handles `GET /woonbehoefte/additional-evidence/{submissionId}`. A normal read, so no ACCESS_GRANTED
+ * audit. Reads the primary `WoonbehoefteCaseRepository`/`WoonbehoefteSourceCacheStore` for the "zoek
+ * hoofdzaak"-lookup only: it never writes to them, and never creates a case there.
+ */
 export class AdditionalEvidenceDetailHandler {
   constructor(
     private readonly authorizationService: AuthorizationService,
     private readonly repository: AdditionalEvidenceRepository,
     private readonly sourceCacheStore: AdditionalEvidenceSourceCacheStore,
     private readonly openZaakClient: OpenZaakClient,
+    private readonly primaryCaseRepository: WoonbehoefteCaseRepository,
+    private readonly primarySourceCacheStore: WoonbehoefteSourceCacheStore,
   ) { }
 
   async handleRequest(
@@ -62,9 +74,13 @@ export class AdditionalEvidenceDetailHandler {
       ? await loadAdditionalEvidenceDocuments(this.openZaakClient, documentSource, submissionId, identity)
       : [];
 
+    const caseLookup = queryStringParameters?.searchCaseReference !== undefined
+      ? await this.lookupCase(queryStringParameters.searchCaseReference)
+      : emptyCaseLookup();
+
     const csrf = issueCsrfToken();
     const backQuery = sanitizeAdditionalEvidenceFilterQuery(queryStringParameters?.back);
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem, source, availability, documents, backQuery, csrf.value);
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem, source, availability, documents, backQuery, csrf.value, caseLookup);
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
@@ -78,5 +94,35 @@ export class AdditionalEvidenceDetailHandler {
       { ...viewModel },
     );
     return Response.html(html, 200, csrf.cookie);
+  }
+
+  /** Read-only: never creates or changes the target case. A later koppeling re-validates it independently again. */
+  private async lookupCase(rawSearchedReference: string): Promise<AdditionalEvidenceCaseLookupViewModel> {
+    const searchedReference = rawSearchedReference.trim();
+    if (!searchedReference) {
+      return buildAdditionalEvidenceCaseLookup(searchedReference, undefined, undefined, false);
+    }
+
+    const targetCase = await this.primaryCaseRepository.getCase(searchedReference);
+    if (!targetCase) {
+      return buildAdditionalEvidenceCaseLookup(searchedReference, undefined, undefined, false);
+    }
+
+    const caseItems = await this.primaryCaseRepository.getCaseItems(searchedReference);
+    const primaryLink = caseItems.sourceLinks.find((link) => link.relation === 'PRIMARY');
+    let primarySource;
+    let primarySourceAvailable = false;
+    if (primaryLink) {
+      const primarySourceItems = await this.primarySourceCacheStore.getItems([primaryLink.submissionId]);
+      const primaryItem = primarySourceItems.get(primaryLink.submissionId);
+      if (primaryItem && isReadySource(primaryItem)) {
+        primarySource = primaryItem;
+        primarySourceAvailable = true;
+      } else if (primaryItem && isFailedSource(primaryItem)) {
+        primarySourceAvailable = false;
+      }
+    }
+
+    return buildAdditionalEvidenceCaseLookup(searchedReference, targetCase, primarySource, primarySourceAvailable);
   }
 }

@@ -5,6 +5,7 @@ import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-htt
 import { environmentVariables } from '@gemeentenijmegen/utils';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import { AdditionalEvidenceDetailHandler } from './detail/AdditionalEvidenceDetailHandler';
+import { AdditionalEvidenceSearchCaseHandler } from './detail/AdditionalEvidenceSearchCaseHandler';
 import { AdditionalEvidenceDocumentDownloadHandler } from './documents/AdditionalEvidenceDocumentDownloadHandler';
 import { AdditionalEvidenceOverviewHandler } from './overview/AdditionalEvidenceOverviewHandler';
 import { AdditionalEvidenceRefreshHandler } from './overview/AdditionalEvidenceRefreshHandler';
@@ -23,8 +24,9 @@ import { PermissionCheck } from '../../../shared/authorization/PermissionEvaluat
 import { getOpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClientFactory';
 import { render } from '../../../shared/rendering/Renderer';
 import notFoundTemplate from '../../home/templates/notFound.mustache';
+import { createWoonbehoefteCaseRepository } from '../cases/createWoonbehoefteCaseRepository';
+import { createWoonbehoefteSourceCacheStore } from '../source/createWoonbehoefteSourceCacheStore';
 
-const WOONBEHOEFTE_VIEW_CHECK: PermissionCheck = { resource: 'woonbehoefte', action: 'view' };
 const WOONBEHOEFTE_MANAGE_CHECK: PermissionCheck = { resource: 'woonbehoefte', action: 'manage' };
 
 const dynamoDBClient = new DynamoDBClient({});
@@ -34,7 +36,11 @@ const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const repository = createAdditionalEvidenceRepository(dynamoDBClient);
 const sourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
+// Read-only reuse for the "zoek hoofdzaak"-lookup only; never written to from here.
+const primaryCaseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
+const primarySourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
 const overviewHandler = new AdditionalEvidenceOverviewHandler(authorizationService, repository, sourceCacheStore);
+const searchCaseHandler = new AdditionalEvidenceSearchCaseHandler(authorizationService);
 
 async function respondSubmissionNotFound(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
   const html = render(notFoundTemplate, { title: 'Extra bewijzen niet gevonden', features: [], currentPath, actorEmail: identity.email });
@@ -65,9 +71,9 @@ async function requireAuthorizationThenStubResponse(
 }
 
 /**
- * Dispatches every Additional Evidence route. Overview, refresh, detail and document download are
- * functionally real. Search-hoofdzaak/status/koppelen are permission-checked stubs: the koppelvlak is
- * visually prepared on the detail page, but posting to these routes never mutates anything yet.
+ * Dispatches every Additional Evidence route. Overview, refresh, detail, zoek-hoofdzaak and document
+ * download are functionally real. Status/koppelen are still permission-checked stubs: the koppelvlak is
+ * visually prepared on the detail page, but posting to koppelen itself never mutates anything yet.
  */
 export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Context): Promise<ApiGatewayV2Response> {
   const correlationId = bindRequestLogging(lambdaContext);
@@ -100,7 +106,9 @@ export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Cont
     }
     if (event.routeKey === 'GET /woonbehoefte/additional-evidence/{submissionId}') {
       const openZaakClient = await getOpenZaakClient();
-      const detailHandler = new AdditionalEvidenceDetailHandler(authorizationService, repository, sourceCacheStore, openZaakClient);
+      const detailHandler = new AdditionalEvidenceDetailHandler(
+        authorizationService, repository, sourceCacheStore, openZaakClient, primaryCaseRepository, primarySourceCacheStore,
+      );
       return await detailHandler.handleRequest(identity, submissionId, event.queryStringParameters);
     }
     if (event.routeKey === 'GET /woonbehoefte/additional-evidence/{submissionId}/documents/{documentId}') {
@@ -112,7 +120,7 @@ export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Cont
       return await downloadHandler.handleRequest(identity, submissionId, documentId);
     }
     if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/search-case') {
-      return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_VIEW_CHECK, submissionId);
+      return await searchCaseHandler.handleRequest(identity, submissionId, cookieHeader, event.body, isBase64Encoded);
     }
     if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/status') {
       return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);

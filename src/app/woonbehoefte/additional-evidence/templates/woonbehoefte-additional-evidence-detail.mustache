@@ -55,6 +55,36 @@
       <p class="utrecht-paragraph">Zoek of er binnen Woonbehoefte een hoofdzaak bestaat met dit kenmerk.</p>
       <button type="submit" class="utrecht-button utrecht-button--primary-action">Zoek hoofdzaak bij kenmerk</button>
     </form>
+
+    {{#caseLookup}}
+    {{#searched}}
+    <div class="woonbehoefte-case-lookup-result">
+    {{#found}}
+    <div class="utrecht-alert utrecht-alert--success" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Hoofdzaak gevonden</p>
+      </div>
+    </div>
+    <ul class="nijmegen-metadata">
+      <li class="nijmegen-metadata__item">Kenmerk hoofdzaak: {{caseReference}}</li>
+      <li class="nijmegen-metadata__item">Projectnaam hoofdzaak: {{hoofdzaakProjectNameLabel}}</li>
+      <li class="nijmegen-metadata__item">Status hoofdzaak: {{hoofdzaakStatusLabel}}</li>
+      {{#hoofdzaakEmail}}<li class="nijmegen-metadata__item">E-mailadres hoofdzaak: {{hoofdzaakEmail}}</li>{{/hoofdzaakEmail}}
+    </ul>
+    {{#hoofdzaakSourceMissing}}
+    <p class="utrecht-paragraph">De aanvraaggegevens van deze hoofdzaak konden niet volledig worden geladen. Het dossier bestaat wel. Controleer het kenmerk extra zorgvuldig.</p>
+    {{/hoofdzaakSourceMissing}}
+    {{/found}}
+    {{^found}}
+    <div class="utrecht-alert utrecht-alert--error" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Geen hoofdzaak gevonden met kenmerk {{searchedReference}}. Controleer het kenmerk en probeer opnieuw. De extra bewijzen zijn niet gekoppeld.</p>
+      </div>
+    </div>
+    {{/found}}
+    </div>
+    {{/searched}}
+    {{/caseLookup}}
   </details>
 
   <details id="bestanden" class="woonbehoefte-details woonbehoefte-details--section" open>

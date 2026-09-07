@@ -1,6 +1,42 @@
+import { WoonbehoefteCase } from '../../../domain/WoonbehoefteCase';
+import { WoonbehoefteSourceRecord } from '../../../domain/WoonbehoefteSource';
 import { ADDITIONAL_EVIDENCE_SOURCE_CACHE_VERSION, AdditionalEvidenceSourceRecord } from '../../domain/AdditionalEvidenceSource';
 import { AdditionalEvidenceWorkItem } from '../../persistence/AdditionalEvidenceRepository';
-import { buildAdditionalEvidenceDetailViewModel } from '../AdditionalEvidenceDetailViewModel';
+import { buildAdditionalEvidenceCaseLookup, buildAdditionalEvidenceDetailViewModel } from '../AdditionalEvidenceDetailViewModel';
+
+function woonbehoefteCase(overrides: Partial<WoonbehoefteCase> = {}): WoonbehoefteCase {
+  return {
+    caseReference: 'OF-HOOFD01',
+    status: 'IN_PROGRESS',
+    statusChangedAt: '2026-08-01T00:00:00.000Z',
+    assessment: {},
+    check: { requested: false },
+    version: 1,
+    createdAt: '2026-08-01T00:00:00.000Z',
+    createdBy: 'woonbehoefte-sync-worker',
+    updatedAt: '2026-08-01T00:00:00.000Z',
+    updatedBy: 'woonbehoefte-sync-worker',
+    ...overrides,
+  };
+}
+
+function primarySource(overrides: Partial<WoonbehoefteSourceRecord> = {}): WoonbehoefteSourceRecord {
+  return {
+    status: 'READY',
+    cacheVersion: 1,
+    objectUuid: 'uuid-primary-1',
+    submissionId: 'uuid-primary-1',
+    submissionType: 'PRIMARY_APPLICATION',
+    reference: 'OF-HOOFD01',
+    caseReference: 'OF-HOOFD01',
+    formName: 'Aanmelden stroomaansluiting woningbouw',
+    registrationAt: '2026-08-01T00:00:00.000Z',
+    applicantType: 'UNKNOWN',
+    attachments: [],
+    cachedAt: '2026-08-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
 
 function workItem(overrides: Partial<AdditionalEvidenceWorkItem> = {}): AdditionalEvidenceWorkItem {
   return {
@@ -65,5 +101,43 @@ describe('buildAdditionalEvidenceDetailViewModel', () => {
 
     expect(viewModel.submissionId).toBe('uuid-abc');
     expect(viewModel.submissionReference).toBe('OF-EXTRA09');
+  });
+
+  it('shows the just-searched kenmerk in the zoekveld, not the original one, once a search happened', () => {
+    const caseLookup = buildAdditionalEvidenceCaseLookup('OF-ANDERS02', woonbehoefteCase({ caseReference: 'OF-ANDERS02' }), primarySource(), true);
+
+    const viewModel = buildAdditionalEvidenceDetailViewModel(
+      workItem(), source({ originalCaseReference: 'OF-HOOFD01' }), 'READY', [], '', undefined, caseLookup,
+    );
+
+    expect(viewModel.searchCaseReferenceValue).toBe('OF-ANDERS02');
+    expect(viewModel.originalCaseReferenceLabel).toBe('OF-HOOFD01');
+  });
+});
+
+describe('buildAdditionalEvidenceCaseLookup', () => {
+  it('shows the hoofdzaak project name distinctly labelled from the additional evidence projectnaam, never confused', () => {
+    const caseLookup = buildAdditionalEvidenceCaseLookup(
+      'OF-HOOFD01', woonbehoefteCase(), primarySource({ projectName: 'Project Lindenhof fase 2' }), true,
+    );
+
+    expect(caseLookup.found).toBe(true);
+    expect(caseLookup.hoofdzaakProjectNameLabel).toBe('Project Lindenhof fase 2');
+    expect(caseLookup.hoofdzaakSourceMissing).toBe(false);
+  });
+
+  it('does not block on a missing primary source, but flags it', () => {
+    const caseLookup = buildAdditionalEvidenceCaseLookup('OF-HOOFD01', woonbehoefteCase(), undefined, false);
+
+    expect(caseLookup.found).toBe(true);
+    expect(caseLookup.hoofdzaakSourceMissing).toBe(true);
+    expect(caseLookup.hoofdzaakStatusLabel).toBe('In behandeling');
+  });
+
+  it('reports not found without ever creating anything, keeping the searched value for the medewerker to correct', () => {
+    const caseLookup = buildAdditionalEvidenceCaseLookup('OF-ONBEKEND99', undefined, undefined, false);
+
+    expect(caseLookup.found).toBe(false);
+    expect(caseLookup.searchedReference).toBe('OF-ONBEKEND99');
   });
 });

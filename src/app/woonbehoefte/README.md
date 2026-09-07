@@ -162,9 +162,9 @@ nooit bijwerken. Projectnaam, opgegeven hoofdzaakkenmerk en contactgegevens kome
 weergave vers uit de source-cache, niet uit het workitem zelf - anders zou een eenmalig mislukte
 CSV-ophaling een inzending voorgoed met halve gegevens laten staan.
 
-Wat al werkt: overzicht met filter en statusbadge, verversen, en de volledige detailpagina inclusief
-documenten. Het koppelvlak staat visueel al op de detailpagina, maar zoeken en koppelen zelf zijn er nog
-niet.
+Wat al werkt: overzicht met filter en statusbadge, verversen, de volledige detailpagina inclusief
+documenten, en het zoeken van de hoofdzaak (leest daarvoor de bestaande primary `WoonbehoefteCaseRepository`
+en source-cache read-only, schrijft er niets naartoe). Koppelen zelf staat er nog niet.
 
 ## Verwijderen
 

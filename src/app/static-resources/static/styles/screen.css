@@ -697,3 +697,7 @@ footer {
   font-size: var(--utrecht-paragraph-small-font-size);
   color: var(--nijmegen-color-foreground-subdued);
 }
+
+.woonbehoefte-case-lookup-result {
+  margin-block-start: var(--nijmegen-space-200);
+}

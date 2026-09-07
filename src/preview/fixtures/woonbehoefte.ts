@@ -1,4 +1,6 @@
-import { buildAdditionalEvidenceDetailViewModel } from '../../app/woonbehoefte/additional-evidence/detail/AdditionalEvidenceDetailViewModel';
+import {
+  buildAdditionalEvidenceCaseLookup, buildAdditionalEvidenceDetailViewModel,
+} from '../../app/woonbehoefte/additional-evidence/detail/AdditionalEvidenceDetailViewModel';
 import { AdditionalEvidenceDocumentRow } from '../../app/woonbehoefte/additional-evidence/documents/AdditionalEvidenceDocumentsLoader';
 import { ADDITIONAL_EVIDENCE_SOURCE_CACHE_VERSION, AdditionalEvidenceSourceItem, AdditionalEvidenceSourceRecord } from '../../app/woonbehoefte/additional-evidence/domain/AdditionalEvidenceSource';
 import { resolveAdditionalEvidenceOverviewFilter } from '../../app/woonbehoefte/additional-evidence/overview/AdditionalEvidenceOverviewFilter';
@@ -279,6 +281,37 @@ export const woonbehoefteAdditionalEvidenceDetailSourceError = {
     [],
     '',
     'preview-csrf-token',
+  ),
+};
+
+// Reuses the existing OF-2026-00142 hoofdzaak/source fixtures, so the "gevonden" preview lines up with
+// what the primary Woonbehoefte-previews already show for that same case.
+const previewFoundCase = cases.find((c) => c.caseReference === 'OF-2026-00142')!;
+const previewFoundPrimarySource = sources.find((s) => s.caseReference === 'OF-2026-00142');
+
+export const woonbehoefteAdditionalEvidenceDetailCaseFound = {
+  page: additionalEvidenceDetailPage('OF-EXTRA01'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-01', status: 'NEW' }),
+    additionalEvidenceSource({ objectUuid: 'uuid-extra-01', submittedAt: '2026-09-07T17:54:04.702Z', submittedProjectName: 'Project Lindenhof' }),
+    'READY',
+    [],
+    '',
+    'preview-csrf-token',
+    buildAdditionalEvidenceCaseLookup('OF-2026-00142', previewFoundCase, previewFoundPrimarySource, true),
+  ),
+};
+
+export const woonbehoefteAdditionalEvidenceDetailCaseNotFound = {
+  page: additionalEvidenceDetailPage('OF-EXTRA03'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-03', status: 'NEW' }),
+    additionalEvidenceSource({ objectUuid: 'uuid-extra-03', submittedAt: '2026-09-05T11:00:00.000Z', submittedProjectName: 'Project Meijhorst' }),
+    'READY',
+    [],
+    '',
+    'preview-csrf-token',
+    buildAdditionalEvidenceCaseLookup('OF-BESTAAT-NIET', undefined, undefined, false),
   ),
 };
 
