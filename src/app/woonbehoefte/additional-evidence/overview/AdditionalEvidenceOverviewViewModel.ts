@@ -31,7 +31,21 @@ export function joinWorkItemsWithSources(
 }
 
 export function matchesOverviewFilter(entry: AdditionalEvidenceWorkItemWithSource, filter: AdditionalEvidenceOverviewFilter): boolean {
-  return filter.statuses.length === 0 || filter.statuses.includes(entry.workItem.status);
+  if (filter.statuses.length > 0 && !filter.statuses.includes(entry.workItem.status)) {
+    return false;
+  }
+
+  if (filter.search) {
+    const needle = filter.search.toLowerCase();
+    const haystack = [
+      entry.workItem.submissionReference, entry.source?.submittedProjectName, entry.source?.originalCaseReference,
+    ].filter((value): value is string => Boolean(value)).map((value) => value.toLowerCase());
+    if (!haystack.some((value) => value.includes(needle))) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export interface AdditionalEvidenceOverviewRow {
@@ -78,6 +92,7 @@ export interface AdditionalEvidenceOverviewViewModel {
   hasRows: boolean;
   totalCountLabel: string;
   statusOptions: AdditionalEvidenceStatusOption[];
+  search: string;
 }
 
 export function buildAdditionalEvidenceOverviewViewModel(
@@ -94,5 +109,6 @@ export function buildAdditionalEvidenceOverviewViewModel(
     statusOptions: (Object.keys(ADDITIONAL_EVIDENCE_STATUS_LABELS) as AdditionalEvidenceWorkItemStatus[]).map((status) => ({
       value: status, label: ADDITIONAL_EVIDENCE_STATUS_LABELS[status], checked: filter.statuses.includes(status),
     })),
+    search: filter.search ?? '',
   };
 }

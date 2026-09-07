@@ -124,6 +124,28 @@ describe('AdditionalEvidenceOverviewHandler', () => {
     expect(response.body).toContain('Gekoppeld');
   });
 
+  it('filters op zoekterm, matcht op projectnaam, opgegeven hoofdzaakkenmerk en de eigen extra-bewijzenreferentie', async () => {
+    const handler = new AdditionalEvidenceOverviewHandler(
+      makeAuthorizationService([{ resource: 'woonbehoefte', actions: ['view'] }]),
+      makeRepository([
+        workItem({ objectUuid: 'uuid-1', submissionReference: 'OF-EXTRA01' }),
+        workItem({ objectUuid: 'uuid-2', submissionReference: 'OF-EXTRA02' }),
+      ]),
+      makeSourceCacheStore([
+        sourceRecord({ objectUuid: 'uuid-1', submittedProjectName: 'Project Lindenhof', originalCaseReference: 'OF-HOOFD01' }),
+        sourceRecord({ objectUuid: 'uuid-2', submittedProjectName: 'Project Meijhorst', originalCaseReference: 'OF-HOOFD02' }),
+      ]),
+    );
+
+    const response = await handler.handleRequest({ principalId: 'employee-1' }, { search: 'lindenhof' });
+
+    expect(response.body).toContain('1 extra bewijs');
+    expect(response.body).toContain('Project Lindenhof');
+    expect(response.body).not.toContain('Project Meijhorst');
+    // De ingevulde zoekterm blijft zichtbaar in het zoekveld.
+    expect(response.body).toContain('value="lindenhof"');
+  });
+
   it('denies a medewerker without woonbehoefte:view', async () => {
     const handler = new AdditionalEvidenceOverviewHandler(makeAuthorizationService([]), makeRepository([]), makeSourceCacheStore());
 

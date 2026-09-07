@@ -8,6 +8,7 @@ function isAdditionalEvidenceWorkItemStatus(value: string): value is AdditionalE
 
 export interface AdditionalEvidenceOverviewFilter {
   statuses: AdditionalEvidenceWorkItemStatus[];
+  search?: string;
 }
 
 function splitValues(value: string | undefined): string[] {
@@ -19,13 +20,19 @@ export function resolveAdditionalEvidenceOverviewFilter(
   queryStringParameters: Record<string, string | undefined> | undefined,
 ): AdditionalEvidenceOverviewFilter {
   const qsp = queryStringParameters ?? {};
-  return { statuses: splitValues(qsp.status).filter(isAdditionalEvidenceWorkItemStatus) };
+  return {
+    statuses: splitValues(qsp.status).filter(isAdditionalEvidenceWorkItemStatus),
+    ...(qsp.search?.trim() ? { search: qsp.search.trim() } : {}),
+  };
 }
 
 export function serializeAdditionalEvidenceOverviewFilter(filter: AdditionalEvidenceOverviewFilter): string {
   const params = new URLSearchParams();
   if (filter.statuses.length > 0) {
     params.set('status', filter.statuses.join(','));
+  }
+  if (filter.search) {
+    params.set('search', filter.search);
   }
   return params.toString();
 }

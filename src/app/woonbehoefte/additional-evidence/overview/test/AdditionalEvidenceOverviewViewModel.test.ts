@@ -82,4 +82,26 @@ describe('buildAdditionalEvidenceOverviewViewModel', () => {
     expect(filtered.rows).toHaveLength(1);
     expect(filtered.rows[0].submissionReference).toBe('OF-uuid-1');
   });
+
+  it('matches search on projectnaam, opgegeven hoofdzaakkenmerk or de eigen extra-bewijzenreferentie, case-insensitive and partial', () => {
+    const entries = joinWorkItemsWithSources(
+      [workItem({ objectUuid: 'uuid-1', submissionReference: 'OF-EXTRA01' })],
+      new Map<string, AdditionalEvidenceSourceItem>([
+        ['uuid-1', sourceRecord({
+          objectUuid: 'uuid-1', submittedAt: '2026-09-01T00:00:00.000Z', submittedProjectName: 'Project Lindenhof', originalCaseReference: 'OF-HOOFD01',
+        })],
+      ]),
+    );
+
+    expect(buildAdditionalEvidenceOverviewViewModel(entries, { statuses: [], search: 'lindenhof' }, '').rows).toHaveLength(1);
+    expect(buildAdditionalEvidenceOverviewViewModel(entries, { statuses: [], search: 'HOOFD01' }, '').rows).toHaveLength(1);
+    expect(buildAdditionalEvidenceOverviewViewModel(entries, { statuses: [], search: 'extra01' }, '').rows).toHaveLength(1);
+    expect(buildAdditionalEvidenceOverviewViewModel(entries, { statuses: [], search: 'geen-match' }, '').rows).toHaveLength(0);
+  });
+
+  it('carries the search value back into the viewmodel so the input keeps its value', () => {
+    const viewModel = buildAdditionalEvidenceOverviewViewModel([], { statuses: [], search: 'lindenhof' }, '');
+
+    expect(viewModel.search).toBe('lindenhof');
+  });
 });

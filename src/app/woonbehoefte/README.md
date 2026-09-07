@@ -163,9 +163,9 @@ nooit bijwerken. Projectnaam, opgegeven hoofdzaakkenmerk en contactgegevens kome
 weergave vers uit de source-cache in plaats van uit het workitem zelf. Anders zou een eenmalig mislukte
 CSV-ophaling een inzending voorgoed met halve gegevens laten staan.
 
-Wat al werkt: overzicht met filter en statusbadge, verversen, de hele detailpagina inclusief documenten,
-het zoeken van de hoofdzaak, het handmatig wijzigen van de status tussen Nieuw en Onbekend, en het
-daadwerkelijk koppelen aan een gevonden hoofdzaak. Het zoeken leest alleen de bestaande primary
+De subfeature biedt een overzicht met filter en statusbadge, verversen, een volledige detailpagina
+inclusief documenten, het zoeken van de hoofdzaak, het handmatig wijzigen van de status tussen Nieuw en
+Onbekend, en het koppelen aan een gevonden hoofdzaak. Het zoeken leest alleen de bestaande primary
 WoonbehoefteCaseRepository en source-cache, en schrijft er niets naar terug.
 
 Koppelen zelf is één atomaire DynamoDB-transactie over twee partities in dezelfde Cases-tabel. Het
@@ -187,6 +187,10 @@ zelf. Daarvoor zoekt de documentdownloadhandler nu niet meer alleen in de primar
 in die van extra bewijzen, en alleen voor links die daadwerkelijk aan de opgevraagde hoofdzaak gekoppeld
 zijn, precies zoals dat al gold voor primary documenten. Iemand kan dus nog steeds geen document van een
 andere hoofdzaak opvragen door alleen een documentId te raden.
+
+Ontkoppelen of opnieuw koppelen bestaat niet. Een workitem dat eenmaal Gekoppeld is, blijft dat en kan
+niet handmatig terug naar Nieuw of Onbekend. De sourcelink, de aantekening en de activity zijn allemaal
+append-only en worden nooit verwijderd.
 
 ## Verwijderen
 

@@ -14,6 +14,7 @@ import {
   woonbehoefteAdditionalEvidenceDetailCaseFound, woonbehoefteAdditionalEvidenceDetailCaseNotFound,
   woonbehoefteAdditionalEvidenceDetailLinked,
   woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
+  woonbehoefteAdditionalEvidenceOverviewSearch,
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
   woonbehoefteDetailWithAdditionalEvidence,
@@ -150,6 +151,9 @@ export async function renderAll(): Promise<void> {
     ),
     'woonbehoefte-additional-evidence-overview': render(
       additionalEvidenceOverviewTemplate, woonbehoefteAdditionalEvidenceOverview.page, woonbehoefteAdditionalEvidenceOverview.data,
+    ),
+    'woonbehoefte-additional-evidence-overview-search': render(
+      additionalEvidenceOverviewTemplate, woonbehoefteAdditionalEvidenceOverviewSearch.page, woonbehoefteAdditionalEvidenceOverviewSearch.data,
     ),
     'woonbehoefte-additional-evidence-detail-normal': render(
       additionalEvidenceDetailTemplate, woonbehoefteAdditionalEvidenceDetailNormal.page, woonbehoefteAdditionalEvidenceDetailNormal.data,

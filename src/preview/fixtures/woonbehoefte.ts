@@ -228,6 +228,20 @@ const additionalEvidenceSources = new Map<string, AdditionalEvidenceSourceItem>(
 const additionalEvidenceEntries = joinWorkItemsWithSources(additionalEvidenceWorkItems, additionalEvidenceSources);
 const additionalEvidenceFilter = resolveAdditionalEvidenceOverviewFilter(undefined);
 
+const additionalEvidenceSearchFilter = resolveAdditionalEvidenceOverviewFilter({ search: 'Lindenhof' });
+
+export const woonbehoefteAdditionalEvidenceOverviewSearch = {
+  page: additionalEvidencePage(),
+  data: {
+    ...buildAdditionalEvidenceOverviewViewModel(additionalEvidenceEntries, additionalEvidenceSearchFilter, ''),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+    refreshFailed: false,
+  },
+};
+
 export const woonbehoefteAdditionalEvidenceOverview = {
   page: additionalEvidencePage(),
   data: {

@@ -42,6 +42,11 @@
   <details class="woonbehoefte-filter">
     <summary class="utrecht-form-label">Zoeken en filteren</summary>
     <form method="get" action="/woonbehoefte/additional-evidence">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="search">Zoeken op projectnaam, OF-nummer hoofdzaak of OF-nummer extra bewijzen</label>
+        <input type="text" class="utrecht-textbox" id="search" name="search" value="{{search}}">
+      </div>
+
       <fieldset>
         <legend class="utrecht-form-label">Status</legend>
         {{#statusOptions}}
