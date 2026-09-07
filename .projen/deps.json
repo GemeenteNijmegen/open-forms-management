@@ -295,6 +295,10 @@
       "type": "runtime"
     },
     {
+      "name": "jose",
+      "type": "runtime"
+    },
+    {
       "name": "mustache",
       "type": "runtime"
     },

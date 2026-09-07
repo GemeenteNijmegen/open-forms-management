@@ -73,6 +73,14 @@ export class Statics {
    */
   static readonly secretOpenZaakCredentials = `/${Statics.projectName}/open-zaak/credentials`;
 
+  // MARK: Keycloak
+  static readonly ssmKeycloakBaseUrl = `/${Statics.projectName}/keycloak/base-url`;
+  static readonly ssmKeycloakIssuer = `/${Statics.projectName}/keycloak/issuer`;
+  static readonly ssmKeycloakRealm = `/${Statics.projectName}/keycloak/realm`;
+  static readonly secretKeycloakOidcClient = `/${Statics.projectName}/keycloak/oidc-client`;
+  static readonly secretKeycloakPermissionAdminClient = `/${Statics.projectName}/keycloak/permission-admin-client`;
+  static readonly secretKeycloakAuthCookieKey = `/${Statics.projectName}/keycloak/auth-cookie-key`;
+
   // MARK: UsEastStack producer-outputparameters (us-east-1, alleen door UsEastStack beschreven)
   static readonly ssmUsEastOutputsPath = `/${Statics.projectName}/us-east-1`;
   static readonly ssmManagementCertificateArn = `${Statics.ssmUsEastOutputsPath}/certificate-arn`;

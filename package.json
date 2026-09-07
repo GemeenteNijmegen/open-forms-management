@@ -127,6 +127,7 @@
     "chokidar": "^5.0.0",
     "constructs": "^10.5.1",
     "csv-parse": "^7.0.2",
+    "jose": "^6.2.9",
     "mustache": "^4.2.0",
     "openid-client": "^6.8.6",
     "write-excel-file": "^4.1.1",
