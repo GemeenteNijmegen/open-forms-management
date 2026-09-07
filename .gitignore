@@ -71,8 +71,10 @@ junit.xml
 !/src/app/woonbehoefte/woonbehoefte-function.ts
 !/src/app/sport/cache/sportCacheWorker-function.ts
 !/src/app/sport/reporter/sportExcelWorker-function.ts
+!/src/app/woonbehoefte/additional-evidence/additionalEvidence-function.ts
 !/src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts
 !/src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function.ts
+!/src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker-function.ts
 !/.github/workflows/emergency.yml
 !/.github/workflows/auto-merge.yml
 !/.nvmrc

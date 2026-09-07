@@ -163,6 +163,10 @@ export const woonbehoefteOverviewViewOnly = {
   },
 };
 
+export const woonbehoefteAdditionalEvidenceOverview = {
+  page: { ...woonbehoeftePage('medewerker@example.invalid'), title: 'Woonbehoefte - Extra bewijzen' },
+};
+
 function detailPage(caseReference: string): PageViewModel {
   return { title: `${caseReference} - Woonbehoefte`, features: [woonbehoefteFeature], currentPath: `/woonbehoefte/cases/${caseReference}`, actorEmail: 'medewerker@example.invalid' };
 }

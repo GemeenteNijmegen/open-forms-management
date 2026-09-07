@@ -327,6 +327,28 @@ footer {
   margin-block-end: var(--nijmegen-space-50);
 }
 
+.woonbehoefte-tabs {
+  display: flex;
+  gap: var(--nijmegen-space-200);
+  border-bottom: 1px solid var(--nijmegen-color-border-default);
+  margin-block-end: var(--nijmegen-space-200);
+}
+
+/* An explicit color, not the browser's default link blue/visited-purple: this is a tab, not a body-text link. */
+.woonbehoefte-tabs__link {
+  display: inline-block;
+  padding-block: var(--nijmegen-space-100);
+  border-bottom: 2px solid transparent;
+  color: var(--nijmegen-color-foreground-default);
+  text-decoration: none;
+}
+
+.woonbehoefte-tabs__link--active {
+  border-bottom-color: var(--utrecht-link-color);
+  color: var(--utrecht-link-color);
+  font-weight: 600;
+}
+
 .woonbehoefte-filter {
   margin-block-end: var(--nijmegen-space-200);
 }
