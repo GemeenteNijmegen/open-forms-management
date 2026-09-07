@@ -51,6 +51,12 @@
   </div>
   {{/showLinkedConflictWarning}}
 
+  {{#linkErrorMessage}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content"><p class="utrecht-alert__message">{{linkErrorMessage}}</p></div>
+  </div>
+  {{/linkErrorMessage}}
+
   <section id="basisgegevens" class="woonbehoefte-section">
     <h2 class="utrecht-heading-4">Ingezonden</h2>
     <p class="utrecht-paragraph">{{submittedAtLabel}}</p>
@@ -75,6 +81,21 @@
   <details id="koppelen" class="woonbehoefte-details woonbehoefte-details--section" open>
     <summary class="utrecht-heading-4">Koppelen aan hoofdzaak</summary>
 
+    {{#isLinked}}
+    <div class="utrecht-alert utrecht-alert--success" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Extra bewijzen zijn gekoppeld aan {{linkedInfo.caseReference}} - {{linkedInfo.projectNameLabel}}.</p>
+      </div>
+    </div>
+    <ul class="nijmegen-metadata">
+      <li class="nijmegen-metadata__item">Gekoppeld aan: {{linkedInfo.caseReference}} - {{linkedInfo.projectNameLabel}}</li>
+      <li class="nijmegen-metadata__item">Gekoppeld op: {{linkedInfo.linkedAtLabel}}</li>
+      <li class="nijmegen-metadata__item">Gekoppeld door: {{linkedInfo.linkedByLabel}}</li>
+    </ul>
+    <p><a class="utrecht-link" href="{{linkedInfo.caseHref}}">Ga naar hoofdzaak</a></p>
+    {{/isLinked}}
+
+    {{^isLinked}}
     <h3 class="utrecht-heading-5">Kenmerk door indiener in formulier</h3>
     <p class="utrecht-paragraph">{{originalCaseReferenceLabel}}</p>
 
@@ -106,6 +127,15 @@
     {{#hoofdzaakSourceMissing}}
     <p class="utrecht-paragraph">De aanvraaggegevens van deze hoofdzaak konden niet volledig worden geladen. Het dossier bestaat wel. Controleer het kenmerk extra zorgvuldig.</p>
     {{/hoofdzaakSourceMissing}}
+    <p class="utrecht-paragraph">Controleer of dit het juiste project is voordat u koppelt.</p>
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/additional-evidence/{{submissionId}}/link">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="targetCaseReference" value="{{caseReference}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Koppel extra bewijzen aan deze hoofdzaak</button>
+    </form>
+    {{/canManage}}
     {{/found}}
     {{^found}}
     <div class="utrecht-alert utrecht-alert--error" role="status">
@@ -117,6 +147,7 @@
     </div>
     {{/searched}}
     {{/caseLookup}}
+    {{/isLinked}}
   </details>
 
   <details id="bestanden" class="woonbehoefte-details woonbehoefte-details--section" open>

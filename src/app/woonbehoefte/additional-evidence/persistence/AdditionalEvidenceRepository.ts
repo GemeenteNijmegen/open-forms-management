@@ -1,9 +1,10 @@
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
-const PARTITION_KEY = 'ADDITIONAL_EVIDENCE#WORKITEMS';
+/** Exported so `AdditionalEvidenceLinkRepository` can put the workitem's own partition into its cross-partition link transaction. */
+export const ADDITIONAL_EVIDENCE_WORKITEM_PARTITION_KEY = 'ADDITIONAL_EVIDENCE#WORKITEMS';
 const WORKITEM_SORT_KEY_PREFIX = 'WORKITEM#';
 
-function workItemSortKey(objectUuid: string): string {
+export function workItemSortKey(objectUuid: string): string {
   return `${WORKITEM_SORT_KEY_PREFIX}${objectUuid}`;
 }
 
@@ -36,6 +37,11 @@ export interface AdditionalEvidenceWorkItem {
   status: AdditionalEvidenceWorkItemStatus;
   createdAt: string;
   createdBy: string;
+
+  /** Only set once a link transaction succeeds; the outcome of the link action itself, not reproducible from the source cache. */
+  linkedCaseReference?: string;
+  linkedAt?: string;
+  linkedBy?: string;
 }
 
 /**
@@ -53,7 +59,7 @@ export class AdditionalEvidenceRepository {
     try {
       await this.documentClient.send(new PutCommand({
         TableName: this.tableName,
-        Item: { pk: PARTITION_KEY, sk: workItemSortKey(objectUuid), ...workItem },
+        Item: { pk: ADDITIONAL_EVIDENCE_WORKITEM_PARTITION_KEY, sk: workItemSortKey(objectUuid), ...workItem },
         ConditionExpression: 'attribute_not_exists(pk)',
       }));
       return true;
@@ -68,7 +74,7 @@ export class AdditionalEvidenceRepository {
   async getWorkItem(objectUuid: string): Promise<AdditionalEvidenceWorkItem | undefined> {
     const result = await this.documentClient.send(new GetCommand({
       TableName: this.tableName,
-      Key: { pk: PARTITION_KEY, sk: workItemSortKey(objectUuid) },
+      Key: { pk: ADDITIONAL_EVIDENCE_WORKITEM_PARTITION_KEY, sk: workItemSortKey(objectUuid) },
     }));
     return result.Item as AdditionalEvidenceWorkItem | undefined;
   }
@@ -94,7 +100,7 @@ export class AdditionalEvidenceRepository {
     try {
       await this.documentClient.send(new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: PARTITION_KEY, sk: workItemSortKey(objectUuid) },
+        Key: { pk: ADDITIONAL_EVIDENCE_WORKITEM_PARTITION_KEY, sk: workItemSortKey(objectUuid) },
         UpdateExpression: 'SET #status = :targetStatus',
         ConditionExpression: '#status <> :linked',
         ExpressionAttributeNames: { '#status': 'status' },
@@ -118,7 +124,7 @@ export class AdditionalEvidenceRepository {
       const response = await this.documentClient.send(new QueryCommand({
         TableName: this.tableName,
         KeyConditionExpression: 'pk = :pk AND begins_with(sk, :workItemPrefix)',
-        ExpressionAttributeValues: { ':pk': PARTITION_KEY, ':workItemPrefix': WORKITEM_SORT_KEY_PREFIX },
+        ExpressionAttributeValues: { ':pk': ADDITIONAL_EVIDENCE_WORKITEM_PARTITION_KEY, ':workItemPrefix': WORKITEM_SORT_KEY_PREFIX },
         ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
       }));
       workItems.push(...(response.Items ?? []) as AdditionalEvidenceWorkItem[]);

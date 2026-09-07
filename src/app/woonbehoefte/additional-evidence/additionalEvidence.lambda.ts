@@ -8,6 +8,8 @@ import { AdditionalEvidenceDetailHandler } from './detail/AdditionalEvidenceDeta
 import { AdditionalEvidenceSearchCaseHandler } from './detail/AdditionalEvidenceSearchCaseHandler';
 import { AdditionalEvidenceStatusHandler } from './detail/AdditionalEvidenceStatusHandler';
 import { AdditionalEvidenceDocumentDownloadHandler } from './documents/AdditionalEvidenceDocumentDownloadHandler';
+import { AdditionalEvidenceLinkHandler } from './link/AdditionalEvidenceLinkHandler';
+import { createAdditionalEvidenceLinkRepository } from './link/createAdditionalEvidenceLinkRepository';
 import { AdditionalEvidenceOverviewHandler } from './overview/AdditionalEvidenceOverviewHandler';
 import { AdditionalEvidenceRefreshHandler } from './overview/AdditionalEvidenceRefreshHandler';
 import { createAdditionalEvidenceRepository } from './persistence/createAdditionalEvidenceRepository';
@@ -17,18 +19,14 @@ import { logger } from '../../../observability/Logger';
 import { countMetric, metrics } from '../../../observability/Metrics';
 import { bindRequestLogging, resetRequestLogging } from '../../../observability/RequestLogging';
 import { createAuditTrail } from '../../../shared/audit/createAuditTrail';
-import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { requireSession } from '../../../shared/auth/requireSession';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
 import { createPermissionRepository } from '../../../shared/authorization/createPermissionRepository';
-import { PermissionCheck } from '../../../shared/authorization/PermissionEvaluator';
 import { getOpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClientFactory';
 import { render } from '../../../shared/rendering/Renderer';
 import notFoundTemplate from '../../home/templates/notFound.mustache';
 import { createWoonbehoefteCaseRepository } from '../cases/createWoonbehoefteCaseRepository';
 import { createWoonbehoefteSourceCacheStore } from '../source/createWoonbehoefteSourceCacheStore';
-
-const WOONBEHOEFTE_MANAGE_CHECK: PermissionCheck = { resource: 'woonbehoefte', action: 'manage' };
 
 const dynamoDBClient = new DynamoDBClient({});
 const lambdaClient = new LambdaClient({});
@@ -37,45 +35,19 @@ const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const repository = createAdditionalEvidenceRepository(dynamoDBClient);
 const sourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
-// Read-only reuse for the "zoek hoofdzaak"-lookup only; never written to from here.
+// Read-only reuse for the "zoek hoofdzaak"-lookup, and read/write reuse for the link transaction's target case.
 const primaryCaseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const primarySourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
+const linkRepository = createAdditionalEvidenceLinkRepository(dynamoDBClient);
 const overviewHandler = new AdditionalEvidenceOverviewHandler(authorizationService, repository, sourceCacheStore);
 const searchCaseHandler = new AdditionalEvidenceSearchCaseHandler(authorizationService);
 const statusHandler = new AdditionalEvidenceStatusHandler(authorizationService, repository, auditTrail);
-
-async function respondSubmissionNotFound(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
-  const html = render(notFoundTemplate, { title: 'Extra bewijzen niet gevonden', features: [], currentPath, actorEmail: identity.email });
-  return Response.html(html, 404);
-}
-
-/** Koppelen is not built yet; a known submission gets an honest "not available" instead of a misleading 404. */
-async function respondActionNotAvailable(identity: EmployeeIdentity, currentPath: string): Promise<ApiGatewayV2Response> {
-  const html = render(notFoundTemplate, { title: 'Nog niet beschikbaar', features: [], currentPath, actorEmail: identity.email });
-  return Response.html(html, 404);
-}
+const linkHandler = new AdditionalEvidenceLinkHandler(
+  authorizationService, repository, sourceCacheStore, primaryCaseRepository, linkRepository, auditTrail,
+);
 
 /**
- * Authorizes, then reports either "not found" (no such submission) or "not available" (submission exists,
- * the action itself isn't built yet) for a submissionId-scoped stub route. Never mutates anything.
- */
-async function requireAuthorizationThenStubResponse(
-  identity: EmployeeIdentity, check: PermissionCheck, submissionId: string | undefined,
-): Promise<ApiGatewayV2Response> {
-  const authContext = await authorizationService.loadContext(identity);
-  const denied = await authorizationService.requireAuthorization(authContext, check);
-  if (denied) {
-    return denied;
-  }
-  const currentPath = `/woonbehoefte/additional-evidence/${submissionId}`;
-  const workItem = submissionId ? await repository.getWorkItem(submissionId) : undefined;
-  return workItem ? respondActionNotAvailable(identity, currentPath) : respondSubmissionNotFound(identity, currentPath);
-}
-
-/**
- * Dispatches every Additional Evidence route. Overview, refresh, detail, zoek-hoofdzaak, status and document
- * download are functionally real. Koppelen is still a permission-checked stub: the koppelvlak is visually
- * prepared on the detail page, but posting to koppelen itself never mutates anything yet.
+ * Dispatches every Additional Evidence route. Every route, including koppelen, is functionally real.
  */
 export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Context): Promise<ApiGatewayV2Response> {
   const correlationId = bindRequestLogging(lambdaContext);
@@ -128,7 +100,7 @@ export async function handler(event: APIGatewayProxyEventV2, lambdaContext: Cont
       return await statusHandler.handleRequest(identity, submissionId, cookieHeader, event.body, isBase64Encoded);
     }
     if (event.routeKey === 'POST /woonbehoefte/additional-evidence/{submissionId}/link') {
-      return await requireAuthorizationThenStubResponse(identity, WOONBEHOEFTE_MANAGE_CHECK, submissionId);
+      return await linkHandler.handleRequest(identity, submissionId, cookieHeader, event.body, isBase64Encoded);
     }
 
     const html = render(notFoundTemplate, { title: 'Pagina niet gevonden', features: [], currentPath: event.rawPath, actorEmail: identity.email });

@@ -164,10 +164,17 @@ CSV-ophaling een inzending voorgoed met halve gegevens laten staan.
 
 Wat al werkt: overzicht met filter en statusbadge, verversen, de volledige detailpagina inclusief
 documenten, het zoeken van de hoofdzaak (leest daarvoor de bestaande primary `WoonbehoefteCaseRepository`
-en source-cache read-only, schrijft er niets naartoe), en het handmatig wijzigen van de status tussen
-Nieuw en Onbekend. Gekoppeld is nooit een handmatig te kiezen status: die zet alleen de koppelactie zelf,
-en zowel de handler als de write zelf weigeren een gekoppeld workitem terug te zetten. Koppelen zelf
-staat er nog niet.
+en source-cache read-only, schrijft er niets naartoe), het handmatig wijzigen van de status tussen Nieuw
+en Onbekend, en het daadwerkelijk koppelen aan een gevonden hoofdzaak.
+
+Koppelen zelf is één atomaire DynamoDB-transactie over twee partities in dezelfde Cases-tabel: het
+workitem gaat naar Gekoppeld, de hoofdzaak krijgt een nieuwe `SOURCE#ADDITIONAL`-link, een automatische
+interne aantekening (categorie `ADDITIONAL_INFORMATION`, met de door de burger opgegeven toelichting) en
+een case-activity. Alles commit samen of niets. Gekoppeld is nooit een handmatig te kiezen status: die
+zet alleen de koppeltransactie zelf, geborgd door een conditie op de write van het workitem, niet door een
+eerdere lezing - een racende tweede koppelpoging voor dezelfde inzending kan dus nooit twee verschillende
+hoofdzaken raken. Zowel de statushandler als de koppelactie weigeren een al gekoppeld workitem terug te
+zetten of opnieuw te koppelen.
 
 ## Verwijderen
 

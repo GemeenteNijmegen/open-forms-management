@@ -296,4 +296,74 @@ describe('AdditionalEvidenceDetailHandler', () => {
     const conflict = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { status: 'linked-conflict' });
     expect(conflict.body).toContain('kan niet meer handmatig van status wisselen');
   });
+
+  it('shows the koppelknop only for a medewerker with woonbehoefte:manage when a hoofdzaak is found', async () => {
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(workItem()) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const primaryCaseRepository = {
+      getCase: jest.fn().mockResolvedValue(woonbehoefteCase({ caseReference: 'OF-HOOFD01' })),
+      getCaseItems: jest.fn().mockResolvedValue(emptyCaseItems()),
+    } as unknown as WoonbehoefteCaseRepository;
+    const primarySourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map()) } as unknown as WoonbehoefteSourceCacheStore;
+
+    const managingHandler = new AdditionalEvidenceDetailHandler(
+      makeManagingAuthorizationService(), repository, sourceCacheStore, openZaakClient, primaryCaseRepository, primarySourceCacheStore,
+    );
+    const managingResponse = await managingHandler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { searchCaseReference: 'OF-HOOFD01' });
+    expect(managingResponse.body).toContain('Koppel extra bewijzen aan deze hoofdzaak');
+
+    const viewOnlyHandler = new AdditionalEvidenceDetailHandler(
+      makeAuthorizationService(), repository, sourceCacheStore, openZaakClient, primaryCaseRepository, primarySourceCacheStore,
+    );
+    const viewOnlyResponse = await viewOnlyHandler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { searchCaseReference: 'OF-HOOFD01' });
+    expect(viewOnlyResponse.body).not.toContain('Koppel extra bewijzen aan deze hoofdzaak');
+  });
+
+  it('shows gekoppeld-info with a freshly read primary projectnaam for a LINKED workitem, and never looks up a search kenmerk', async () => {
+    const linkedWorkItem = workItem({
+      status: 'LINKED', linkedCaseReference: 'OF-HOOFD01', linkedAt: '2026-09-09T10:32:00.000Z', linkedBy: 'medewerker@example.invalid',
+    });
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(linkedWorkItem) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const primaryCaseRepository = {
+      getCase: jest.fn(),
+      getCaseItems: jest.fn().mockResolvedValue({
+        ...emptyCaseItems(),
+        sourceLinks: [{ caseReference: 'OF-HOOFD01', submissionId: 'uuid-primary-1', submissionReference: 'OF-HOOFD01', relation: 'PRIMARY', linkedAt: '2026-08-01T00:00:00.000Z' }],
+      }),
+    } as unknown as WoonbehoefteCaseRepository;
+    const primarySourceCacheStore = {
+      getItems: jest.fn().mockResolvedValue(new Map([['uuid-primary-1', primarySource({ projectName: 'Project Lindenhof fase 2' })]])),
+    } as unknown as WoonbehoefteSourceCacheStore;
+    const handler = new AdditionalEvidenceDetailHandler(
+      makeManagingAuthorizationService(), repository, sourceCacheStore, openZaakClient, primaryCaseRepository, primarySourceCacheStore,
+    );
+
+    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { searchCaseReference: 'OF-IGNORED' });
+
+    expect(response.body).toContain('Gekoppeld aan: OF-HOOFD01 - Project Lindenhof fase 2');
+    expect(response.body).toContain('Gekoppeld door: medewerker@example.invalid');
+    expect(response.body).not.toContain('Zoek hoofdzaak bij kenmerk');
+    expect(primaryCaseRepository.getCase).not.toHaveBeenCalled();
+  });
+
+  it('shows the koppelen-success message and the two distinct koppelen-error messages based on redirect query params', async () => {
+    const repository = { getWorkItem: jest.fn().mockResolvedValue(workItem()) } as unknown as AdditionalEvidenceRepository;
+    const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', source()]])) } as unknown as AdditionalEvidenceSourceCacheStore;
+    const openZaakClient = { getDocumentMetadata: jest.fn() } as unknown as OpenZaakClient;
+    const handler = new AdditionalEvidenceDetailHandler(
+      makeManagingAuthorizationService(), repository, sourceCacheStore, openZaakClient, noPrimaryCaseRepository(), noPrimarySourceCacheStore(),
+    );
+
+    const saved = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { saved: 'linked' });
+    expect(saved.body).toContain('Extra bewijzen gekoppeld.');
+
+    const conflict = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { linkError: 'conflict' });
+    expect(conflict.body).toContain('Deze inzending is ondertussen gewijzigd of gekoppeld');
+
+    const failed = await handler.handleRequest({ principalId: 'medewerker' }, 'uuid-1', { linkError: 'failed' });
+    expect(failed.body).toContain('Koppelen is niet gelukt');
+  });
 });

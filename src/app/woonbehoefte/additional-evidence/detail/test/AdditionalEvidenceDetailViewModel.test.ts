@@ -137,6 +137,40 @@ describe('buildAdditionalEvidenceDetailViewModel', () => {
 
     expect(viewModel.canManage).toBe(false);
   });
+
+  it('builds linkedInfo from the workitem\'s own linked* fields plus a freshly read primary projectnaam', () => {
+    const linkedWorkItem = workItem({
+      status: 'LINKED', linkedCaseReference: 'OF-HOOFD01', linkedAt: '2026-09-09T10:32:00.000Z', linkedBy: 'medewerker@example.invalid',
+    });
+
+    const viewModel = buildAdditionalEvidenceDetailViewModel(
+      linkedWorkItem, source(), 'READY', [], true, '', undefined, undefined, primarySource({ projectName: 'Project Lindenhof fase 2' }),
+    );
+
+    expect(viewModel.linkedInfo).toEqual({
+      caseReference: 'OF-HOOFD01',
+      projectNameLabel: 'Project Lindenhof fase 2',
+      linkedAtLabel: expect.stringContaining('2026'),
+      linkedByLabel: 'medewerker@example.invalid',
+      caseHref: '/woonbehoefte/cases/OF-HOOFD01',
+    });
+  });
+
+  it('still shows linkedInfo, with a fallback projectnaam, when the primary source could not be read', () => {
+    const linkedWorkItem = workItem({
+      status: 'LINKED', linkedCaseReference: 'OF-HOOFD01', linkedAt: '2026-09-09T10:32:00.000Z', linkedBy: 'medewerker@example.invalid',
+    });
+
+    const viewModel = buildAdditionalEvidenceDetailViewModel(linkedWorkItem, source(), 'READY', [], true, '');
+
+    expect(viewModel.linkedInfo?.projectNameLabel).toBe('Onbekend project (bron nog niet beschikbaar)');
+  });
+
+  it('never builds linkedInfo for a non-LINKED workitem', () => {
+    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem({ status: 'NEW' }), source(), 'READY', [], true, '');
+
+    expect(viewModel.linkedInfo).toBeUndefined();
+  });
 });
 
 describe('buildAdditionalEvidenceCaseLookup', () => {

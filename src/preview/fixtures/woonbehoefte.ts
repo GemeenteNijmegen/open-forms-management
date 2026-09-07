@@ -319,6 +319,23 @@ export const woonbehoefteAdditionalEvidenceDetailCaseNotFound = {
   ),
 };
 
+export const woonbehoefteAdditionalEvidenceDetailLinked = {
+  page: additionalEvidenceDetailPage('OF-EXTRA01'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({
+      objectUuid: 'uuid-extra-01', status: 'LINKED', linkedCaseReference: 'OF-2026-00142', linkedAt: '2026-09-09T10:32:00.000Z', linkedBy: 'medewerker@example.invalid',
+    }),
+    additionalEvidenceSource({ objectUuid: 'uuid-extra-01', submittedAt: '2026-09-07T17:54:04.702Z', submittedProjectName: 'Project Lindenhof' }),
+    'READY',
+    [],
+    true,
+    '',
+    'preview-csrf-token',
+    undefined,
+    previewFoundPrimarySource,
+  ),
+};
+
 function detailPage(caseReference: string): PageViewModel {
   return { title: `${caseReference} - Woonbehoefte`, features: [woonbehoefteFeature], currentPath: `/woonbehoefte/cases/${caseReference}`, actorEmail: 'medewerker@example.invalid' };
 }

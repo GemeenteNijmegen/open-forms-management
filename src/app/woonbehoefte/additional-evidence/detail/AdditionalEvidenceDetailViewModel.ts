@@ -33,6 +33,14 @@ export interface AdditionalEvidenceCaseLookupViewModel {
   hoofdzaakSourceMissing: boolean;
 }
 
+export interface AdditionalEvidenceLinkedInfoViewModel {
+  caseReference: string;
+  projectNameLabel: string;
+  linkedAtLabel: string;
+  linkedByLabel: string;
+  caseHref: string;
+}
+
 export interface AdditionalEvidenceDetailViewModel {
   submissionId: string;
   submissionReference: string;
@@ -59,6 +67,7 @@ export interface AdditionalEvidenceDetailViewModel {
   canManage: boolean;
   isLinked: boolean;
   statusOptions: SelectOption[];
+  linkedInfo?: AdditionalEvidenceLinkedInfoViewModel;
 
   applicationDocument?: AdditionalEvidenceDocumentRow;
   attachments: AdditionalEvidenceDocumentRow[];
@@ -102,6 +111,22 @@ export function buildAdditionalEvidenceCaseLookup(
   };
 }
 
+/** `linkedPrimarySource` is read fresh at render time, same live-join reasoning as the case lookup above. */
+function buildLinkedInfo(
+  workItem: AdditionalEvidenceWorkItem, linkedPrimarySource: WoonbehoefteSourceRecord | undefined,
+): AdditionalEvidenceLinkedInfoViewModel | undefined {
+  if (!workItem.linkedCaseReference) {
+    return undefined;
+  }
+  return {
+    caseReference: workItem.linkedCaseReference,
+    projectNameLabel: linkedPrimarySource?.projectName ?? 'Onbekend project (bron nog niet beschikbaar)',
+    linkedAtLabel: workItem.linkedAt ? formatDutchDateTime(workItem.linkedAt) : '-',
+    linkedByLabel: workItem.linkedBy ?? '-',
+    caseHref: `/woonbehoefte/cases/${encodeURIComponent(workItem.linkedCaseReference)}`,
+  };
+}
+
 export function buildAdditionalEvidenceDetailViewModel(
   workItem: AdditionalEvidenceWorkItem,
   source: AdditionalEvidenceSourceRecord | undefined,
@@ -111,6 +136,7 @@ export function buildAdditionalEvidenceDetailViewModel(
   backQuery: string,
   csrfToken?: string,
   caseLookup: AdditionalEvidenceCaseLookupViewModel = emptyCaseLookup(),
+  linkedPrimarySource?: WoonbehoefteSourceRecord,
 ): AdditionalEvidenceDetailViewModel {
   const applicationDocument = documents.find((document) => document.isApplicationPdf);
   const attachments = documents.filter((document) => !document.isApplicationPdf);
@@ -143,6 +169,7 @@ export function buildAdditionalEvidenceDetailViewModel(
     statusOptions: CHANGEABLE_STATUSES.map((status) => ({
       value: status, label: ADDITIONAL_EVIDENCE_STATUS_LABELS[status], selected: status === workItem.status,
     })),
+    ...(workItem.status === 'LINKED' ? { linkedInfo: buildLinkedInfo(workItem, linkedPrimarySource) } : {}),
 
     ...(applicationDocument ? { applicationDocument } : {}),
     attachments,

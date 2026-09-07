@@ -13,7 +13,7 @@ import { issueCsrfToken } from '../../../../shared/security/csrf/CsrfProtection'
 import notFoundTemplate from '../../../home/templates/notFound.mustache';
 import { visiblePermissionsFeature } from '../../../permissions/PermissionsNavigationFeature';
 import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
-import { isFailedSource, isReadySource } from '../../domain/WoonbehoefteSource';
+import { isReadySource, WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { loadAdditionalEvidenceDocuments } from '../documents/AdditionalEvidenceDocumentsLoader';
 import { isFailedAdditionalEvidenceSource, isReadyAdditionalEvidenceSource } from '../domain/AdditionalEvidenceSource';
@@ -25,9 +25,16 @@ import detailTemplate from '../templates/woonbehoefte-additional-evidence-detail
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
 const WOONBEHOEFTE_MANAGE_CHECK = { resource: 'woonbehoefte', action: 'manage' } as const;
 
-/** Keyed by the `saved` redirect marker `AdditionalEvidenceStatusHandler` sets on a successful (or no-op) status change. */
+/** Keyed by the `saved` redirect marker `AdditionalEvidenceStatusHandler`/`AdditionalEvidenceLinkHandler` set on success. */
 const SAVED_MESSAGES: Record<string, string> = {
   status: 'Status gewijzigd.',
+  linked: 'Extra bewijzen gekoppeld.',
+};
+
+/** Keyed by the `linkError` redirect marker `AdditionalEvidenceLinkHandler` sets when koppelen did not succeed. */
+const LINK_ERROR_MESSAGES: Record<string, string> = {
+  conflict: 'Deze inzending is ondertussen gewijzigd of gekoppeld. Ververs de pagina en controleer de huidige status.',
+  failed: 'Koppelen is niet gelukt. Er is niets gewijzigd. Probeer het opnieuw.',
 };
 
 /**
@@ -80,14 +87,21 @@ export class AdditionalEvidenceDetailHandler {
       ? await loadAdditionalEvidenceDocuments(this.openZaakClient, documentSource, submissionId, identity)
       : [];
 
-    const caseLookup = queryStringParameters?.searchCaseReference !== undefined
+    const isLinked = workItem.status === 'LINKED';
+    // Once linked, the zoek-hoofdzaak UI is gone (see mustache), so a stray searchCaseReference query is never looked up.
+    const caseLookup = !isLinked && queryStringParameters?.searchCaseReference !== undefined
       ? await this.lookupCase(queryStringParameters.searchCaseReference)
       : emptyCaseLookup();
+    const linkedPrimarySource = isLinked && workItem.linkedCaseReference
+      ? (await this.loadPrimarySource(workItem.linkedCaseReference)).source
+      : undefined;
 
     const canManage = context.evaluator.evaluate(WOONBEHOEFTE_MANAGE_CHECK) === 'ALLOW';
     const csrf = issueCsrfToken();
     const backQuery = sanitizeAdditionalEvidenceFilterQuery(queryStringParameters?.back);
-    const viewModel = buildAdditionalEvidenceDetailViewModel(workItem, source, availability, documents, canManage, backQuery, csrf.value, caseLookup);
+    const viewModel = buildAdditionalEvidenceDetailViewModel(
+      workItem, source, availability, documents, canManage, backQuery, csrf.value, caseLookup, linkedPrimarySource,
+    );
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
@@ -103,6 +117,9 @@ export class AdditionalEvidenceDetailHandler {
         showLinkedConflictWarning: queryStringParameters?.status === 'linked-conflict',
         ...(queryStringParameters?.saved && SAVED_MESSAGES[queryStringParameters.saved]
           ? { savedMessage: SAVED_MESSAGES[queryStringParameters.saved] }
+          : {}),
+        ...(queryStringParameters?.linkError && LINK_ERROR_MESSAGES[queryStringParameters.linkError]
+          ? { linkErrorMessage: LINK_ERROR_MESSAGES[queryStringParameters.linkError] }
           : {}),
       },
     );
@@ -121,21 +138,19 @@ export class AdditionalEvidenceDetailHandler {
       return buildAdditionalEvidenceCaseLookup(searchedReference, undefined, undefined, false);
     }
 
-    const caseItems = await this.primaryCaseRepository.getCaseItems(searchedReference);
-    const primaryLink = caseItems.sourceLinks.find((link) => link.relation === 'PRIMARY');
-    let primarySource;
-    let primarySourceAvailable = false;
-    if (primaryLink) {
-      const primarySourceItems = await this.primarySourceCacheStore.getItems([primaryLink.submissionId]);
-      const primaryItem = primarySourceItems.get(primaryLink.submissionId);
-      if (primaryItem && isReadySource(primaryItem)) {
-        primarySource = primaryItem;
-        primarySourceAvailable = true;
-      } else if (primaryItem && isFailedSource(primaryItem)) {
-        primarySourceAvailable = false;
-      }
-    }
+    const { source, available } = await this.loadPrimarySource(searchedReference);
+    return buildAdditionalEvidenceCaseLookup(searchedReference, targetCase, source, available);
+  }
 
-    return buildAdditionalEvidenceCaseLookup(searchedReference, targetCase, primarySource, primarySourceAvailable);
+  /** Shared by the zoek-hoofdzaak lookup and the na-koppelen info: always reads the PRIMARY source fresh, never cached from an earlier request. */
+  private async loadPrimarySource(caseReference: string): Promise<{ source?: WoonbehoefteSourceRecord; available: boolean }> {
+    const caseItems = await this.primaryCaseRepository.getCaseItems(caseReference);
+    const primaryLink = caseItems.sourceLinks.find((link) => link.relation === 'PRIMARY');
+    if (!primaryLink) {
+      return { available: false };
+    }
+    const primarySourceItems = await this.primarySourceCacheStore.getItems([primaryLink.submissionId]);
+    const primaryItem = primarySourceItems.get(primaryLink.submissionId);
+    return primaryItem && isReadySource(primaryItem) ? { source: primaryItem, available: true } : { available: false };
   }
 }
