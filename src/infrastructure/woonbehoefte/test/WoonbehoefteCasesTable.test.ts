@@ -57,6 +57,7 @@ describe('WoonbehoefteCasesTable', () => {
       .flatMap((statement: any) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action])));
     expect(actions).toEqual(expect.arrayContaining([
       'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:TransactWriteItems',
+      'dynamodb:ConditionCheckItem',
     ]));
     expect(actions).not.toEqual(expect.arrayContaining(['dynamodb:DeleteItem']));
   });
