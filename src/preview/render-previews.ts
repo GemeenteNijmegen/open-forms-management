@@ -18,7 +18,7 @@ import {
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
   woonbehoefteDetailWithAdditionalEvidence,
-  woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
+  woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix, woonbehoefteReportsOverview,
 } from './fixtures/woonbehoefte';
 import homeTemplate from '../app/home/templates/home.mustache';
 import noPermissionsTemplate from '../app/home/templates/no-permissions.mustache';
@@ -33,6 +33,7 @@ import sportSubmissionsTemplate from '../app/sport/templates/sport-submissions.m
 import sportTemplate from '../app/sport/templates/sport.mustache';
 import additionalEvidenceDetailTemplate from '../app/woonbehoefte/additional-evidence/templates/woonbehoefte-additional-evidence-detail.mustache';
 import additionalEvidenceOverviewTemplate from '../app/woonbehoefte/additional-evidence/templates/woonbehoefte-additional-evidence-overview.mustache';
+import woonbehoefteReportsOverviewTemplate from '../app/woonbehoefte/reports/templates/woonbehoefte-reports-overview.mustache';
 import woonbehoefteDetailTemplate from '../app/woonbehoefte/templates/woonbehoefte-detail.mustache';
 import woonbehoefteOverviewTemplate from '../app/woonbehoefte/templates/woonbehoefte-overview.mustache';
 import { render, renderFragment, PageViewModel } from '../shared/rendering/Renderer';
@@ -91,6 +92,7 @@ const ROUTE_TO_PREVIEW_FILE: Record<string, string> = {
   '/permissions': 'permissions-superadmin',
   '/woonbehoefte': 'woonbehoefte-overview-mix',
   '/woonbehoefte/additional-evidence': 'woonbehoefte-additional-evidence-overview',
+  '/woonbehoefte/overzichten': 'woonbehoefte-reports-overview',
 };
 
 function stubFileName(route: string): string {
@@ -144,11 +146,10 @@ export async function renderAll(): Promise<void> {
     'permissions-sport-admin': render(permissionsTemplate, permissionsSportAdmin.page, permissionsSportAdmin.data),
     'permissions-user-multi-resource': render(permissionEditTemplate, permissionsUserMultiResource.page, permissionsUserMultiResource.data),
     'permissions-remove-confirm': render(permissionRemoveConfirmTemplate, permissionsRemoveConfirm.page, permissionsRemoveConfirm.data),
-    'woonbehoefte-overview-mix': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewWithMix.page, { ...woonbehoefteOverviewWithMix.data, isAanvragenTab: true }),
-    'woonbehoefte-overview-empty': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewEmpty.page, { ...woonbehoefteOverviewEmpty.data, isAanvragenTab: true }),
-    'woonbehoefte-overview-view-only': render(
-      woonbehoefteOverviewTemplate, woonbehoefteOverviewViewOnly.page, { ...woonbehoefteOverviewViewOnly.data, isAanvragenTab: true },
-    ),
+    'woonbehoefte-overview-mix': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewWithMix.page, woonbehoefteOverviewWithMix.data),
+    'woonbehoefte-overview-empty': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewEmpty.page, woonbehoefteOverviewEmpty.data),
+    'woonbehoefte-overview-view-only': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewViewOnly.page, woonbehoefteOverviewViewOnly.data),
+    'woonbehoefte-reports-overview': render(woonbehoefteReportsOverviewTemplate, woonbehoefteReportsOverview.page, woonbehoefteReportsOverview.data),
     'woonbehoefte-additional-evidence-overview': render(
       additionalEvidenceOverviewTemplate, woonbehoefteAdditionalEvidenceOverview.page, woonbehoefteAdditionalEvidenceOverview.data,
     ),

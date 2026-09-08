@@ -8,12 +8,14 @@ import { REGISTERED_FEATURES } from '../../../../shared/navigation/RegisteredFea
 import { render } from '../../../../shared/rendering/Renderer';
 import { issueCsrfToken } from '../../../../shared/security/csrf/CsrfProtection';
 import { visiblePermissionsFeature } from '../../../permissions/PermissionsNavigationFeature';
+import { buildWoonbehoefteTabs } from '../../WoonbehoefteTabs';
 import { AdditionalEvidenceSourceItem } from '../domain/AdditionalEvidenceSource';
 import { AdditionalEvidenceRepository } from '../persistence/AdditionalEvidenceRepository';
 import { AdditionalEvidenceSourceCacheStore } from '../source/AdditionalEvidenceSourceCacheStore';
 import overviewTemplate from '../templates/woonbehoefte-additional-evidence-overview.mustache';
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
+const WOONBEHOEFTE_EXCELOVERZICHT_CHECK = { resource: 'woonbehoefte', action: 'exceloverzicht' } as const;
 
 /** Handles `GET /woonbehoefte/additional-evidence`. A normal read, so no ACCESS_GRANTED audit. */
 export class AdditionalEvidenceOverviewHandler {
@@ -32,6 +34,7 @@ export class AdditionalEvidenceOverviewHandler {
       return denied;
     }
 
+    const canExcelOverview = context.evaluator.evaluate(WOONBEHOEFTE_EXCELOVERZICHT_CHECK) === 'ALLOW';
     const filter = resolveAdditionalEvidenceOverviewFilter(queryStringParameters);
     const csrf = issueCsrfToken();
 
@@ -56,6 +59,7 @@ export class AdditionalEvidenceOverviewHandler {
       { title: 'Woonbehoefte - Extra bewijzen', features, currentPath: '/woonbehoefte', actorEmail: identity.email },
       {
         ...viewModel,
+        tabs: buildWoonbehoefteTabs('additional-evidence', true, canExcelOverview),
         csrfToken: csrf.value,
         backQuery,
         isRefreshing: refreshState?.status === 'REFRESHING',

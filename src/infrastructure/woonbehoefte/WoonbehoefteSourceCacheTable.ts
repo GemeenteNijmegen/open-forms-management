@@ -34,4 +34,9 @@ export class WoonbehoefteSourceCacheTable extends Construct {
   grantFrontendAccess(grantee: IGrantable): Grant {
     return this.table.grant(grantee, 'dynamodb:GetItem', 'dynamodb:BatchGetItem', 'dynamodb:Query', 'dynamodb:UpdateItem');
   }
+
+  // The Excel report worker reads the ready-submission set for the export and batch-reads linked additional-evidence sources. Never a write.
+  grantReportWorkerAccess(grantee: IGrantable): Grant {
+    return this.table.grant(grantee, 'dynamodb:GetItem', 'dynamodb:BatchGetItem', 'dynamodb:Query');
+  }
 }

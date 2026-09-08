@@ -168,6 +168,8 @@
           "src/app/sport/cache/sportCacheWorker.lambda.ts",
           "src/app/sport/reporter/sportExcelWorker.lambda.ts",
           "src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
+          "src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts",
+          "src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts",
           "src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
           "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
           "src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",

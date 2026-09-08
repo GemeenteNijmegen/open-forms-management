@@ -13,6 +13,7 @@ import { CaseActivity, CaseNote, WoonbehoefteCase } from '../../app/woonbehoefte
 import { WoonbehoefteSourceRecord } from '../../app/woonbehoefte/domain/WoonbehoefteSource';
 import { resolveWoonbehoefteOverviewFilter } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewFilter';
 import { buildWoonbehoefteOverviewViewModel, joinCasesWithSources } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewViewModel';
+import { buildWoonbehoefteTabs } from '../../app/woonbehoefte/WoonbehoefteTabs';
 import { Feature } from '../../shared/navigation/Feature';
 import { PageViewModel } from '../../shared/rendering/Renderer';
 
@@ -142,6 +143,7 @@ export const woonbehoefteOverviewWithMix = {
   data: {
     ...buildWoonbehoefteOverviewViewModel(joinCasesWithSources(cases, sources), resolveWoonbehoefteOverviewFilter(undefined), 'medewerker@example.invalid'),
     canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
     csrfToken: 'preview-csrf-token',
     isRefreshing: false,
     refreshStarted: false,
@@ -154,6 +156,7 @@ export const woonbehoefteOverviewEmpty = {
   data: {
     ...buildWoonbehoefteOverviewViewModel([], resolveWoonbehoefteOverviewFilter(undefined), 'medewerker@example.invalid'),
     canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
     csrfToken: 'preview-csrf-token',
     isRefreshing: false,
     refreshStarted: false,
@@ -166,10 +169,16 @@ export const woonbehoefteOverviewViewOnly = {
   data: {
     ...buildWoonbehoefteOverviewViewModel(joinCasesWithSources(cases, sources), resolveWoonbehoefteOverviewFilter(undefined), 'kijker@example.invalid'),
     canManage: false,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, false),
     isRefreshing: false,
     refreshStarted: false,
     refreshAlreadyRunning: false,
   },
+};
+
+export const woonbehoefteReportsOverview = {
+  page: { ...woonbehoeftePage('medewerker@example.invalid'), title: 'Woonbehoefte - Excel-overzichten', currentPath: '/woonbehoefte/overzichten' },
+  data: { tabs: buildWoonbehoefteTabs('exceloverzichten', true, true) },
 };
 
 function additionalEvidencePage(): PageViewModel {
@@ -234,6 +243,7 @@ export const woonbehoefteAdditionalEvidenceOverviewSearch = {
   page: additionalEvidencePage(),
   data: {
     ...buildAdditionalEvidenceOverviewViewModel(additionalEvidenceEntries, additionalEvidenceSearchFilter, ''),
+    tabs: buildWoonbehoefteTabs('additional-evidence', true, true),
     csrfToken: 'preview-csrf-token',
     isRefreshing: false,
     refreshStarted: false,
@@ -246,6 +256,7 @@ export const woonbehoefteAdditionalEvidenceOverview = {
   page: additionalEvidencePage(),
   data: {
     ...buildAdditionalEvidenceOverviewViewModel(additionalEvidenceEntries, additionalEvidenceFilter, ''),
+    tabs: buildWoonbehoefteTabs('additional-evidence', true, true),
     csrfToken: 'preview-csrf-token',
     isRefreshing: false,
     refreshStarted: false,

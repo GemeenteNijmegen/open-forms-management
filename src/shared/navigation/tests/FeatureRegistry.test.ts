@@ -70,4 +70,28 @@ describe('visibleFeatures', () => {
     const evaluator = new PermissionEvaluator(grants);
     expect(visibleFeatures(features, evaluator)).toEqual(expected);
   });
+
+  describe('dedupeKey', () => {
+    const primaryVariant: Feature = {
+      id: 'variant-a', label: 'Variant A', route: '/variant-a', resource: 'testresource', action: 'view', dedupeKey: 'shared',
+    };
+    const fallbackVariant: Feature = {
+      id: 'variant-b', label: 'Variant B', route: '/variant-b', resource: 'testresource', action: 'other', dedupeKey: 'shared',
+    };
+
+    it('keeps only the first visible feature sharing a dedupeKey, in array order', () => {
+      const evaluator = new PermissionEvaluator([{ resource: 'testresource', actions: ['view', 'other'] }]);
+      expect(visibleFeatures([primaryVariant, fallbackVariant], evaluator)).toEqual([primaryVariant]);
+    });
+
+    it('falls back to the second variant when only its own action is granted', () => {
+      const evaluator = new PermissionEvaluator([{ resource: 'testresource', actions: ['other'] }]);
+      expect(visibleFeatures([primaryVariant, fallbackVariant], evaluator)).toEqual([fallbackVariant]);
+    });
+
+    it('features without a dedupeKey are never deduplicated against each other', () => {
+      const evaluator = new PermissionEvaluator([{ resource: 'testresource', actions: ['view'] }]);
+      expect(visibleFeatures([testFeature, { ...testFeature, id: 'test-feature-2' }], evaluator)).toHaveLength(2);
+    });
+  });
 });

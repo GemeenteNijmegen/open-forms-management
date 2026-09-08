@@ -1,0 +1,17 @@
+{{>header}}
+<main id="main-content" class="woonbehoefte-overview">
+  <h1 class="utrecht-heading-2">Woonbehoefte - Excel-overzichten</h1>
+
+  <nav class="woonbehoefte-tabs" aria-label="Woonbehoeftenavigatie">
+    {{#tabs}}
+    <a class="woonbehoefte-tabs__link{{#active}} woonbehoefte-tabs__link--active{{/active}}" href="{{href}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>
+    {{/tabs}}
+  </nav>
+
+  <div class="nijmegen-action-card">
+    <div class="nijmegen-action-card__content">
+      <p class="utrecht-paragraph">Er zijn nog geen Excel-overzichten.</p>
+    </div>
+  </div>
+</main>
+{{>footer}}

@@ -28,6 +28,8 @@
     "src/app/sport/sport-function.ts",
     "src/app/woonbehoefte/additional-evidence/additionalEvidence-function.ts",
     "src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker-function.ts",
+    "src/app/woonbehoefte/reports/woonbehoefteExcelWorker-function.ts",
+    "src/app/woonbehoefte/reports/woonbehoefteReports-function.ts",
     "src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts",
     "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function.ts",
     "src/app/woonbehoefte/woonbehoefte-function.ts",
