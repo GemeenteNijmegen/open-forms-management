@@ -327,6 +327,28 @@ footer {
   margin-block-end: var(--nijmegen-space-50);
 }
 
+.woonbehoefte-tabs {
+  display: flex;
+  gap: var(--nijmegen-space-200);
+  border-bottom: 1px solid var(--nijmegen-color-border-default);
+  margin-block-end: var(--nijmegen-space-200);
+}
+
+/* An explicit color, not the browser's default link blue/visited-purple: this is a tab, not a body-text link. */
+.woonbehoefte-tabs__link {
+  display: inline-block;
+  padding-block: var(--nijmegen-space-100);
+  border-bottom: 2px solid transparent;
+  color: var(--nijmegen-color-foreground-default);
+  text-decoration: none;
+}
+
+.woonbehoefte-tabs__link--active {
+  border-bottom-color: var(--utrecht-link-color);
+  color: var(--utrecht-link-color);
+  font-weight: 600;
+}
+
 .woonbehoefte-filter {
   margin-block-end: var(--nijmegen-space-200);
 }
@@ -422,7 +444,8 @@ footer {
 
 .woonbehoefte-badge--waiting-for-additional-information,
 .woonbehoefte-badge--proposed-inadmissible,
-.woonbehoefte-badge--check {
+.woonbehoefte-badge--check,
+.woonbehoefte-badge--unknown {
   background-color: var(--nijmegen-color-feedback-warning-subdued);
   color: var(--nijmegen-color-feedback-warning-default);
 }
@@ -432,7 +455,8 @@ footer {
   color: var(--nijmegen-color-feedback-error-default);
 }
 
-.woonbehoefte-badge--ready-for-ranking {
+.woonbehoefte-badge--ready-for-ranking,
+.woonbehoefte-badge--linked {
   background-color: var(--nijmegen-color-feedback-success-subdued);
   color: var(--nijmegen-color-feedback-success-default);
 }
@@ -672,4 +696,8 @@ footer {
 .woonbehoefte-details--inline > summary {
   font-size: var(--utrecht-paragraph-small-font-size);
   color: var(--nijmegen-color-foreground-subdued);
+}
+
+.woonbehoefte-case-lookup-result {
+  margin-block-start: var(--nijmegen-space-200);
 }

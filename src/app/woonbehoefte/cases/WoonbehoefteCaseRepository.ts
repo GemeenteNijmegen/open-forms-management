@@ -6,21 +6,22 @@ import {
   CaseActivity, CaseActivityType, CaseAssessment, CaseCheck, CaseNote, CaseNoteCategory, CaseSourceLink, CaseSourceRelation, WoonbehoefteCase,
 } from '../domain/WoonbehoefteCase';
 
-function casePartitionKey(caseReference: string): string {
+/** Exported so `AdditionalEvidenceLinkRepository` can put items into a case's partition in its own cross-partition transaction. */
+export function casePartitionKey(caseReference: string): string {
   return `CASE#${caseReference}`;
 }
 
-const CASE_SORT_KEY = 'CASE';
+export const CASE_SORT_KEY = 'CASE';
 
-function sourceLinkSortKey(relation: CaseSourceRelation, objectUuid?: string): string {
+export function sourceLinkSortKey(relation: CaseSourceRelation, objectUuid?: string): string {
   return relation === 'PRIMARY' ? 'SOURCE#PRIMARY' : `SOURCE#ADDITIONAL#${objectUuid}`;
 }
 
-function noteSortKey(createdAt: string, noteId: string): string {
+export function noteSortKey(createdAt: string, noteId: string): string {
   return `NOTE#${createdAt}#${noteId}`;
 }
 
-function activitySortKey(occurredAt: string, activityId: string): string {
+export function activitySortKey(occurredAt: string, activityId: string): string {
   return `ACTIVITY#${occurredAt}#${activityId}`;
 }
 

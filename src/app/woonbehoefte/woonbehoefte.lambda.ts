@@ -6,6 +6,7 @@ import { environmentVariables } from '@gemeentenijmegen/utils';
 import { APIGatewayProxyEventV2, Context } from 'aws-lambda';
 import { WoonbehoefteClaimHandler } from './actions/WoonbehoefteClaimHandler';
 import { WoonbehoefteStatusHandler } from './actions/WoonbehoefteStatusHandler';
+import { createAdditionalEvidenceSourceCacheStore } from './additional-evidence/source/createAdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteAssessmentHandler } from './assessment/WoonbehoefteAssessmentHandler';
 import { createWoonbehoefteCaseRepository } from './cases/createWoonbehoefteCaseRepository';
 import { WoonbehoefteCheckHandler } from './checks/WoonbehoefteCheckHandler';
@@ -34,6 +35,8 @@ const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const caseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const sourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
+// Read-only reuse of the extra-bewijzen source cache, same table: shows gekoppelde documenten on the hoofdzaak, never written to from here.
+const additionalSourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
 
 const overviewHandler = new WoonbehoefteOverviewHandler(authorizationService, caseRepository, sourceCacheStore);
 const claimHandler = new WoonbehoefteClaimHandler(authorizationService, caseRepository, auditTrail);
@@ -78,7 +81,9 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     }
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}') {
       const openZaakClient = await getOpenZaakClient();
-      const detailHandler = new WoonbehoefteDetailHandler(authorizationService, caseRepository, sourceCacheStore, openZaakClient);
+      const detailHandler = new WoonbehoefteDetailHandler(
+        authorizationService, caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore,
+      );
       return await detailHandler.handleRequest(identity, caseReference, event.queryStringParameters);
     }
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}/documents/{documentId}') {
@@ -86,7 +91,7 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
       const env = environmentVariables(['WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET'] as const);
       const downloadHandler = new WoonbehoefteDocumentDownloadHandler(
         authorizationService, caseRepository, sourceCacheStore, openZaakClient, auditTrail,
-        s3Client, env.WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET,
+        s3Client, env.WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET, additionalSourceCacheStore,
       );
       return await downloadHandler.handleRequest(identity, caseReference, documentId);
     }

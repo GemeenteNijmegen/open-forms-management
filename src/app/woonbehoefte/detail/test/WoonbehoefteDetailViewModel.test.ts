@@ -254,6 +254,31 @@ describe('buildWoonbehoefteDetailViewModel', () => {
     expect(viewModel.attachmentCountLabel).toBe('Bijlagen (0)');
   });
 
+  it('has no additionalDocumentGroups by default: an omitted argument never breaks an existing call', () => {
+    const viewModel = build(makeCase(), makeSource(), 'READY');
+
+    expect(viewModel.additionalDocumentGroups).toEqual([]);
+    expect(viewModel.hasAdditionalDocumentGroups).toBe(false);
+  });
+
+  it('passes additionalDocumentGroups straight through: all shaping happens in AdditionalEvidenceCaseDocumentsLoader, not here', () => {
+    const group = {
+      submissionReference: 'OF-EXTRA01',
+      submittedAtLabel: '7 september 2026 17:54',
+      linkedAtLabel: '9 september 2026 10:32',
+      linkedByLabel: 'medewerker@example.invalid',
+      hasSourceError: false,
+      documents: [],
+      hasDocuments: false,
+    };
+    const viewModel = buildWoonbehoefteDetailViewModel(
+      makeCase(), makeSource(), 'READY', [], [], [], true, 'medewerker@example.nl', '', 'csrf-token', [group],
+    );
+
+    expect(viewModel.additionalDocumentGroups).toEqual([group]);
+    expect(viewModel.hasAdditionalDocumentGroups).toBe(true);
+  });
+
   it('shows only the projectrijpheid condition text for the category the aanvraag actually claims', () => {
     const viewModel = build(makeCase(), makeSource({ submittedProjectReadiness: 3 }), 'READY');
 

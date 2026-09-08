@@ -1,3 +1,4 @@
+import { AdditionalEvidenceCaseDocumentGroup } from '../additional-evidence/documents/AdditionalEvidenceCaseDocumentsLoader';
 import { WoonbehoefteDocumentRow } from '../documents/WoonbehoefteDocumentsLoader';
 import {
   APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, CHECK_OUTCOME_LABELS, NOTE_CATEGORY_LABELS, PROJECT_READINESS_CONDITIONS,
@@ -148,6 +149,9 @@ export interface WoonbehoefteDetailViewModel {
   attachments: WoonbehoefteDocumentRow[];
   hasAttachments: boolean;
   attachmentCountLabel: string;
+  /** One group per gekoppelde extra-bewijzeninzending; all shaping happens in `AdditionalEvidenceCaseDocumentsLoader`, this is a straight passthrough. */
+  additionalDocumentGroups: AdditionalEvidenceCaseDocumentGroup[];
+  hasAdditionalDocumentGroups: boolean;
 
   notes: WoonbehoefteNoteRow[];
   hasNotes: boolean;
@@ -233,6 +237,7 @@ export function buildWoonbehoefteDetailViewModel(
   actorEmail: string | undefined,
   backQuery: string,
   csrfToken?: string,
+  additionalDocumentGroups: AdditionalEvidenceCaseDocumentGroup[] = [],
 ): WoonbehoefteDetailViewModel {
   const assessment: CaseAssessment = woonbehoefteCase.assessment;
   const sortedNotes = [...notes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -302,6 +307,8 @@ export function buildWoonbehoefteDetailViewModel(
     attachments,
     hasAttachments: attachments.length > 0,
     attachmentCountLabel: `Bijlagen (${attachments.length})`,
+    additionalDocumentGroups,
+    hasAdditionalDocumentGroups: additionalDocumentGroups.length > 0,
 
     notes: sortedNotes.map(noteRow),
     hasNotes: sortedNotes.length > 0,

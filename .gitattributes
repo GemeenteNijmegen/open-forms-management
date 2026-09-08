@@ -31,6 +31,8 @@
 /src/app/sport/cache/sportCacheWorker-function.ts linguist-generated
 /src/app/sport/reporter/sportExcelWorker-function.ts linguist-generated
 /src/app/sport/sport-function.ts linguist-generated
+/src/app/woonbehoefte/additional-evidence/additionalEvidence-function.ts linguist-generated
+/src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker-function.ts linguist-generated
 /src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts linguist-generated
 /src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function.ts linguist-generated
 /src/app/woonbehoefte/woonbehoefte-function.ts linguist-generated

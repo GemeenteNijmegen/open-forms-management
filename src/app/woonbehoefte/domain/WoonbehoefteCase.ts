@@ -68,6 +68,8 @@ export interface CaseSourceLink {
   submissionReference: string;
   relation: CaseSourceRelation;
   linkedAt: string;
+  /** Optional so existing PRIMARY links never need a migration; every new ADDITIONAL link sets it. */
+  linkedBy?: string;
 }
 
 export type CaseNoteCategory =
@@ -96,7 +98,8 @@ export type CaseActivityType =
   | 'ASSESSMENT_UPDATED'
   | 'NOTE_ADDED'
   | 'CHECK_REQUESTED'
-  | 'CHECK_COMPLETED';
+  | 'CHECK_COMPLETED'
+  | 'ADDITIONAL_EVIDENCE_LINKED';
 
 export interface CaseActivityChange {
   field: string;

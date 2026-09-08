@@ -55,6 +55,7 @@ export class WoonbehoefteOverviewHandler {
       {
         ...viewModel,
         canManage,
+        isAanvragenTab: true,
         csrfToken: csrf.value,
         isRefreshing: refreshState?.status === 'REFRESHING',
         refreshStarted: queryStringParameters?.refresh === 'started',

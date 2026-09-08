@@ -4,6 +4,7 @@ import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations
 import { StartingPosition, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
+import { WoonbehoefteAdditionalEvidenceFeature } from './additional-evidence/WoonbehoefteAdditionalEvidenceFeature';
 import { WoonbehoefteCasesTable } from './WoonbehoefteCasesTable';
 import { WoonbehoefteCaseVersionsTable } from './WoonbehoefteCaseVersionsTable';
 import { applyWoonbehoefteDataSourceAccess } from './WoonbehoefteDataSourceAccess';
@@ -84,6 +85,17 @@ export class WoonbehoefteFeature extends Construct {
     const temporaryDownloadsBucket = new WoonbehoefteTemporaryDownloadsBucket(this, 'temporary-downloads-bucket');
     temporaryDownloadsBucket.grantFrontendAccess(pageFunction);
     pageFunction.addEnvironment('WOONBEHOEFTE_TEMP_DOWNLOAD_BUCKET', temporaryDownloadsBucket.bucket.bucketName);
+
+    new WoonbehoefteAdditionalEvidenceFeature(this, 'additional-evidence-feature', {
+      managementApi: props.managementApi,
+      permissionsTable: props.permissionsTable,
+      auditTrailTable: props.auditTrailTable,
+      sessionsTable: props.sessionsTable,
+      configuration: props.configuration,
+      sourceCacheTable,
+      casesTable,
+      temporaryDownloadsBucket,
+    });
 
     const caseVersionWorkerFunction = new WoonbehoefteCaseVersionWorkerFunction(this, 'case-version-worker-function', {
       tracing: Tracing.ACTIVE,

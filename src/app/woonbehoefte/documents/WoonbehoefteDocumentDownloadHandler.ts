@@ -9,19 +9,28 @@ import { recordAudit } from '../../../shared/audit/recordAudit';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { AdditionalEvidenceSourceCacheStore } from '../additional-evidence/source/AdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
-import { SourceDocumentReference, WoonbehoefteSourceItem } from '../domain/WoonbehoefteSource';
+import { SourceDocumentReference } from '../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
 const PRESIGN_EXPIRY_SECONDS = 60;
 
+/** Satisfied by both a `WoonbehoefteSourceItem` and an `AdditionalEvidenceSourceItem`: only the two document fields are ever needed here. */
+interface DownloadableDocumentSource {
+  pdfDocument?: SourceDocumentReference;
+  attachments?: SourceDocumentReference[];
+}
+
 /**
  * Only `pdfDocument`/`attachments` are ever offered for download; the CSV export itself is a sync input,
  * not a medewerker document. Searches READY and FAILED sources alike: a FAILED source (CSV parse/fetch
- * error) can still carry a `pdfDocument`/`attachments` it kept from a valid Object envelope.
+ * error) can still carry a `pdfDocument`/`attachments` it kept from a valid Object envelope. Searches
+ * PRIMARY and ADDITIONAL sources alike: a gekoppelde extra-bewijzeninzending's document is downloadable
+ * through this same case-scoped route once it is linked, see `AdditionalEvidenceCaseDocumentsLoader`.
  */
-function findDownloadableDocument(sources: WoonbehoefteSourceItem[], documentId: string): SourceDocumentReference | undefined {
+function findDownloadableDocument(sources: DownloadableDocumentSource[], documentId: string): SourceDocumentReference | undefined {
   for (const source of sources) {
     const candidates = [...(source.pdfDocument ? [source.pdfDocument] : []), ...(source.attachments ?? [])];
     const match = candidates.find((document) => document.documentId === documentId);
@@ -56,6 +65,7 @@ export class WoonbehoefteDocumentDownloadHandler {
     private readonly auditTrail: AuditTrail,
     private readonly s3Client: S3Client,
     private readonly bucketName: string,
+    private readonly additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore,
   ) { }
 
   async handleRequest(identity: EmployeeIdentity, caseReference: string | undefined, documentId: string | undefined): Promise<ApiGatewayV2Response> {
@@ -74,9 +84,13 @@ export class WoonbehoefteDocumentDownloadHandler {
       return Response.error(404);
     }
 
-    const submissionIds = caseItems.sourceLinks.map((link) => link.submissionId);
-    const sourceItems = await this.sourceCacheStore.getItems(submissionIds);
-    const sources = [...sourceItems.values()];
+    const primarySubmissionIds = caseItems.sourceLinks.filter((link) => link.relation === 'PRIMARY').map((link) => link.submissionId);
+    const additionalSubmissionIds = caseItems.sourceLinks.filter((link) => link.relation === 'ADDITIONAL').map((link) => link.submissionId);
+    const [primarySourceItems, additionalSourceItems] = await Promise.all([
+      this.sourceCacheStore.getItems(primarySubmissionIds),
+      this.additionalSourceCacheStore.getItems(additionalSubmissionIds),
+    ]);
+    const sources: DownloadableDocumentSource[] = [...primarySourceItems.values(), ...additionalSourceItems.values()];
 
     const document = findDownloadableDocument(sources, documentId);
     if (!document) {

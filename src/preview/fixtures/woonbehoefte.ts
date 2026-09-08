@@ -1,3 +1,12 @@
+import {
+  buildAdditionalEvidenceCaseLookup, buildAdditionalEvidenceDetailViewModel,
+} from '../../app/woonbehoefte/additional-evidence/detail/AdditionalEvidenceDetailViewModel';
+import { AdditionalEvidenceCaseDocumentGroup } from '../../app/woonbehoefte/additional-evidence/documents/AdditionalEvidenceCaseDocumentsLoader';
+import { AdditionalEvidenceDocumentRow } from '../../app/woonbehoefte/additional-evidence/documents/AdditionalEvidenceDocumentsLoader';
+import { ADDITIONAL_EVIDENCE_SOURCE_CACHE_VERSION, AdditionalEvidenceSourceItem, AdditionalEvidenceSourceRecord } from '../../app/woonbehoefte/additional-evidence/domain/AdditionalEvidenceSource';
+import { resolveAdditionalEvidenceOverviewFilter } from '../../app/woonbehoefte/additional-evidence/overview/AdditionalEvidenceOverviewFilter';
+import { buildAdditionalEvidenceOverviewViewModel, joinWorkItemsWithSources } from '../../app/woonbehoefte/additional-evidence/overview/AdditionalEvidenceOverviewViewModel';
+import { AdditionalEvidenceWorkItem } from '../../app/woonbehoefte/additional-evidence/persistence/AdditionalEvidenceRepository';
 import { buildWoonbehoefteDetailViewModel } from '../../app/woonbehoefte/detail/WoonbehoefteDetailViewModel';
 import { WoonbehoefteDocumentRow } from '../../app/woonbehoefte/documents/WoonbehoefteDocumentsLoader';
 import { CaseActivity, CaseNote, WoonbehoefteCase } from '../../app/woonbehoefte/domain/WoonbehoefteCase';
@@ -163,6 +172,185 @@ export const woonbehoefteOverviewViewOnly = {
   },
 };
 
+function additionalEvidencePage(): PageViewModel {
+  return { ...woonbehoeftePage('medewerker@example.invalid'), title: 'Woonbehoefte - Extra bewijzen' };
+}
+
+function additionalEvidenceWorkItem(overrides: Partial<AdditionalEvidenceWorkItem> & { objectUuid: string }): AdditionalEvidenceWorkItem {
+  return {
+    submissionReference: `OF-${overrides.objectUuid}`,
+    status: 'NEW',
+    createdAt: '2026-09-07T18:00:00.000Z',
+    createdBy: 'additional-evidence-sync-worker',
+    ...overrides,
+  };
+}
+
+function additionalEvidenceSource(
+  overrides: Partial<AdditionalEvidenceSourceRecord> & { objectUuid: string; submittedAt: string },
+): AdditionalEvidenceSourceRecord {
+  return {
+    status: 'READY',
+    cacheVersion: ADDITIONAL_EVIDENCE_SOURCE_CACHE_VERSION,
+    submissionId: overrides.objectUuid,
+    reference: `OF-${overrides.objectUuid}`,
+    formName: 'Extra bewijzen stroomaansluiting woningbouw',
+    originalCaseReference: 'OF-2026-00142',
+    attachments: [],
+    cachedAt: '2026-09-07T18:00:00.000Z',
+    ...overrides,
+  };
+}
+
+const additionalEvidenceWorkItems: AdditionalEvidenceWorkItem[] = [
+  additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-01', status: 'NEW' }),
+  additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-02', status: 'UNKNOWN' }),
+  additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-03', status: 'LINKED' }),
+  additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-04', status: 'NEW' }),
+];
+
+const additionalEvidenceSources = new Map<string, AdditionalEvidenceSourceItem>([
+  ['uuid-extra-01', additionalEvidenceSource({
+    objectUuid: 'uuid-extra-01',
+    submittedAt: '2026-09-07T17:54:04.702Z',
+    submittedProjectName: 'Project Lindenhof',
+    contactEmail: 'burger@example.invalid',
+    contactPhone: '0612345678',
+    evidenceDescription: 'Aanvullende planning en ondertekende overeenkomst.',
+    remarks: 'Graag meenemen bij de beoordeling.',
+  })],
+  ['uuid-extra-02', additionalEvidenceSource({ objectUuid: 'uuid-extra-02', submittedAt: '2026-09-06T09:15:00.000Z', submittedProjectName: 'Project Zonnehof' })],
+  ['uuid-extra-03', additionalEvidenceSource({ objectUuid: 'uuid-extra-03', submittedAt: '2026-09-05T11:00:00.000Z', submittedProjectName: 'Project Meijhorst' })],
+  // uuid-extra-04 has no source record at all: Object was valid but the CSV fetch failed (bronfout).
+  ['uuid-extra-04', { status: 'FAILED', objectUuid: 'uuid-extra-04', failureReasonCode: 'CSV_FETCH_ERROR', lastAttemptAt: '2026-09-07T19:00:00.000Z' }],
+]);
+
+const additionalEvidenceEntries = joinWorkItemsWithSources(additionalEvidenceWorkItems, additionalEvidenceSources);
+const additionalEvidenceFilter = resolveAdditionalEvidenceOverviewFilter(undefined);
+
+const additionalEvidenceSearchFilter = resolveAdditionalEvidenceOverviewFilter({ search: 'Lindenhof' });
+
+export const woonbehoefteAdditionalEvidenceOverviewSearch = {
+  page: additionalEvidencePage(),
+  data: {
+    ...buildAdditionalEvidenceOverviewViewModel(additionalEvidenceEntries, additionalEvidenceSearchFilter, ''),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+    refreshFailed: false,
+  },
+};
+
+export const woonbehoefteAdditionalEvidenceOverview = {
+  page: additionalEvidencePage(),
+  data: {
+    ...buildAdditionalEvidenceOverviewViewModel(additionalEvidenceEntries, additionalEvidenceFilter, ''),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+    refreshFailed: false,
+  },
+};
+
+function additionalEvidenceDetailPage(submissionReference: string): PageViewModel {
+  return { title: `${submissionReference} - Woonbehoefte`, features: [woonbehoefteFeature], currentPath: '/woonbehoefte/additional-evidence/uuid-extra-01', actorEmail: 'medewerker@example.invalid' };
+}
+
+function additionalEvidenceDocumentRow(overrides: Partial<AdditionalEvidenceDocumentRow> & { documentId: string }): AdditionalEvidenceDocumentRow {
+  return {
+    filenameLabel: 'Bijlage', downloadHref: `/woonbehoefte/additional-evidence/uuid-extra-01/documents/${overrides.documentId}`, isApplicationPdf: false, ...overrides,
+  };
+}
+
+export const woonbehoefteAdditionalEvidenceDetailNormal = {
+  page: additionalEvidenceDetailPage('OF-EXTRA01'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-01', status: 'NEW' }),
+    additionalEvidenceSource({
+      objectUuid: 'uuid-extra-01',
+      submittedAt: '2026-09-07T17:54:04.702Z',
+      submittedProjectName: 'Project Lindenhof',
+      contactEmail: 'burger@example.invalid',
+      contactPhone: '0612345678',
+      evidenceDescription: 'Aanvullende planning en ondertekende overeenkomst.',
+      remarks: 'Graag meenemen bij de beoordeling.',
+    }),
+    'READY',
+    [
+      additionalEvidenceDocumentRow({ documentId: 'pdf-1', filenameLabel: 'Extra-bewijzenformulier (PDF)', isApplicationPdf: true, formatLabel: 'application/pdf' }),
+      additionalEvidenceDocumentRow({ documentId: 'att-1', filenameLabel: 'situatietekening.pdf', formatLabel: 'application/pdf', sizeLabel: '482 KB' }),
+    ],
+    true,
+    '',
+    'preview-csrf-token',
+  ),
+};
+
+export const woonbehoefteAdditionalEvidenceDetailSourceError = {
+  page: additionalEvidenceDetailPage('OF-EXTRA04'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-04', status: 'NEW' }),
+    undefined,
+    'FAILED',
+    [],
+    true,
+    '',
+    'preview-csrf-token',
+  ),
+};
+
+// Reuses the existing OF-2026-00142 hoofdzaak/source fixtures, so the "gevonden" preview lines up with
+// what the primary Woonbehoefte-previews already show for that same case.
+const previewFoundCase = cases.find((c) => c.caseReference === 'OF-2026-00142')!;
+const previewFoundPrimarySource = sources.find((s) => s.caseReference === 'OF-2026-00142');
+
+export const woonbehoefteAdditionalEvidenceDetailCaseFound = {
+  page: additionalEvidenceDetailPage('OF-EXTRA01'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-01', status: 'NEW' }),
+    additionalEvidenceSource({ objectUuid: 'uuid-extra-01', submittedAt: '2026-09-07T17:54:04.702Z', submittedProjectName: 'Project Lindenhof' }),
+    'READY',
+    [],
+    true,
+    '',
+    'preview-csrf-token',
+    buildAdditionalEvidenceCaseLookup('OF-2026-00142', previewFoundCase, previewFoundPrimarySource, true),
+  ),
+};
+
+export const woonbehoefteAdditionalEvidenceDetailCaseNotFound = {
+  page: additionalEvidenceDetailPage('OF-EXTRA03'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({ objectUuid: 'uuid-extra-03', status: 'NEW' }),
+    additionalEvidenceSource({ objectUuid: 'uuid-extra-03', submittedAt: '2026-09-05T11:00:00.000Z', submittedProjectName: 'Project Meijhorst' }),
+    'READY',
+    [],
+    true,
+    '',
+    'preview-csrf-token',
+    buildAdditionalEvidenceCaseLookup('OF-BESTAAT-NIET', undefined, undefined, false),
+  ),
+};
+
+export const woonbehoefteAdditionalEvidenceDetailLinked = {
+  page: additionalEvidenceDetailPage('OF-EXTRA01'),
+  data: buildAdditionalEvidenceDetailViewModel(
+    additionalEvidenceWorkItem({
+      objectUuid: 'uuid-extra-01', status: 'LINKED', linkedCaseReference: 'OF-2026-00142', linkedAt: '2026-09-09T10:32:00.000Z', linkedBy: 'medewerker@example.invalid',
+    }),
+    additionalEvidenceSource({ objectUuid: 'uuid-extra-01', submittedAt: '2026-09-07T17:54:04.702Z', submittedProjectName: 'Project Lindenhof' }),
+    'READY',
+    [],
+    true,
+    '',
+    'preview-csrf-token',
+    undefined,
+    previewFoundPrimarySource,
+  ),
+};
+
 function detailPage(caseReference: string): PageViewModel {
   return { title: `${caseReference} - Woonbehoefte`, features: [woonbehoefteFeature], currentPath: `/woonbehoefte/cases/${caseReference}`, actorEmail: 'medewerker@example.invalid' };
 }
@@ -278,6 +466,41 @@ export const woonbehoefteDetailInadmissible = {
     woonbehoefteCase({ caseReference: 'OF-2026-00033', status: 'INADMISSIBLE', claimedBy: 'medewerker@example.invalid' }),
     source({ caseReference: 'OF-2026-00033', projectName: 'Aanvraag zonder rechtsgeldige onderbouwing', applicantType: 'PROJECT_APPLICANT' }),
     'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+  ),
+};
+
+function additionalDocumentGroup(
+  overrides: Partial<AdditionalEvidenceCaseDocumentGroup> & { submissionReference: string },
+): AdditionalEvidenceCaseDocumentGroup {
+  return {
+    submittedAtLabel: '7 september 2026 17:54',
+    linkedAtLabel: '9 september 2026 10:32',
+    linkedByLabel: 'medewerker@example.invalid',
+    hasSourceError: false,
+    documents: [
+      { documentId: 'extra-pdf-1', filenameLabel: 'Extra-bewijzenformulier (PDF)', formatLabel: 'application/pdf', downloadHref: '/woonbehoefte/cases/OF-2026-00142/documents/extra-pdf-1' },
+    ],
+    hasDocuments: true,
+    ...overrides,
+  };
+}
+
+export const woonbehoefteDetailWithAdditionalEvidence = {
+  page: detailPage('OF-2026-00142'),
+  data: buildWoonbehoefteDetailViewModel(
+    detailCase, detailSource, 'READY',
+    [documentRow({ documentId: 'pdf-1', filenameLabel: 'Aanvraagformulier (PDF)', isApplicationPdf: true, formatLabel: 'application/pdf', sizeLabel: '842 KB' })],
+    [detailNote], [detailActivity], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    [
+      additionalDocumentGroup({ submissionReference: 'OF-EXTRA01' }),
+      additionalDocumentGroup({
+        submissionReference: 'OF-EXTRA02',
+        hasSourceError: true,
+        sourceErrorMessage: 'De brongegevens van deze extra-bewijzeninzending konden niet volledig worden gelezen. Ververs Extra bewijzen later opnieuw.',
+        documents: [],
+        hasDocuments: false,
+      }),
+    ],
   ),
 };
 

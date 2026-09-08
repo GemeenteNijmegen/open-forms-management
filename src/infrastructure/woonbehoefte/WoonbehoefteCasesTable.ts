@@ -39,11 +39,13 @@ export class WoonbehoefteCasesTable extends Construct {
   }
 
   // The page lambda owns every human mutation: reads, notes/activity puts, conditional case updates and their transact writes.
-  // Scan backs the ~400-case overview.
+  // Scan backs the ~400-case overview. ConditionCheckItem is separate from TransactWriteItems: the additional-evidence
+  // link transaction includes a standalone ConditionCheck item, which DynamoDB authorizes under its own action.
   grantFrontendAccess(grantee: IGrantable): Grant {
     return this.table.grant(
       grantee,
       'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:TransactWriteItems',
+      'dynamodb:ConditionCheckItem',
     );
   }
 }

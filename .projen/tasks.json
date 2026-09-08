@@ -100,10 +100,16 @@
           "spawn": "bundle:app/sport/reporter/sportExcelWorker.lambda"
         },
         {
+          "spawn": "bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda"
+        },
+        {
           "spawn": "bundle:app/woonbehoefte/source/woonbehoefteSyncWorker.lambda"
         },
         {
           "spawn": "bundle:app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda"
+        },
+        {
+          "spawn": "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda"
         }
       ]
     },
@@ -248,6 +254,42 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/sport/sport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/sport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda": {
+      "name": "bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda",
+      "description": "Create a JavaScript bundle from src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/additionalEvidence.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda:watch": {
+      "name": "bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/additionalEvidence.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda": {
+      "name": "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda",
+      "description": "Create a JavaScript bundle from src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda:watch": {
+      "name": "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

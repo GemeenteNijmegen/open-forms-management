@@ -58,6 +58,8 @@ describe('AppStack authentication and routing wiring', () => {
     'src/app/sport/reporter/sportExcelWorker.lambda.ts',
     'src/app/sport/cache/sportCacheWorker.lambda.ts',
     'src/app/permissions/permissions.lambda.ts',
+    'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts',
+    'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -69,7 +71,7 @@ describe('AppStack authentication and routing wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(11);
+    expect(Object.keys(logGroups)).toHaveLength(13);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
@@ -132,13 +134,85 @@ describe('AppStack authentication and routing wiring', () => {
     const [versionsTableLogicalId] = Object.keys(template.findResources('AWS::DynamoDB::Table', Match.objectLike({
       Properties: { TableName: Match.stringLikeRegexp('woonbehoefte-case-versions') },
     })));
-    const otherRoles = ['src/app/woonbehoefte/woonbehoefte.lambda.ts', 'src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts']
-      .map((description) => roleLogicalIdFor(template, description));
+    const otherRoles = [
+      'src/app/woonbehoefte/woonbehoefte.lambda.ts',
+      'src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts',
+      'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts',
+      'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
+    ].map((description) => roleLogicalIdFor(template, description));
     const policies = Object.values(template.findResources('AWS::IAM::Policy')) as any[];
     const referencesVersionsTable = policies
       .filter((policy) => (policy.Properties.Roles ?? []).some((role: any) => otherRoles.includes(role.Ref)))
       .some((policy) => JSON.stringify(policy.Properties.PolicyDocument.Statement).includes(versionsTableLogicalId));
     expect(referencesVersionsTable).toBe(false);
+  });
+
+  it('gives the Additional Evidence sync worker a 900s timeout, separate from the 29s HTTP-facing page function', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
+      Timeout: 900,
+    }));
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts',
+      Timeout: 29,
+      MemorySize: 256,
+    }));
+  });
+
+  // The IAM split in WoonbehoefteDataSourceAccess.ts must leave the Additional Evidence sync worker exactly
+  // like the primary sync worker (both Objects and Open Zaak), while the Additional Evidence page function
+  // only gets Open Zaak, never Objects.
+  it('gives the Additional Evidence sync worker both Objects and Open Zaak access, and the page function only Open Zaak', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
+      Environment: Match.objectLike({
+        Variables: Match.objectLike({
+          OBJECTS_BASE_URL: Match.anyValue(),
+          OBJECTS_CREDENTIALS_SECRET_NAME: Match.anyValue(),
+          OPEN_ZAAK_DOCUMENTEN_BASE_URL: Match.anyValue(),
+          OPEN_ZAAK_CREDENTIALS_SECRET_NAME: Match.anyValue(),
+        }),
+      }),
+    }));
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts',
+      Environment: Match.objectLike({
+        Variables: Match.objectLike({
+          OPEN_ZAAK_DOCUMENTEN_BASE_URL: Match.anyValue(),
+          OPEN_ZAAK_CREDENTIALS_SECRET_NAME: Match.anyValue(),
+        }),
+      }),
+    }));
+    const pageFunctions = template.findResources('AWS::Lambda::Function', Match.objectLike({
+      Properties: { Description: 'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts' },
+    }));
+    const [pageFunction]: any[] = Object.values(pageFunctions);
+    const pageEnvironmentKeys = Object.keys(pageFunction.Properties.Environment.Variables);
+    expect(pageEnvironmentKeys).not.toContain('OBJECTS_BASE_URL');
+    expect(pageEnvironmentKeys).not.toContain('OBJECTS_CREDENTIALS_SECRET_NAME');
+  });
+
+  it('only lets the Additional Evidence page function invoke the Additional Evidence sync worker', () => {
+    const pageActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts'));
+    expect(pageActions).toContain('lambda:InvokeFunction');
+
+    const workerActions = actionsGrantedToRole(
+      template, roleLogicalIdFor(template, 'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts'),
+    );
+    expect(workerActions).not.toContain('lambda:InvokeFunction');
+  });
+
+  it('registers every Additional Evidence route', () => {
+    const routeKeys = Object.values(template.findResources('AWS::ApiGatewayV2::Route')).map((route: any) => route.Properties.RouteKey);
+    expect(routeKeys).toEqual(expect.arrayContaining([
+      'GET /woonbehoefte/additional-evidence',
+      'POST /woonbehoefte/additional-evidence/refresh',
+      'GET /woonbehoefte/additional-evidence/{submissionId}',
+      'POST /woonbehoefte/additional-evidence/{submissionId}/search-case',
+      'POST /woonbehoefte/additional-evidence/{submissionId}/status',
+      'POST /woonbehoefte/additional-evidence/{submissionId}/link',
+      'GET /woonbehoefte/additional-evidence/{submissionId}/documents/{documentId}',
+    ]));
   });
 
   it('creates an AuditWriteFailure alarm that triggers on any failure', () => {
