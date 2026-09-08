@@ -187,14 +187,24 @@ describe('runWoonbehoefteExcelReport', () => {
     }));
   });
 
-  it('marks FAILED with a compact reason and uploads nothing when reading Cases/source fails', async () => {
+  it('marks FAILED with CASE_DATA_ERROR and uploads nothing when reading Cases fails', async () => {
     const { deps, store, s3Send, caseRepository } = makeDeps(makeReport());
     (caseRepository.listCases as jest.Mock).mockRejectedValue(new Error('DynamoDB unavailable'));
 
     await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
 
     expect(s3Send).not.toHaveBeenCalled();
-    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'DATA_READ_ERROR');
+    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'CASE_DATA_ERROR');
+  });
+
+  it('marks FAILED with SOURCE_DATA_ERROR and uploads nothing when reading the source cache fails', async () => {
+    const { deps, store, s3Send, sourceCacheStore } = makeDeps(makeReport());
+    (sourceCacheStore.readReadySubmissions as jest.Mock).mockRejectedValue(new Error('DynamoDB unavailable'));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'SOURCE_DATA_ERROR');
   });
 
   it('never marks READY when the S3 upload itself fails', async () => {

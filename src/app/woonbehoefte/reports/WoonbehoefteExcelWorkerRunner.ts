@@ -33,7 +33,7 @@ export interface WoonbehoefteExcelWorkerDependencies {
 // The worker calls Open Zaak on its own behalf, well after the medewerker's original request/session ended.
 const WORKER_ACTOR: EmployeeIdentity = { principalId: 'woonbehoefte-excel-worker' };
 
-type FailurePhase = 'DATA_READ_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
+type FailurePhase = 'CASE_DATA_ERROR' | 'SOURCE_DATA_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
 
 function storageKeyFor(reportId: string): string {
   return `reports/${reportId}.xlsx`;
@@ -60,14 +60,26 @@ export async function runWoonbehoefteExcelReport(
     return;
   }
 
-  let phase: FailurePhase = 'DATA_READ_ERROR';
+  let phase: FailurePhase = 'CASE_DATA_ERROR';
   try {
     if (isPastCutoff()) {
       await cutoff(report, deps, correlationId);
       return;
     }
 
-    const [cases, { submissions }] = await Promise.all([deps.caseRepository.listCases(), deps.sourceCacheStore.readReadySubmissions()]);
+    // Read concurrently (they're independent), but settle both so a failure can still be tagged to its own source.
+    const [casesResult, submissionsResult] = await Promise.allSettled([
+      deps.caseRepository.listCases(), deps.sourceCacheStore.readReadySubmissions(),
+    ]);
+    if (casesResult.status === 'rejected') {
+      throw casesResult.reason;
+    }
+    if (submissionsResult.status === 'rejected') {
+      phase = 'SOURCE_DATA_ERROR';
+      throw submissionsResult.reason;
+    }
+    const cases = casesResult.value;
+    const { submissions } = submissionsResult.value;
     const entries = joinCasesWithSources(cases, submissions)
       .filter((entry) => matchesReportFilter(entry, report.filter))
       .sort(compareByRegistrationAtDesc);
