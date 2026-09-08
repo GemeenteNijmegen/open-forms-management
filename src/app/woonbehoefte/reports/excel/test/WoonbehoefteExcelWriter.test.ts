@@ -7,10 +7,8 @@ function baseRow(overrides: Partial<WoonbehoefteReportRow> = {}): WoonbehoefteRe
     caseReference: 'OF-2026-00001',
     projectName: 'Project Een',
     statusLabel: 'In behandeling',
-    assessedStartPeriodLabel: 'maart 2028',
     assessedStartYear: 2028,
     assessedStartMonth: 3,
-    assessedCompletionPeriodLabel: 'Nog niet vastgesteld',
     assessedProjectReadinessLabel: 'Nog niet vastgesteld',
     assigneeLabel: 'medewerker@nijmegen.nl',
     claimedAtLabel: '20 augustus 2026 10:15',
@@ -75,7 +73,22 @@ describe('buildWoonbehoefteReportSheetData', () => {
     const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({ assessedStartYear: 2028, assessedStartMonth: 3 })]);
 
     expect(cellFor(header, dataRow, 'Vastgesteld startjaar')).toEqual({ value: 2028, type: Number });
-    expect(cellFor(header, dataRow, 'Vastgestelde startmaand')).toEqual({ value: 3, type: Number });
+    expect(cellFor(header, dataRow, 'Vastgestelde startmaand')).toEqual({ value: 3, type: Number, format: '00' });
+  });
+
+  it('writes the vastgestelde start/oplever jaar-maand as a real number, so 202601 sorts/filters below 203005', () => {
+    const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({
+      assessedStartYear: 2026, assessedStartMonth: 1, assessedCompletionYear: 2030, assessedCompletionMonth: 5,
+    })]);
+
+    expect(cellFor(header, dataRow, 'Vastgestelde start jaar-maand')).toEqual({ value: 202601, type: Number });
+    expect(cellFor(header, dataRow, 'Vastgestelde oplever jaar-maand')).toEqual({ value: 203005, type: Number });
+  });
+
+  it('leaves the vastgestelde jaar-maand as "Nog niet vastgesteld" text when no period is set yet', () => {
+    const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({ assessedCompletionYear: undefined, assessedCompletionMonth: undefined })]);
+
+    expect(cellFor(header, dataRow, 'Vastgestelde oplever jaar-maand')).toEqual({ value: 'Nog niet vastgesteld', type: String });
   });
 
   it('leaves an undefined numeric field as a blank text cell, not a zero', () => {

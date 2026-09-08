@@ -4,7 +4,7 @@ import {
   TERNARY_ASSESSMENT_LABELS, TERNARY_ASSESSMENT_UNASSESSED_LABEL,
 } from '../../domain/CaseLabels';
 import { TernaryAssessment } from '../../domain/WoonbehoefteCase';
-import { formatDutchDateTime, formatPeriodLabel, periodMonth, periodYear } from '../../domain/WoonbehoefteFormatting';
+import { formatDutchDateTime, periodMonth, periodYear } from '../../domain/WoonbehoefteFormatting';
 import { WoonbehoefteCaseWithSource } from '../../overview/WoonbehoefteOverviewViewModel';
 import { AttachmentFilenamesOutcome } from '../attachments/WoonbehoefteReportAttachments';
 import { RawFormFieldsOutcome } from '../rawformfields/fetchWoonbehoefteRawFormFields';
@@ -50,10 +50,8 @@ function buildRow(
     projectName: source?.projectName ?? '',
     statusLabel: CASE_STATUS_LABELS[c.status],
 
-    assessedStartPeriodLabel: formatPeriodLabel(a.assessedStartPeriod),
     assessedStartYear: periodYear(a.assessedStartPeriod),
     assessedStartMonth: periodMonth(a.assessedStartPeriod),
-    assessedCompletionPeriodLabel: formatPeriodLabel(a.assessedCompletionPeriod),
     assessedCompletionYear: periodYear(a.assessedCompletionPeriod),
     assessedCompletionMonth: periodMonth(a.assessedCompletionPeriod),
     assessedProjectReadinessCategory: readiness,

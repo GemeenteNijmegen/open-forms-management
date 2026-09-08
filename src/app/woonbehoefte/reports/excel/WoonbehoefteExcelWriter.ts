@@ -21,6 +21,18 @@ function numberCell(value: number | undefined): Cell {
   return value === undefined ? { value: '', type: String } : { value, type: Number };
 }
 
+// Zero-padded display ('09'), but the underlying value stays a plain number so month still sorts/filters numerically, not as text.
+function monthCell(value: number | undefined): Cell {
+  return value === undefined ? { value: '', type: String } : { value, type: Number, format: '00' };
+}
+
+// YYYYMM as a real number (e.g. 202809) so a filter/sort on this column orders chronologically, not alphabetically on a spelled-out label.
+function periodCell(year: number | undefined, month: number | undefined): Cell {
+  return year === undefined || month === undefined
+    ? { value: 'Nog niet vastgesteld', type: String }
+    : { value: (year * 100) + month, type: Number };
+}
+
 const FIXED_COLUMNS: ColumnDef[] = [
   // A. Identiteit en actuele verwerking
   { header: 'OF-kenmerk', width: 20, cell: (row) => textCell(row.caseReference) },
@@ -28,9 +40,9 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'Status', width: 22, cell: (row) => textCell(row.statusLabel) },
 
   // Startdatum: vastgesteld, ingediend, toelichting en de twee bewijsvelden staan bewust bij elkaar.
-  { header: 'Vastgestelde start jaar-maand', width: 18, cell: (row) => textCell(row.assessedStartPeriodLabel) },
+  { header: 'Vastgestelde start jaar-maand', width: 18, cell: (row) => periodCell(row.assessedStartYear, row.assessedStartMonth) },
   { header: 'Vastgesteld startjaar', width: 12, cell: (row) => numberCell(row.assessedStartYear) },
-  { header: 'Vastgestelde startmaand', width: 12, cell: (row) => numberCell(row.assessedStartMonth) },
+  { header: 'Vastgestelde startmaand', width: 12, cell: (row) => monthCell(row.assessedStartMonth) },
   { header: 'Ingediende startdatum', width: 18, cell: (row) => textCell(row.submittedStartDate) },
   { header: 'Toelichting vastgestelde start', width: 30, wrap: true, cell: (row) => textCell(row.assessedStartExplanation, true) },
   {
@@ -47,9 +59,9 @@ const FIXED_COLUMNS: ColumnDef[] = [
   },
 
   // Opleverdatum: zelfde opbouw als startdatum hierboven.
-  { header: 'Vastgestelde oplever jaar-maand', width: 18, cell: (row) => textCell(row.assessedCompletionPeriodLabel) },
+  { header: 'Vastgestelde oplever jaar-maand', width: 18, cell: (row) => periodCell(row.assessedCompletionYear, row.assessedCompletionMonth) },
   { header: 'Vastgesteld opleverjaar', width: 12, cell: (row) => numberCell(row.assessedCompletionYear) },
-  { header: 'Vastgestelde oplevermaand', width: 12, cell: (row) => numberCell(row.assessedCompletionMonth) },
+  { header: 'Vastgestelde oplevermaand', width: 12, cell: (row) => monthCell(row.assessedCompletionMonth) },
   { header: 'Ingediende opleverdatum', width: 18, cell: (row) => textCell(row.submittedCompletionDate) },
   { header: 'Toelichting vastgestelde oplevering', width: 30, wrap: true, cell: (row) => textCell(row.assessedCompletionExplanation, true) },
 

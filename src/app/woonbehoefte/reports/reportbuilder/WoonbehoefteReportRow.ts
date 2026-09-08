@@ -10,10 +10,8 @@ export interface WoonbehoefteReportRow {
   projectName: string;
   statusLabel: string;
 
-  assessedStartPeriodLabel: string;
   assessedStartYear?: number;
   assessedStartMonth?: number;
-  assessedCompletionPeriodLabel: string;
   assessedCompletionYear?: number;
   assessedCompletionMonth?: number;
   assessedProjectReadinessCategory?: number;
