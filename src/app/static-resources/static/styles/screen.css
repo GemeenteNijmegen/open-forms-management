@@ -461,6 +461,22 @@ footer {
   color: var(--nijmegen-color-feedback-success-default);
 }
 
+/* Report-status variants (Excel-overzichten), separate from the case-status variants above. */
+.woonbehoefte-badge--report-building {
+  background-color: var(--nijmegen-color-feedback-info-subdued);
+  color: var(--nijmegen-color-feedback-info-default);
+}
+
+.woonbehoefte-badge--report-ready {
+  background-color: var(--nijmegen-color-feedback-success-subdued);
+  color: var(--nijmegen-color-feedback-success-default);
+}
+
+.woonbehoefte-badge--report-failed {
+  background-color: var(--nijmegen-color-feedback-error-subdued);
+  color: var(--nijmegen-color-feedback-error-default);
+}
+
 /*
  * @utrecht/select-css and @utrecht/textbox-css only ever read padding from --utrecht-select-padding-*
  * or --utrecht-textbox-padding-*, falling back to --utrecht-form-control-padding-*, and none of those

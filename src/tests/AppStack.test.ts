@@ -274,9 +274,14 @@ describe('AppStack authentication and routing wiring', () => {
     ]));
   });
 
-  it('registers the Excel-overzichten route', () => {
+  it('registers every Excel-overzichten route', () => {
     const routeKeys = Object.values(template.findResources('AWS::ApiGatewayV2::Route')).map((route: any) => route.Properties.RouteKey);
-    expect(routeKeys).toContain('GET /woonbehoefte/overzichten');
+    expect(routeKeys).toEqual(expect.arrayContaining([
+      'GET /woonbehoefte/overzichten',
+      'POST /woonbehoefte/overzichten',
+      'GET /woonbehoefte/overzichten/{reportId}/download',
+      'POST /woonbehoefte/overzichten/{reportId}/delete',
+    ]));
   });
 
   it('creates an AuditWriteFailure alarm that triggers on any failure', () => {

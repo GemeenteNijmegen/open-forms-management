@@ -45,6 +45,11 @@ export function joinCasesWithSources(cases: WoonbehoefteCase[], sources: Woonbeh
   ));
 }
 
+/** Newest primary registration first; a case without a source sorts last (empty string is the lowest possible value). */
+export function compareByRegistrationAtDesc(a: WoonbehoefteCaseWithSource, b: WoonbehoefteCaseWithSource): number {
+  return (b.source?.registrationAt ?? '').localeCompare(a.source?.registrationAt ?? '');
+}
+
 export function matchesOverviewFilter(
   entry: WoonbehoefteCaseWithSource, filter: WoonbehoefteOverviewFilter, actorEmail: string | undefined,
 ): boolean {
@@ -164,7 +169,7 @@ export function buildWoonbehoefteOverviewViewModel(
 ): WoonbehoefteOverviewViewModel {
   const matched = entries
     .filter((entry) => matchesOverviewFilter(entry, filter, actorEmail))
-    .sort((a, b) => (b.source?.registrationAt ?? '').localeCompare(a.source?.registrationAt ?? ''));
+    .sort(compareByRegistrationAtDesc);
 
   const availableStartYears = [...new Set(
     entries.map((e) => periodYear(e.woonbehoefteCase.assessment.assessedStartPeriod)).filter((y): y is number => y !== undefined),

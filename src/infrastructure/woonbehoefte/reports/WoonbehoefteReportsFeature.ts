@@ -76,6 +76,8 @@ export class WoonbehoefteReportsFeature extends Construct {
     pageFunction.addEnvironment('WOONBEHOEFTE_EXCEL_WORKER_FUNCTION_NAME', excelWorkerFunction.functionName);
 
     const integration = new HttpLambdaIntegration('integration-woonbehoefte-reports-function', pageFunction);
-    props.managementApi.api.addRoutes({ path: '/woonbehoefte/overzichten', methods: [HttpMethod.GET], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/overzichten', methods: [HttpMethod.GET, HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/overzichten/{reportId}/download', methods: [HttpMethod.GET], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/overzichten/{reportId}/delete', methods: [HttpMethod.POST], integration });
   }
 }

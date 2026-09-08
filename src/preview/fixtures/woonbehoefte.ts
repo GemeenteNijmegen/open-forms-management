@@ -13,6 +13,10 @@ import { CaseActivity, CaseNote, WoonbehoefteCase } from '../../app/woonbehoefte
 import { WoonbehoefteSourceRecord } from '../../app/woonbehoefte/domain/WoonbehoefteSource';
 import { resolveWoonbehoefteOverviewFilter } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewFilter';
 import { buildWoonbehoefteOverviewViewModel, joinCasesWithSources } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewViewModel';
+import { WoonbehoefteReport } from '../../app/woonbehoefte/reports/domain/WoonbehoefteReport';
+import {
+  buildWoonbehoefteReportRequestFormViewModel, buildWoonbehoefteReportsListViewModel,
+} from '../../app/woonbehoefte/reports/ui-request-handlers/WoonbehoefteReportsViewModel';
 import { buildWoonbehoefteTabs } from '../../app/woonbehoefte/WoonbehoefteTabs';
 import { Feature } from '../../shared/navigation/Feature';
 import { PageViewModel } from '../../shared/rendering/Renderer';
@@ -176,9 +180,60 @@ export const woonbehoefteOverviewViewOnly = {
   },
 };
 
+function reportsPage(): PageViewModel {
+  return { ...woonbehoeftePage('medewerker@example.invalid'), title: 'Woonbehoefte - Excel-overzichten', currentPath: '/woonbehoefte/overzichten' };
+}
+
+const emptyReportFilter = {
+  statuses: [], startYears: [], startYearNotSet: false, applicantTypes: [], assignment: 'ALL' as const, checkRequestedOnly: false,
+};
+
+function woonbehoefteReport(overrides: Partial<WoonbehoefteReport> & { reportId: string }): WoonbehoefteReport {
+  return {
+    filter: emptyReportFilter,
+    options: { includeAllFormFields: false, includeAttachmentFilenames: false },
+    status: 'READY',
+    requestedBy: 'medewerker@example.invalid',
+    requestedAt: '2026-09-01T09:00:00.000Z',
+    updatedAt: '2026-09-01T09:00:00.000Z',
+    expiresAt: Math.floor(new Date('2026-10-01T09:00:00.000Z').getTime() / 1000),
+    ...overrides,
+  };
+}
+
+const reportsMix: WoonbehoefteReport[] = [
+  woonbehoefteReport({
+    reportId: 'report-ready', status: 'READY', requestedBy: 'collega@example.invalid', caseCount: 128, warningCount: 3,
+  }),
+  woonbehoefteReport({
+    reportId: 'report-building', status: 'BUILDING', requestedAt: '2026-09-08T10:00:00.000Z', updatedAt: '2026-09-08T10:01:00.000Z',
+  }),
+  woonbehoefteReport({
+    reportId: 'report-failed', status: 'FAILED', requestedAt: '2026-09-05T08:00:00.000Z', updatedAt: '2026-09-05T08:03:00.000Z',
+  }),
+  woonbehoefteReport({
+    reportId: 'report-too-large', status: 'TOO_LARGE', options: { includeAllFormFields: true, includeAttachmentFilenames: true },
+  }),
+];
+
 export const woonbehoefteReportsOverview = {
-  page: { ...woonbehoeftePage('medewerker@example.invalid'), title: 'Woonbehoefte - Excel-overzichten', currentPath: '/woonbehoefte/overzichten' },
-  data: { tabs: buildWoonbehoefteTabs('exceloverzichten', true, true) },
+  page: reportsPage(),
+  data: {
+    ...buildWoonbehoefteReportsListViewModel(reportsMix),
+    ...buildWoonbehoefteReportRequestFormViewModel(),
+    tabs: buildWoonbehoefteTabs('exceloverzichten', true, true),
+    csrfToken: 'preview-csrf-token',
+  },
+};
+
+export const woonbehoefteReportsOverviewEmpty = {
+  page: reportsPage(),
+  data: {
+    ...buildWoonbehoefteReportsListViewModel([]),
+    ...buildWoonbehoefteReportRequestFormViewModel(),
+    tabs: buildWoonbehoefteTabs('exceloverzichten', false, true),
+    csrfToken: 'preview-csrf-token',
+  },
 };
 
 function additionalEvidencePage(): PageViewModel {
