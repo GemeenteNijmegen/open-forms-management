@@ -106,6 +106,22 @@ describe('WoonbehoefteCaseRepository', () => {
     expect(items.activities).toHaveLength(1);
   });
 
+  it('reads only SOURCE# links for a case, never notes/activities/the case item itself', async () => {
+    documentMock.on(QueryCommand).resolves({
+      Items: [
+        { pk: 'CASE#OF-1', sk: 'SOURCE#PRIMARY', submissionId: 'uuid-1' },
+        { pk: 'CASE#OF-1', sk: 'SOURCE#ADDITIONAL#uuid-2', submissionId: 'uuid-2' },
+      ],
+    });
+
+    const links = await newRepository().getSourceLinks('OF-1');
+
+    expect(links.map((link) => link.submissionId)).toEqual(['uuid-1', 'uuid-2']);
+    const call = documentMock.commandCalls(QueryCommand)[0];
+    expect(call.args[0].input.KeyConditionExpression).toBe('pk = :pk AND begins_with(sk, :sourcePrefix)');
+    expect(call.args[0].input.ExpressionAttributeValues).toMatchObject({ ':pk': 'CASE#OF-1', ':sourcePrefix': 'SOURCE#' });
+  });
+
   it('claiming a NEW case also moves it to IN_PROGRESS in the same transaction, guarded on claimedBy being absent', async () => {
     documentMock.on(TransactWriteCommand).resolves({});
 

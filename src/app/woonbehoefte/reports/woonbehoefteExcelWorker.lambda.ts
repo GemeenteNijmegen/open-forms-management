@@ -10,6 +10,7 @@ import { bindRequestLogging, resetRequestLogging } from '../../../observability/
 import { xRayTraceId } from '../../../observability/xRayTraceId';
 import { createAuditTrail } from '../../../shared/audit/createAuditTrail';
 import { getOpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClientFactory';
+import { createAdditionalEvidenceSourceCacheStore } from '../additional-evidence/source/createAdditionalEvidenceSourceCacheStore';
 import { createWoonbehoefteCaseRepository } from '../cases/createWoonbehoefteCaseRepository';
 import { createWoonbehoefteSourceCacheStore } from '../source/createWoonbehoefteSourceCacheStore';
 
@@ -24,6 +25,7 @@ const dynamoDBClient = new DynamoDBClient({});
 const s3Client = new S3Client({});
 const caseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const sourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
+const additionalSourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
 const reportStore = createWoonbehoefteReportStore(dynamoDBClient);
 const auditTrail = createAuditTrail(dynamoDBClient);
 
@@ -35,7 +37,16 @@ export async function handler(event: WoonbehoefteExcelWorkerEvent, context: Cont
 
     await runWoonbehoefteExcelReport(
       event.reportId,
-      { caseRepository, sourceCacheStore, openZaakClient, s3Client, reportStore, auditTrail, bucketName: env.WOONBEHOEFTE_REPORTS_BUCKET },
+      {
+        caseRepository,
+        sourceCacheStore,
+        additionalSourceCacheStore,
+        openZaakClient,
+        s3Client,
+        reportStore,
+        auditTrail,
+        bucketName: env.WOONBEHOEFTE_REPORTS_BUCKET,
+      },
       () => context.getRemainingTimeInMillis() <= CUTOFF_SAFETY_MARGIN_MS,
       xRayTraceId(),
     );

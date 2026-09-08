@@ -171,4 +171,40 @@ describe('buildWoonbehoefteReportRows', () => {
     expect(row.rawFormFields).toBeUndefined();
     expect(row.sourceWarning).toBe('');
   });
+
+  it('attaches the attachment filenames text for a case when an outcome is given', () => {
+    const entry: WoonbehoefteCaseWithSource = {
+      woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-10' }),
+      source: source({ caseReference: 'OF-10' }),
+    };
+    const attachmentFilenames = new Map([['OF-10', { filenamesText: 'bijlage-een.pdf\nbijlage-twee.pdf' }]]);
+
+    const [row] = buildWoonbehoefteReportRows([entry], undefined, attachmentFilenames);
+
+    expect(row.attachmentFilenamesText).toBe('bijlage-een.pdf\nbijlage-twee.pdf');
+    expect(row.sourceWarning).toBe('');
+  });
+
+  it('appends an attachment filenames warning on its own line, alongside an existing Bronwaarschuwing', () => {
+    const entry: WoonbehoefteCaseWithSource = { woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-11' }), source: undefined };
+    const attachmentFilenames = new Map([['OF-11', { filenamesText: '', warning: 'Bestandsnaam van 1 bijlage kon niet worden geladen.' }]]);
+
+    const [row] = buildWoonbehoefteReportRows([entry], undefined, attachmentFilenames);
+
+    expect(row.sourceWarning.split('\n')).toHaveLength(2);
+    expect(row.sourceWarning).toContain('bronconflict');
+    expect(row.sourceWarning).toContain('bijlage kon niet worden geladen');
+  });
+
+  it('leaves attachmentFilenamesText empty and no extra warning when the option was off (empty map)', () => {
+    const entry: WoonbehoefteCaseWithSource = {
+      woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-12' }),
+      source: source({ caseReference: 'OF-12' }),
+    };
+
+    const [row] = buildWoonbehoefteReportRows([entry]);
+
+    expect(row.attachmentFilenamesText).toBe('');
+    expect(row.sourceWarning).toBe('');
+  });
 });

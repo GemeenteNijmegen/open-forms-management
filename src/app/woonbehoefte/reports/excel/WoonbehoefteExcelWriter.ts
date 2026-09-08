@@ -31,7 +31,7 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'Vastgestelde startmaand', width: 12, cell: (row) => numberCell(row.assessedStartMonth) },
   { header: 'Vastgestelde oplever jaar-maand', width: 18, cell: (row) => textCell(row.assessedCompletionPeriodLabel) },
   { header: 'Vastgesteld opleverjaar', width: 12, cell: (row) => numberCell(row.assessedCompletionYear) },
-  { header: 'Vastgestelde opleverjaarmaand', width: 12, cell: (row) => numberCell(row.assessedCompletionMonth) },
+  { header: 'Vastgestelde oplevermaand', width: 12, cell: (row) => numberCell(row.assessedCompletionMonth) },
   { header: 'Vastgestelde projectrijpheid categorie', width: 14, cell: (row) => numberCell(row.assessedProjectReadinessCategory) },
   { header: 'Vastgestelde projectrijpheid', width: 40, wrap: true, cell: (row) => textCell(row.assessedProjectReadinessLabel, true) },
   { header: 'Behandelaar', width: 24, cell: (row) => textCell(row.assigneeLabel) },
@@ -84,7 +84,12 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'KOVA', width: 10, cell: (row) => textCell(row.kovaLabel) },
 ];
 
-// H. Laatste kolom, altijd na de vaste en de dynamische formulierveldkolommen.
+// G. Bijlagen, na de vaste en dynamische formulierveldkolommen, altijd vóór Bronwaarschuwing.
+const ATTACHMENTS_COLUMN: ColumnDef = {
+  header: 'Bijlagen', width: 40, wrap: true, cell: (row) => textCell(row.attachmentFilenamesText, true),
+};
+
+// H. Laatste kolom, altijd na de vaste, dynamische en Bijlagen-kolommen.
 const BRONWAARSCHUWING_COLUMN: ColumnDef = {
   header: 'Bronwaarschuwing', width: 40, wrap: true, cell: (row) => textCell(row.sourceWarning, true),
 };
@@ -107,7 +112,7 @@ function buildRawFormFieldColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
 }
 
 function buildColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
-  return [...FIXED_COLUMNS, ...buildRawFormFieldColumns(rows), BRONWAARSCHUWING_COLUMN];
+  return [...FIXED_COLUMNS, ...buildRawFormFieldColumns(rows), ATTACHMENTS_COLUMN, BRONWAARSCHUWING_COLUMN];
 }
 
 function headerRow(columns: ColumnDef[]): Row {

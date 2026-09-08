@@ -66,6 +66,9 @@ export interface WoonbehoefteReportRow {
   /** Only set when includeAllFormFields is on and the fetch/parse succeeded for this case. */
   rawFormFields?: WoonbehoefteRawFormRow;
 
+  /** Always present, empty unless includeAttachmentFilenames is on. One filename per line, primary attachments first. */
+  attachmentFilenamesText: string;
+
   /** Always present, usually empty. Multiple warnings share one cell, one per line. */
   sourceWarning: string;
 }

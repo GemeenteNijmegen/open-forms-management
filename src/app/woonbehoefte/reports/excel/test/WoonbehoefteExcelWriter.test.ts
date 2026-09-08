@@ -47,6 +47,7 @@ function baseRow(overrides: Partial<WoonbehoefteReportRow> = {}): WoonbehoefteRe
     collectiveHousingCategory: '',
     collectiveFacilitiesLabel: 'Nee',
     kovaLabel: 'Nee',
+    attachmentFilenamesText: '',
     sourceWarning: '',
     ...overrides,
   };
@@ -97,6 +98,22 @@ describe('buildWoonbehoefteReportSheetData', () => {
     const rawFormFields = { headers: ['projectNaam'], values: { projectNaam: 'Project Een' } };
     const [header] = buildWoonbehoefteReportSheetData([baseRow({ rawFormFields })]);
     expect((header[header.length - 1] as CellObject).value).toBe('Bronwaarschuwing');
+  });
+
+  it('puts Bijlagen right before Bronwaarschuwing, even with dynamic form field columns present', () => {
+    const rawFormFields = { headers: ['projectNaam'], values: { projectNaam: 'Project Een' } };
+    const [header] = buildWoonbehoefteReportSheetData([baseRow({ rawFormFields })]);
+    expect((header[header.length - 2] as CellObject).value).toBe('Bijlagen');
+  });
+
+  it('writes attachmentFilenamesText into the Bijlagen column, one filename per line', () => {
+    const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({ attachmentFilenamesText: 'bijlage-een.pdf\nbijlage-twee.pdf' })]);
+    expect(cellFor(header, dataRow, 'Bijlagen')).toEqual({ value: 'bijlage-een.pdf\nbijlage-twee.pdf', type: String, format: '@', wrap: true });
+  });
+
+  it('never turns an attachment filename into a Formula cell either', () => {
+    const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({ attachmentFilenamesText: '=DIT-MAG-GEEN-FORMULE-WORDEN.pdf' })]);
+    expect((cellFor(header, dataRow, 'Bijlagen') as CellObject).type).not.toBe('Formula');
   });
 
   it('adds a "Formulier - " prefixed column per raw CSV header, first-seen order across rows', () => {

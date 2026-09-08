@@ -53,8 +53,9 @@ describe('WoonbehoefteReportStore', () => {
   });
 
   it('gets a report by id, or undefined when it does not exist', async () => {
-    documentMock.on(GetCommand).resolves({ Item: report() });
-    await expect(newStore().get('report-1')).resolves.toEqual(report());
+    const existing = report();
+    documentMock.on(GetCommand).resolves({ Item: existing });
+    await expect(newStore().get('report-1')).resolves.toEqual(existing);
 
     documentMock.on(GetCommand).resolves({});
     await expect(newStore().get('missing')).resolves.toBeUndefined();

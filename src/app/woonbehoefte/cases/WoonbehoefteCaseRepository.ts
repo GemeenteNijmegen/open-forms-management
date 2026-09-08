@@ -193,6 +193,28 @@ export class WoonbehoefteCaseRepository {
   }
 
   /**
+   * Every SOURCE# link under one case (primary and any linked Additional Evidence), never notes/activities.
+   * Lighter than getCaseItems for callers that only need the source links, like the Excel report worker.
+   */
+  async getSourceLinks(caseReference: string): Promise<CaseSourceLink[]> {
+    const links: CaseSourceLink[] = [];
+    let exclusiveStartKey: Record<string, unknown> | undefined;
+
+    do {
+      const response = await this.documentClient.send(new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: 'pk = :pk AND begins_with(sk, :sourcePrefix)',
+        ExpressionAttributeValues: { ':pk': casePartitionKey(caseReference), ':sourcePrefix': 'SOURCE#' },
+        ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
+      }));
+      links.push(...(response.Items ?? []) as CaseSourceLink[]);
+      exclusiveStartKey = response.LastEvaluatedKey;
+    } while (exclusiveStartKey);
+
+    return links;
+  }
+
+  /**
    * Every case in the table, `SK = CASE` only (never a note/activity/source-link item). A paginated Scan,
    * not a Query: the Cases table has one partition per case, so there is no shared partition to query
    * across. Acceptable for this dataset size and lifespan; no GSI until that changes.

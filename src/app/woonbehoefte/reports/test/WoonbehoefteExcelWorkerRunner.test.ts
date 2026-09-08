@@ -1,8 +1,9 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { AuditTrail } from '../../../../shared/audit/AuditTrail';
 import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
+import { AdditionalEvidenceSourceCacheStore } from '../../additional-evidence/source/AdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
-import { WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
+import { CaseSourceLink, WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteReport } from '../domain/WoonbehoefteReport';
@@ -60,12 +61,18 @@ function source(overrides: Partial<WoonbehoefteSourceRecord> & { caseReference: 
   };
 }
 
+function additionalLink(caseReference: string, submissionId: string, linkedAt = '2026-08-22T00:00:00.000Z'): CaseSourceLink {
+  return { caseReference, submissionId, submissionReference: 'EB-1', relation: 'ADDITIONAL', linkedAt };
+}
+
 function makeDeps(report: WoonbehoefteReport) {
+  const getSourceLinks = jest.fn().mockResolvedValue([]);
   const caseRepository = {
     listCases: jest.fn().mockResolvedValue([
       woonbehoefteCase({ caseReference: 'OF-1' }),
       woonbehoefteCase({ caseReference: 'OF-2' }),
     ]),
+    getSourceLinks,
   } as unknown as WoonbehoefteCaseRepository;
 
   const sourceCacheStore = {
@@ -78,8 +85,13 @@ function makeDeps(report: WoonbehoefteReport) {
     }),
   } as unknown as WoonbehoefteSourceCacheStore;
 
+  const additionalSourceCacheStore = {
+    getItems: jest.fn().mockResolvedValue(new Map()),
+  } as unknown as AdditionalEvidenceSourceCacheStore;
+
   const getDocumentText = jest.fn().mockResolvedValue('projectNaam\n"Project Een"\n');
-  const openZaakClient = { getDocumentText } as unknown as OpenZaakClient;
+  const getDocumentMetadata = jest.fn().mockResolvedValue({ bestandsnaam: 'bijlage.pdf' });
+  const openZaakClient = { getDocumentText, getDocumentMetadata } as unknown as OpenZaakClient;
 
   const s3Send = jest.fn().mockResolvedValue({});
   const s3Client = { send: s3Send } as unknown as S3Client;
@@ -99,6 +111,7 @@ function makeDeps(report: WoonbehoefteReport) {
   const deps: WoonbehoefteExcelWorkerDependencies = {
     caseRepository,
     sourceCacheStore,
+    additionalSourceCacheStore,
     openZaakClient,
     s3Client,
     auditTrail,
@@ -106,7 +119,7 @@ function makeDeps(report: WoonbehoefteReport) {
     reportStore: store as unknown as WoonbehoefteReportStore,
   };
 
-  return { deps, store, s3Send, auditRecord, caseRepository, sourceCacheStore, getDocumentText };
+  return { deps, store, s3Send, auditRecord, caseRepository, sourceCacheStore, additionalSourceCacheStore, getDocumentText, getDocumentMetadata };
 }
 
 describe('runWoonbehoefteExcelReport', () => {
@@ -229,6 +242,116 @@ describe('runWoonbehoefteExcelReport', () => {
     const isPastCutoff = () => {
       callCount += 1;
       // false for the two earlier checks (before fetch, after cases/source read), true once the raw-field fetch is done.
+      return callCount > 2;
+    };
+
+    await runWoonbehoefteExcelReport('report-1', deps, isPastCutoff, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markTooLarge).toHaveBeenCalledWith('report-1');
+  });
+
+  it('never reads source links or Open Zaak metadata when includeAttachmentFilenames is off', async () => {
+    const { deps, caseRepository, getDocumentMetadata } = makeDeps(makeReport());
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(caseRepository.getSourceLinks).not.toHaveBeenCalled();
+    expect(getDocumentMetadata).not.toHaveBeenCalled();
+  });
+
+  it('resolves primary attachment filenames for every matched case when includeAttachmentFilenames is on', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: true } });
+    const { deps, caseRepository, getDocumentMetadata, store } = makeDeps(report);
+    (caseRepository.getSourceLinks as jest.Mock).mockResolvedValue([]);
+    (deps.sourceCacheStore.readReadySubmissions as jest.Mock).mockResolvedValue({
+      submissions: [
+        source({
+          caseReference: 'OF-1',
+          registrationAt: '2026-08-20T10:15:00.000Z',
+          attachments: [{ documentId: 'doc-attach-1', url: 'https://open-zaak.example.invalid/attach-1', role: 'ATTACHMENT' }],
+        }),
+        source({ caseReference: 'OF-2', registrationAt: '2026-08-21T10:15:00.000Z' }),
+      ],
+      failedMarkers: [],
+    });
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(getDocumentMetadata).toHaveBeenCalledTimes(1);
+    expect(getDocumentMetadata).toHaveBeenCalledWith('https://open-zaak.example.invalid/attach-1', expect.anything());
+    expect(store.markReady).toHaveBeenCalledWith('report-1', 'reports/report-1.xlsx', 2, 0);
+  });
+
+  it('includes a linked Additional Evidence source attachments, resolved through the shared source-cache table', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: true } });
+    const { deps, caseRepository, additionalSourceCacheStore, getDocumentMetadata } = makeDeps(report);
+    (caseRepository.getSourceLinks as jest.Mock).mockImplementation(async (caseReference: string) => (
+      caseReference === 'OF-1' ? [additionalLink(caseReference, 'additional-uuid-1')] : []
+    ));
+    (additionalSourceCacheStore.getItems as jest.Mock).mockResolvedValue(new Map([
+      ['additional-uuid-1', {
+        status: 'READY',
+        cacheVersion: 1,
+        objectUuid: 'additional-uuid-1',
+        submissionId: 'additional-uuid-1',
+        reference: 'EB-1',
+        formName: 'Extra bewijzen',
+        submittedAt: '2026-08-22T00:00:00.000Z',
+        originalCaseReference: 'OF-1',
+        attachments: [{ documentId: 'doc-additional-1', url: 'https://open-zaak.example.invalid/additional-1', role: 'ATTACHMENT' }],
+        cachedAt: '2026-08-22T00:00:00.000Z',
+      }],
+    ]));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(additionalSourceCacheStore.getItems).toHaveBeenCalledWith(['additional-uuid-1']);
+    expect(getDocumentMetadata).toHaveBeenCalledWith('https://open-zaak.example.invalid/additional-1', expect.anything());
+  });
+
+  it('turns a missing linked Additional Evidence source into a Bronwaarschuwing warning, not a report failure', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: true } });
+    const { deps, caseRepository, additionalSourceCacheStore, store } = makeDeps(report);
+    (caseRepository.getSourceLinks as jest.Mock).mockImplementation(async (caseReference: string) => (
+      caseReference === 'OF-1' ? [additionalLink(caseReference, 'missing-uuid')] : []
+    ));
+    (additionalSourceCacheStore.getItems as jest.Mock).mockResolvedValue(new Map());
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(store.markReady).toHaveBeenCalledWith('report-1', 'reports/report-1.xlsx', 2, 1);
+  });
+
+  it('turns an attachment metadata fetch failure into a Bronwaarschuwing warning, but still finishes READY', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: true } });
+    const { deps, caseRepository, getDocumentMetadata, store } = makeDeps(report);
+    (caseRepository.getSourceLinks as jest.Mock).mockResolvedValue([]);
+    (deps.sourceCacheStore.readReadySubmissions as jest.Mock).mockResolvedValue({
+      submissions: [
+        source({
+          caseReference: 'OF-1',
+          registrationAt: '2026-08-20T10:15:00.000Z',
+          attachments: [{ documentId: 'doc-attach-1', url: 'https://open-zaak.example.invalid/attach-1', role: 'ATTACHMENT' }],
+        }),
+        source({ caseReference: 'OF-2', registrationAt: '2026-08-21T10:15:00.000Z' }),
+      ],
+      failedMarkers: [],
+    });
+    getDocumentMetadata.mockRejectedValueOnce(new Error('Open Zaak unavailable'));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(store.markReady).toHaveBeenCalledWith('report-1', 'reports/report-1.xlsx', 2, 1);
+  });
+
+  it('checks the cutoff after the attachment filenames phase too, marking TOO_LARGE instead of uploading', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: true } });
+    const { deps, s3Send, store } = makeDeps(report);
+    let callCount = 0;
+    const isPastCutoff = () => {
+      callCount += 1;
+      // false for the two earlier checks (before fetch, after cases/source read), true once the attachment phase is done.
       return callCount > 2;
     };
 

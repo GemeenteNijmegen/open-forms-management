@@ -6,6 +6,7 @@ import {
 import { TernaryAssessment } from '../../domain/WoonbehoefteCase';
 import { formatDutchDateTime, formatPeriodLabel, periodMonth, periodYear } from '../../domain/WoonbehoefteFormatting';
 import { WoonbehoefteCaseWithSource } from '../../overview/WoonbehoefteOverviewViewModel';
+import { AttachmentFilenamesOutcome } from '../attachments/WoonbehoefteReportAttachments';
 import { RawFormFieldsOutcome } from '../rawformfields/fetchWoonbehoefteRawFormFields';
 
 const MISSING_SOURCE_WARNING = 'Primaire bron ontbreekt of heeft een bronconflict.';
@@ -20,17 +21,25 @@ function booleanLabel(value: boolean | undefined): string {
 
 /**
  * entries must already be filtered and sorted identically to the overview; this only maps them to export
- * rows. rawFormFieldsByCaseReference is empty unless includeAllFormFields was on for this report.
+ * rows. rawFormFieldsByCaseReference/attachmentFilenamesByCaseReference are empty unless their report
+ * option was on.
  */
 export function buildWoonbehoefteReportRows(
   entries: WoonbehoefteCaseWithSource[],
   rawFormFieldsByCaseReference: Map<string, RawFormFieldsOutcome> = new Map(),
+  attachmentFilenamesByCaseReference: Map<string, AttachmentFilenamesOutcome> = new Map(),
 ): WoonbehoefteReportRow[] {
-  return entries.map((entry) => buildRow(entry, rawFormFieldsByCaseReference.get(entry.woonbehoefteCase.caseReference)));
+  return entries.map((entry) => buildRow(
+    entry,
+    rawFormFieldsByCaseReference.get(entry.woonbehoefteCase.caseReference),
+    attachmentFilenamesByCaseReference.get(entry.woonbehoefteCase.caseReference),
+  ));
 }
 
 function buildRow(
-  { woonbehoefteCase: c, source, hasSourceConflict }: WoonbehoefteCaseWithSource, rawOutcome?: RawFormFieldsOutcome,
+  { woonbehoefteCase: c, source, hasSourceConflict }: WoonbehoefteCaseWithSource,
+  rawOutcome?: RawFormFieldsOutcome,
+  attachmentOutcome?: AttachmentFilenamesOutcome,
 ): WoonbehoefteReportRow {
   const a = c.assessment;
   const readiness = a.assessedProjectReadiness;
@@ -96,9 +105,11 @@ function buildRow(
     kovaLabel: booleanLabel(source?.hasKova),
 
     rawFormFields: rawOutcome?.fields,
+    attachmentFilenamesText: attachmentOutcome?.filenamesText ?? '',
     sourceWarning: [
       hasSourceConflict || !source ? MISSING_SOURCE_WARNING : undefined,
       rawOutcome?.warning,
+      attachmentOutcome?.warning,
     ].filter((warning): warning is string => Boolean(warning)).join('\n'),
   };
 }

@@ -1,4 +1,7 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { collectWoonbehoefteAttachmentReferences } from './attachments/collectWoonbehoefteAttachmentReferences';
+import { fetchWoonbehoefteAttachmentFilenames } from './attachments/fetchWoonbehoefteAttachmentFilenames';
+import { AttachmentFilenamesOutcome, buildAttachmentFilenamesOutcome } from './attachments/WoonbehoefteReportAttachments';
 import { WoonbehoefteReport } from './domain/WoonbehoefteReport';
 import { writeWoonbehoefteReportExcel } from './excel/WoonbehoefteExcelWriter';
 import { matchesReportFilter } from './filters/WoonbehoefteReportFilter';
@@ -11,6 +14,7 @@ import { AuditTrail } from '../../../shared/audit/AuditTrail';
 import { recordAudit } from '../../../shared/audit/recordAudit';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
+import { AdditionalEvidenceSourceCacheStore } from '../additional-evidence/source/AdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
 import { compareByRegistrationAtDesc, joinCasesWithSources } from '../overview/WoonbehoefteOverviewViewModel';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
@@ -18,6 +22,7 @@ import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheS
 export interface WoonbehoefteExcelWorkerDependencies {
   caseRepository: WoonbehoefteCaseRepository;
   sourceCacheStore: WoonbehoefteSourceCacheStore;
+  additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore;
   openZaakClient: OpenZaakClient;
   s3Client: S3Client;
   reportStore: WoonbehoefteReportStore;
@@ -36,10 +41,9 @@ function storageKeyFor(reportId: string): string {
 
 /**
  * Drives one report from a conditional QUEUED->BUILDING claim to a final status. Reads Cases and the
- * primary source cache, never Objects. Open Zaak is only called when includeAllFormFields is on, and only
- * for the primary CSV of each matched case, never document content otherwise.
- * includeAttachmentFilenames is read from the report but not honoured yet - a report requested with it on
- * still gets no attachment filenames.
+ * source cache (both the primary and, when includeAttachmentFilenames is on, the Additional Evidence
+ * partition), never Objects. Open Zaak is only called when includeAllFormFields or includeAttachmentFilenames
+ * is on, and only for what each option needs, never for document content otherwise.
  */
 export async function runWoonbehoefteExcelReport(
   reportId: string, deps: WoonbehoefteExcelWorkerDependencies, isPastCutoff: () => boolean, correlationId: string,
@@ -82,8 +86,24 @@ export async function runWoonbehoefteExcelReport(
       }
     }
 
+    let attachmentFilenamesByCaseReference = new Map<string, AttachmentFilenamesOutcome>();
+    if (report.options.includeAttachmentFilenames) {
+      const referencesByCaseReference = await collectWoonbehoefteAttachmentReferences(deps.caseRepository, deps.additionalSourceCacheStore, entries);
+      const allReferences = [...referencesByCaseReference.values()].flatMap((caseReferences) => caseReferences.references);
+      const filenamesByDocumentId = await fetchWoonbehoefteAttachmentFilenames(deps.openZaakClient, allReferences, WORKER_ACTOR);
+      attachmentFilenamesByCaseReference = new Map(
+        [...referencesByCaseReference.entries()].map(([caseReference, caseReferences]) => (
+          [caseReference, buildAttachmentFilenamesOutcome(caseReferences, filenamesByDocumentId)]
+        )),
+      );
+      if (isPastCutoff()) {
+        await cutoff(report, deps, correlationId);
+        return;
+      }
+    }
+
     phase = 'EXCEL_ERROR';
-    const rows = buildWoonbehoefteReportRows(entries, rawFormFieldsByCaseReference);
+    const rows = buildWoonbehoefteReportRows(entries, rawFormFieldsByCaseReference, attachmentFilenamesByCaseReference);
     const warningCount = rows.filter((row) => row.sourceWarning).length;
     const excelBuffer = await writeWoonbehoefteReportExcel(rows);
     if (isPastCutoff()) {
