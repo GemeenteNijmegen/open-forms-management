@@ -1,5 +1,6 @@
 import writeXlsxFile from 'write-excel-file/node';
 import type { Cell, Row } from 'write-excel-file/node';
+import { collectRawFormFieldHeaders, serializeRawFormFieldValue } from '../rawformfields/WoonbehoefteRawFormFields';
 import { WoonbehoefteReportRow } from '../reportbuilder/WoonbehoefteReportRow';
 
 const TEXT_FORMAT = '@';
@@ -81,29 +82,54 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'Categorie collectieve woonvorm', width: 20, cell: (row) => textCell(row.collectiveHousingCategory) },
   { header: 'Collectieve voorzieningen', width: 14, cell: (row) => textCell(row.collectiveFacilitiesLabel) },
   { header: 'KOVA', width: 10, cell: (row) => textCell(row.kovaLabel) },
-
-  // H. Laatste kolom (F/G volgen in latere epics, altijd vóór deze kolom)
-  { header: 'Bronwaarschuwing', width: 40, wrap: true, cell: (row) => textCell(row.sourceWarning, true) },
 ];
 
-function headerRow(): Row {
-  return FIXED_COLUMNS.map((column): Cell => ({ value: column.header, type: String, fontWeight: 'bold' }));
+// H. Laatste kolom, altijd na de vaste en de dynamische formulierveldkolommen.
+const BRONWAARSCHUWING_COLUMN: ColumnDef = {
+  header: 'Bronwaarschuwing', width: 40, wrap: true, cell: (row) => textCell(row.sourceWarning, true),
+};
+
+const RAW_FORM_FIELD_COLUMN_WIDTH = 30;
+
+function rawFormFieldRows(rows: WoonbehoefteReportRow[]) {
+  return rows.map((row) => row.rawFormFields).filter((fields): fields is NonNullable<typeof fields> => Boolean(fields));
 }
 
-function dataRow(row: WoonbehoefteReportRow): Row {
-  return FIXED_COLUMNS.map((column) => column.cell(row));
+/** One dynamic column per unique raw CSV header seen across the whole report, deterministic first-seen order. */
+function buildRawFormFieldColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
+  const headers = collectRawFormFieldHeaders(rawFormFieldRows(rows));
+  return headers.map((header): ColumnDef => ({
+    header: `Formulier - ${header}`,
+    width: RAW_FORM_FIELD_COLUMN_WIDTH,
+    wrap: true,
+    cell: (row) => textCell(serializeRawFormFieldValue(row.rawFormFields?.values[header] ?? ''), true),
+  }));
+}
+
+function buildColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
+  return [...FIXED_COLUMNS, ...buildRawFormFieldColumns(rows), BRONWAARSCHUWING_COLUMN];
+}
+
+function headerRow(columns: ColumnDef[]): Row {
+  return columns.map((column): Cell => ({ value: column.header, type: String, fontWeight: 'bold' }));
+}
+
+function dataRow(row: WoonbehoefteReportRow, columns: ColumnDef[]): Row {
+  return columns.map((column) => column.cell(row));
 }
 
 /** The exact cell data writeWoonbehoefteReportExcel hands to write-excel-file, exposed so tests can check cell types/values directly. */
 export function buildWoonbehoefteReportSheetData(rows: WoonbehoefteReportRow[]): Row[] {
-  return [headerRow(), ...rows.map(dataRow)];
+  const columns = buildColumns(rows);
+  return [headerRow(columns), ...rows.map((row) => dataRow(row, columns))];
 }
 
 /** Writes the full Woonbehoefte report as an XLSX Buffer. Never touches S3; that's the caller's job. */
 export async function writeWoonbehoefteReportExcel(rows: WoonbehoefteReportRow[]): Promise<Buffer> {
-  const data = buildWoonbehoefteReportSheetData(rows);
-  const columns = FIXED_COLUMNS.map((column) => ({ width: column.width }));
+  const columns = buildColumns(rows);
+  const data = [headerRow(columns), ...rows.map((row) => dataRow(row, columns))];
 
-  const file = writeXlsxFile(data, { sheet: 'Woonbehoefte-overzicht', stickyRowsCount: 1, columns });
+  const columnWidths = columns.map((column) => ({ width: column.width }));
+  const file = writeXlsxFile(data, { sheet: 'Woonbehoefte-overzicht', stickyRowsCount: 1, columns: columnWidths });
   return file.toBuffer();
 }

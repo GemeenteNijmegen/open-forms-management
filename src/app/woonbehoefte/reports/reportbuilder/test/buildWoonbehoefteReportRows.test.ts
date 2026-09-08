@@ -134,4 +134,41 @@ describe('buildWoonbehoefteReportRows', () => {
 
     expect(row.submittedStartDate).toBe('01-03-2028');
   });
+
+  it('attaches the raw form fields for a case when a successful fetch outcome is given', () => {
+    const entry: WoonbehoefteCaseWithSource = {
+      woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-7' }),
+      source: source({ caseReference: 'OF-7' }),
+    };
+    const rawFormFields = new Map([['OF-7', { fields: { headers: ['projectNaam'], values: { projectNaam: 'Project Rivierzicht' } } }]]);
+
+    const [row] = buildWoonbehoefteReportRows([entry], rawFormFields);
+
+    expect(row.rawFormFields?.values.projectNaam).toBe('Project Rivierzicht');
+    expect(row.sourceWarning).toBe('');
+  });
+
+  it('appends a raw form field fetch warning on its own line, alongside an existing Bronwaarschuwing', () => {
+    const entry: WoonbehoefteCaseWithSource = { woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-8' }), source: undefined };
+    const rawFormFields = new Map([['OF-8', { warning: 'Originele formulierdata kon niet worden geladen.' }]]);
+
+    const [row] = buildWoonbehoefteReportRows([entry], rawFormFields);
+
+    expect(row.rawFormFields).toBeUndefined();
+    expect(row.sourceWarning.split('\n')).toHaveLength(2);
+    expect(row.sourceWarning).toContain('bronconflict');
+    expect(row.sourceWarning).toContain('formulierdata kon niet worden geladen');
+  });
+
+  it('leaves rawFormFields undefined and no extra warning when the option was off (empty map)', () => {
+    const entry: WoonbehoefteCaseWithSource = {
+      woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-9' }),
+      source: source({ caseReference: 'OF-9' }),
+    };
+
+    const [row] = buildWoonbehoefteReportRows([entry]);
+
+    expect(row.rawFormFields).toBeUndefined();
+    expect(row.sourceWarning).toBe('');
+  });
 });

@@ -1,3 +1,5 @@
+import { WoonbehoefteRawFormRow } from '../rawformfields/WoonbehoefteRawFormFields';
+
 /**
  * One case = one Excel row, fixed columns only (sections A-E, H of 04_REPORT_DATA_AND_COLUMNS.md).
  * Label fields are pre-formatted display strings (reusing the same central label maps as the rest of the
@@ -60,6 +62,9 @@ export interface WoonbehoefteReportRow {
   collectiveHousingCategory: string;
   collectiveFacilitiesLabel: string;
   kovaLabel: string;
+
+  /** Only set when includeAllFormFields is on and the fetch/parse succeeded for this case. */
+  rawFormFields?: WoonbehoefteRawFormRow;
 
   /** Always present, usually empty. Multiple warnings share one cell, one per line. */
   sourceWarning: string;

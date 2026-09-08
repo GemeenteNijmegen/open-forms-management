@@ -1,5 +1,6 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { AuditTrail } from '../../../../shared/audit/AuditTrail';
+import { OpenZaakClient } from '../../../../shared/clients/open-zaak/OpenZaakClient';
 import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
 import { WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
@@ -52,6 +53,9 @@ function source(overrides: Partial<WoonbehoefteSourceRecord> & { caseReference: 
     applicantType: 'INDIVIDUAL',
     attachments: [],
     cachedAt: '2026-08-20T10:15:00.000Z',
+    csvDocument: {
+      documentId: `doc-${overrides.caseReference}`, url: `https://open-zaak.example.invalid/csv/${overrides.caseReference}`, role: 'CSV',
+    },
     ...overrides,
   };
 }
@@ -74,6 +78,9 @@ function makeDeps(report: WoonbehoefteReport) {
     }),
   } as unknown as WoonbehoefteSourceCacheStore;
 
+  const getDocumentText = jest.fn().mockResolvedValue('projectNaam\n"Project Een"\n');
+  const openZaakClient = { getDocumentText } as unknown as OpenZaakClient;
+
   const s3Send = jest.fn().mockResolvedValue({});
   const s3Client = { send: s3Send } as unknown as S3Client;
 
@@ -90,10 +97,16 @@ function makeDeps(report: WoonbehoefteReport) {
   };
 
   const deps: WoonbehoefteExcelWorkerDependencies = {
-    caseRepository, sourceCacheStore, s3Client, auditTrail, bucketName: 'test-bucket', reportStore: store as unknown as WoonbehoefteReportStore,
+    caseRepository,
+    sourceCacheStore,
+    openZaakClient,
+    s3Client,
+    auditTrail,
+    bucketName: 'test-bucket',
+    reportStore: store as unknown as WoonbehoefteReportStore,
   };
 
-  return { deps, store, s3Send, auditRecord, caseRepository, sourceCacheStore };
+  return { deps, store, s3Send, auditRecord, caseRepository, sourceCacheStore, getDocumentText };
 }
 
 describe('runWoonbehoefteExcelReport', () => {
@@ -179,5 +192,49 @@ describe('runWoonbehoefteExcelReport', () => {
 
     expect(store.markReady).not.toHaveBeenCalled();
     expect(store.markFailed).toHaveBeenCalledWith('report-1', 'STORAGE_ERROR');
+  });
+
+  it('never calls Open Zaak when includeAllFormFields is off', async () => {
+    const { deps, getDocumentText } = makeDeps(makeReport());
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(getDocumentText).not.toHaveBeenCalled();
+  });
+
+  it('fetches the primary CSV for every matched case when includeAllFormFields is on', async () => {
+    const report = makeReport({ options: { includeAllFormFields: true, includeAttachmentFilenames: false } });
+    const { deps, getDocumentText, store } = makeDeps(report);
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(getDocumentText).toHaveBeenCalledTimes(2);
+    expect(store.markReady).toHaveBeenCalledWith('report-1', 'reports/report-1.xlsx', 2, 0);
+  });
+
+  it('turns a raw form field fetch failure into a Bronwaarschuwing warning, but still finishes READY', async () => {
+    const report = makeReport({ options: { includeAllFormFields: true, includeAttachmentFilenames: false } });
+    const { deps, getDocumentText, store } = makeDeps(report);
+    getDocumentText.mockRejectedValueOnce(new Error('Open Zaak unavailable'));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(store.markReady).toHaveBeenCalledWith('report-1', 'reports/report-1.xlsx', 2, 1);
+  });
+
+  it('checks the cutoff after the raw form field fetch phase too, marking TOO_LARGE instead of uploading', async () => {
+    const report = makeReport({ options: { includeAllFormFields: true, includeAttachmentFilenames: false } });
+    const { deps, s3Send, store } = makeDeps(report);
+    let callCount = 0;
+    const isPastCutoff = () => {
+      callCount += 1;
+      // false for the two earlier checks (before fetch, after cases/source read), true once the raw-field fetch is done.
+      return callCount > 2;
+    };
+
+    await runWoonbehoefteExcelReport('report-1', deps, isPastCutoff, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markTooLarge).toHaveBeenCalledWith('report-1');
   });
 });

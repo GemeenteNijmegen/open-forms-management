@@ -9,6 +9,7 @@ import { logger } from '../../../observability/Logger';
 import { bindRequestLogging, resetRequestLogging } from '../../../observability/RequestLogging';
 import { xRayTraceId } from '../../../observability/xRayTraceId';
 import { createAuditTrail } from '../../../shared/audit/createAuditTrail';
+import { getOpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClientFactory';
 import { createWoonbehoefteCaseRepository } from '../cases/createWoonbehoefteCaseRepository';
 import { createWoonbehoefteSourceCacheStore } from '../source/createWoonbehoefteSourceCacheStore';
 
@@ -30,10 +31,11 @@ export async function handler(event: WoonbehoefteExcelWorkerEvent, context: Cont
   bindRequestLogging(context);
   try {
     const env = environmentVariables(['WOONBEHOEFTE_REPORTS_BUCKET'] as const);
+    const openZaakClient = await getOpenZaakClient();
 
     await runWoonbehoefteExcelReport(
       event.reportId,
-      { caseRepository, sourceCacheStore, s3Client, reportStore, auditTrail, bucketName: env.WOONBEHOEFTE_REPORTS_BUCKET },
+      { caseRepository, sourceCacheStore, openZaakClient, s3Client, reportStore, auditTrail, bucketName: env.WOONBEHOEFTE_REPORTS_BUCKET },
       () => context.getRemainingTimeInMillis() <= CUTOFF_SAFETY_MARGIN_MS,
       xRayTraceId(),
     );

@@ -6,6 +6,7 @@ import {
 import { TernaryAssessment } from '../../domain/WoonbehoefteCase';
 import { formatDutchDateTime, formatPeriodLabel, periodMonth, periodYear } from '../../domain/WoonbehoefteFormatting';
 import { WoonbehoefteCaseWithSource } from '../../overview/WoonbehoefteOverviewViewModel';
+import { RawFormFieldsOutcome } from '../rawformfields/fetchWoonbehoefteRawFormFields';
 
 const MISSING_SOURCE_WARNING = 'Primaire bron ontbreekt of heeft een bronconflict.';
 
@@ -17,12 +18,20 @@ function booleanLabel(value: boolean | undefined): string {
   return value === undefined ? '' : (value ? 'Ja' : 'Nee');
 }
 
-/** entries must already be filtered and sorted identically to the overview; this only maps them to export rows. */
-export function buildWoonbehoefteReportRows(entries: WoonbehoefteCaseWithSource[]): WoonbehoefteReportRow[] {
-  return entries.map(buildRow);
+/**
+ * entries must already be filtered and sorted identically to the overview; this only maps them to export
+ * rows. rawFormFieldsByCaseReference is empty unless includeAllFormFields was on for this report.
+ */
+export function buildWoonbehoefteReportRows(
+  entries: WoonbehoefteCaseWithSource[],
+  rawFormFieldsByCaseReference: Map<string, RawFormFieldsOutcome> = new Map(),
+): WoonbehoefteReportRow[] {
+  return entries.map((entry) => buildRow(entry, rawFormFieldsByCaseReference.get(entry.woonbehoefteCase.caseReference)));
 }
 
-function buildRow({ woonbehoefteCase: c, source, hasSourceConflict }: WoonbehoefteCaseWithSource): WoonbehoefteReportRow {
+function buildRow(
+  { woonbehoefteCase: c, source, hasSourceConflict }: WoonbehoefteCaseWithSource, rawOutcome?: RawFormFieldsOutcome,
+): WoonbehoefteReportRow {
   const a = c.assessment;
   const readiness = a.assessedProjectReadiness;
   const submittedReadiness = source?.submittedProjectReadiness;
@@ -86,6 +95,10 @@ function buildRow({ woonbehoefteCase: c, source, hasSourceConflict }: Woonbehoef
     collectiveFacilitiesLabel: booleanLabel(source?.hasCollectiveFacilities),
     kovaLabel: booleanLabel(source?.hasKova),
 
-    sourceWarning: hasSourceConflict || !source ? MISSING_SOURCE_WARNING : '',
+    rawFormFields: rawOutcome?.fields,
+    sourceWarning: [
+      hasSourceConflict || !source ? MISSING_SOURCE_WARNING : undefined,
+      rawOutcome?.warning,
+    ].filter((warning): warning is string => Boolean(warning)).join('\n'),
   };
 }

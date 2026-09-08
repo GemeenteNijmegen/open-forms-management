@@ -93,9 +93,53 @@ describe('buildWoonbehoefteReportSheetData', () => {
     expect(cellFor(header, dataRow, 'Projectrijpheid volgens aanvraag').value).toContain('Categorie 5');
   });
 
-  it('puts Bronwaarschuwing as the last column', () => {
-    const [header] = buildWoonbehoefteReportSheetData([baseRow()]);
+  it('puts Bronwaarschuwing as the last column, even with dynamic form field columns present', () => {
+    const rawFormFields = { headers: ['projectNaam'], values: { projectNaam: 'Project Een' } };
+    const [header] = buildWoonbehoefteReportSheetData([baseRow({ rawFormFields })]);
     expect((header[header.length - 1] as CellObject).value).toBe('Bronwaarschuwing');
+  });
+
+  it('adds a "Formulier - " prefixed column per raw CSV header, first-seen order across rows', () => {
+    const rows = [
+      baseRow({ rawFormFields: { headers: ['projectNaam', 'eanCodeOfAanmeldnummer'], values: { projectNaam: 'A', eanCodeOfAanmeldnummer: '1' } } }),
+      baseRow({ rawFormFields: { headers: ['eanCodeOfAanmeldnummer', 'nieuwVeld'], values: { eanCodeOfAanmeldnummer: '2', nieuwVeld: 'Nieuw' } } }),
+    ];
+
+    const [header] = buildWoonbehoefteReportSheetData(rows);
+    const headerValues = header.map((cell) => (cell as CellObject).value);
+
+    expect(headerValues).toEqual(expect.arrayContaining(['Formulier - projectNaam', 'Formulier - eanCodeOfAanmeldnummer', 'Formulier - nieuwVeld']));
+    const projectNaamIndex = headerValues.indexOf('Formulier - projectNaam');
+    const eanIndex = headerValues.indexOf('Formulier - eanCodeOfAanmeldnummer');
+    const nieuwVeldIndex = headerValues.indexOf('Formulier - nieuwVeld');
+    expect(projectNaamIndex).toBeLessThan(eanIndex);
+    expect(eanIndex).toBeLessThan(nieuwVeldIndex);
+  });
+
+  it('leaves a blank cell for a dynamic column when a row is missing that header', () => {
+    const rows = [
+      baseRow({ rawFormFields: { headers: ['projectNaam'], values: { projectNaam: 'A' } } }),
+      baseRow({ rawFormFields: { headers: ['eanCodeOfAanmeldnummer'], values: { eanCodeOfAanmeldnummer: '2' } } }),
+    ];
+
+    const [header, rowA, rowB] = buildWoonbehoefteReportSheetData(rows);
+    const projectNaamIndex = header.findIndex((cell) => (cell as CellObject).value === 'Formulier - projectNaam');
+
+    expect((rowA[projectNaamIndex] as CellObject).value).toBe('A');
+    expect((rowB[projectNaamIndex] as CellObject).value).toBe('');
+  });
+
+  it('adds no dynamic column at all when no row has raw form fields (option was off)', () => {
+    const [header] = buildWoonbehoefteReportSheetData([baseRow(), baseRow()]);
+    expect(header.some((cell) => String((cell as CellObject).value).startsWith('Formulier -'))).toBe(false);
+  });
+
+  it('never turns a raw form field value into a Formula cell either', () => {
+    const rawFormFields = { headers: ['projectSpecifiekeToelichting'], values: { projectSpecifiekeToelichting: '=DIT-MAG-GEEN-FORMULE-WORDEN' } };
+    const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({ rawFormFields })]);
+
+    const index = header.findIndex((cell) => (cell as CellObject).value === 'Formulier - projectSpecifiekeToelichting');
+    expect((dataRow[index] as CellObject)).toEqual({ value: '=DIT-MAG-GEEN-FORMULE-WORDEN', type: String, format: '@', wrap: true });
   });
 });
 

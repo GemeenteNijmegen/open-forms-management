@@ -2,12 +2,15 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { WoonbehoefteReport } from './domain/WoonbehoefteReport';
 import { writeWoonbehoefteReportExcel } from './excel/WoonbehoefteExcelWriter';
 import { matchesReportFilter } from './filters/WoonbehoefteReportFilter';
+import { fetchWoonbehoefteRawFormFields, RawFormFieldsOutcome } from './rawformfields/fetchWoonbehoefteRawFormFields';
 import { buildWoonbehoefteReportRows } from './reportbuilder/buildWoonbehoefteReportRows';
 import { WoonbehoefteReportStore } from './store/WoonbehoefteReportStore';
 import { errorReason } from '../../../observability/errorReason';
 import { logger } from '../../../observability/Logger';
 import { AuditTrail } from '../../../shared/audit/AuditTrail';
 import { recordAudit } from '../../../shared/audit/recordAudit';
+import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
+import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
 import { compareByRegistrationAtDesc, joinCasesWithSources } from '../overview/WoonbehoefteOverviewViewModel';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
@@ -15,11 +18,15 @@ import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheS
 export interface WoonbehoefteExcelWorkerDependencies {
   caseRepository: WoonbehoefteCaseRepository;
   sourceCacheStore: WoonbehoefteSourceCacheStore;
+  openZaakClient: OpenZaakClient;
   s3Client: S3Client;
   reportStore: WoonbehoefteReportStore;
   auditTrail: AuditTrail;
   bucketName: string;
 }
+
+// The worker calls Open Zaak on its own behalf, well after the medewerker's original request/session ended.
+const WORKER_ACTOR: EmployeeIdentity = { principalId: 'woonbehoefte-excel-worker' };
 
 type FailurePhase = 'DATA_READ_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
 
@@ -29,10 +36,10 @@ function storageKeyFor(reportId: string): string {
 
 /**
  * Drives one report from a conditional QUEUED->BUILDING claim to a final status. Reads Cases and the
- * primary source cache only, never Objects or Open Zaak: the standard export needs nothing else.
- * includeAllFormFields/includeAttachmentFilenames are read from the report but not honoured yet - a
- * report requested with either option on still gets the standard fixed-column export, no raw form fields
- * or attachment filenames.
+ * primary source cache, never Objects. Open Zaak is only called when includeAllFormFields is on, and only
+ * for the primary CSV of each matched case, never document content otherwise.
+ * includeAttachmentFilenames is read from the report but not honoured yet - a report requested with it on
+ * still gets no attachment filenames.
  */
 export async function runWoonbehoefteExcelReport(
   reportId: string, deps: WoonbehoefteExcelWorkerDependencies, isPastCutoff: () => boolean, correlationId: string,
@@ -66,8 +73,17 @@ export async function runWoonbehoefteExcelReport(
       return;
     }
 
+    let rawFormFieldsByCaseReference = new Map<string, RawFormFieldsOutcome>();
+    if (report.options.includeAllFormFields) {
+      rawFormFieldsByCaseReference = await fetchWoonbehoefteRawFormFields(deps.openZaakClient, entries, WORKER_ACTOR);
+      if (isPastCutoff()) {
+        await cutoff(report, deps, correlationId);
+        return;
+      }
+    }
+
     phase = 'EXCEL_ERROR';
-    const rows = buildWoonbehoefteReportRows(entries);
+    const rows = buildWoonbehoefteReportRows(entries, rawFormFieldsByCaseReference);
     const warningCount = rows.filter((row) => row.sourceWarning).length;
     const excelBuffer = await writeWoonbehoefteReportExcel(rows);
     if (isPastCutoff()) {
