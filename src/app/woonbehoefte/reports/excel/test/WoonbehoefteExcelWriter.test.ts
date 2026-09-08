@@ -94,6 +94,49 @@ describe('buildWoonbehoefteReportSheetData', () => {
     expect(cellFor(header, dataRow, 'Projectrijpheid volgens aanvraag').value).toContain('Categorie 5');
   });
 
+  it('groups everything about the start date together, then everything about the completion date', () => {
+    const [header] = buildWoonbehoefteReportSheetData([baseRow()]);
+    const headerValues = header.map((cell) => (cell as CellObject).value);
+
+    const startGroup = [
+      'Vastgestelde start jaar-maand', 'Vastgesteld startjaar', 'Vastgestelde startmaand', 'Ingediende startdatum',
+      'Toelichting vastgestelde start', 'Overeenkomst(en) als onderbouwing\nBewijs anterieure overeenkomst akkoord',
+      'Subsidie, woondeal of prestatieafspraken\nBewijs publiek besluit akkoord',
+    ];
+    const completionGroup = [
+      'Vastgestelde oplever jaar-maand', 'Vastgesteld opleverjaar', 'Vastgestelde oplevermaand', 'Ingediende opleverdatum',
+      'Toelichting vastgestelde oplevering',
+    ];
+
+    const startIndices = startGroup.map((label) => headerValues.indexOf(label));
+    const completionIndices = completionGroup.map((label) => headerValues.indexOf(label));
+
+    expect(startIndices).toEqual([...startIndices].sort((a, b) => a - b));
+    expect(completionIndices).toEqual([...completionIndices].sort((a, b) => a - b));
+    expect(Math.max(...startIndices)).toBeLessThan(Math.min(...completionIndices));
+  });
+
+  it('gives the two evidence columns a two-line header: the original form question, then the field name', () => {
+    const [header] = buildWoonbehoefteReportSheetData([baseRow()]);
+
+    const agreementHeader = header.find((cell) => (cell as CellObject).value === (
+      'Overeenkomst(en) als onderbouwing\nBewijs anterieure overeenkomst akkoord'
+    )) as CellObject;
+    expect(agreementHeader.wrap).toBe(true);
+
+    const publicDecisionHeader = header.find((cell) => (cell as CellObject).value === (
+      'Subsidie, woondeal of prestatieafspraken\nBewijs publiek besluit akkoord'
+    )) as CellObject;
+    expect(publicDecisionHeader.wrap).toBe(true);
+  });
+
+  it('wraps every column header, even a short one whose own data cells never wrap', () => {
+    const [header] = buildWoonbehoefteReportSheetData([baseRow()]);
+
+    const ofKenmerkHeader = header.find((cell) => (cell as CellObject).value === 'OF-kenmerk') as CellObject;
+    expect(ofKenmerkHeader.wrap).toBe(true);
+  });
+
   it('puts Bronwaarschuwing as the last column, even with dynamic form field columns present', () => {
     const rawFormFields = { headers: ['projectNaam'], values: { projectNaam: 'Project Een' } };
     const [header] = buildWoonbehoefteReportSheetData([baseRow({ rawFormFields })]);

@@ -26,12 +26,33 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'OF-kenmerk', width: 20, cell: (row) => textCell(row.caseReference) },
   { header: 'Projectnaam', width: 26, cell: (row) => textCell(row.projectName) },
   { header: 'Status', width: 22, cell: (row) => textCell(row.statusLabel) },
+
+  // Startdatum: vastgesteld, ingediend, toelichting en de twee bewijsvelden staan bewust bij elkaar.
   { header: 'Vastgestelde start jaar-maand', width: 18, cell: (row) => textCell(row.assessedStartPeriodLabel) },
   { header: 'Vastgesteld startjaar', width: 12, cell: (row) => numberCell(row.assessedStartYear) },
   { header: 'Vastgestelde startmaand', width: 12, cell: (row) => numberCell(row.assessedStartMonth) },
+  { header: 'Ingediende startdatum', width: 18, cell: (row) => textCell(row.submittedStartDate) },
+  { header: 'Toelichting vastgestelde start', width: 30, wrap: true, cell: (row) => textCell(row.assessedStartExplanation, true) },
+  {
+    header: 'Overeenkomst(en) als onderbouwing\nBewijs anterieure overeenkomst akkoord',
+    width: 28,
+    wrap: true,
+    cell: (row) => textCell(row.planningAgreementEvidenceApprovedLabel),
+  },
+  {
+    header: 'Subsidie, woondeal of prestatieafspraken\nBewijs publiek besluit akkoord',
+    width: 28,
+    wrap: true,
+    cell: (row) => textCell(row.planningPublicDecisionEvidenceApprovedLabel),
+  },
+
+  // Opleverdatum: zelfde opbouw als startdatum hierboven.
   { header: 'Vastgestelde oplever jaar-maand', width: 18, cell: (row) => textCell(row.assessedCompletionPeriodLabel) },
   { header: 'Vastgesteld opleverjaar', width: 12, cell: (row) => numberCell(row.assessedCompletionYear) },
   { header: 'Vastgestelde oplevermaand', width: 12, cell: (row) => numberCell(row.assessedCompletionMonth) },
+  { header: 'Ingediende opleverdatum', width: 18, cell: (row) => textCell(row.submittedCompletionDate) },
+  { header: 'Toelichting vastgestelde oplevering', width: 30, wrap: true, cell: (row) => textCell(row.assessedCompletionExplanation, true) },
+
   { header: 'Vastgestelde projectrijpheid categorie', width: 14, cell: (row) => numberCell(row.assessedProjectReadinessCategory) },
   { header: 'Vastgestelde projectrijpheid', width: 40, wrap: true, cell: (row) => textCell(row.assessedProjectReadinessLabel, true) },
   { header: 'Behandelaar', width: 24, cell: (row) => textCell(row.assigneeLabel) },
@@ -42,11 +63,7 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'Aanvraag compleet', width: 16, cell: (row) => textCell(row.applicationCompleteLabel) },
   { header: 'Bestuursverklaring akkoord', width: 16, cell: (row) => textCell(row.boardDeclarationApprovedLabel) },
   { header: 'KvK-uittreksel akkoord', width: 16, cell: (row) => textCell(row.chamberOfCommerceApprovedLabel) },
-  { header: 'Bewijs anterieure overeenkomst akkoord', width: 16, cell: (row) => textCell(row.planningAgreementEvidenceApprovedLabel) },
-  { header: 'Bewijs publiek besluit akkoord', width: 16, cell: (row) => textCell(row.planningPublicDecisionEvidenceApprovedLabel) },
   { header: 'Bewijs projectrijpheid akkoord', width: 16, cell: (row) => textCell(row.projectReadinessEvidenceApprovedLabel) },
-  { header: 'Toelichting vastgestelde start', width: 30, wrap: true, cell: (row) => textCell(row.assessedStartExplanation, true) },
-  { header: 'Toelichting vastgestelde oplevering', width: 30, wrap: true, cell: (row) => textCell(row.assessedCompletionExplanation, true) },
 
   // C. Check
   { header: 'Check gevraagd', width: 12, cell: (row) => textCell(row.checkRequestedLabel) },
@@ -72,9 +89,7 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'Bestaande Liander-aanvraag', width: 14, cell: (row) => textCell(row.existingLianderRequestLabel) },
   { header: 'EAN-code of aanmeldnummer', width: 20, cell: (row) => textCell(row.eanOrApplicationNumber) },
   { header: 'Totaal aantal woningen', width: 14, cell: (row) => numberCell(row.totalHomes) },
-  { header: 'Ingediende startdatum', width: 18, cell: (row) => textCell(row.submittedStartDate) },
   { header: 'Toelichting ingediende startdatum', width: 30, wrap: true, cell: (row) => textCell(row.startDateExplanation, true) },
-  { header: 'Ingediende opleverdatum', width: 18, cell: (row) => textCell(row.submittedCompletionDate) },
   { header: 'Projectrijpheid volgens aanvraag categorie', width: 14, cell: (row) => numberCell(row.submittedProjectReadinessCategory) },
   { header: 'Projectrijpheid volgens aanvraag', width: 40, wrap: true, cell: (row) => textCell(row.submittedProjectReadinessLabel, true) },
   { header: 'Type aanvrager', width: 18, cell: (row) => textCell(row.applicantTypeLabel) },
@@ -115,8 +130,9 @@ function buildColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
   return [...FIXED_COLUMNS, ...buildRawFormFieldColumns(rows), ATTACHMENTS_COLUMN, BRONWAARSCHUWING_COLUMN];
 }
 
+// Every header wraps, regardless of whether its own data cells do: long headers (like the two-line evidence ones) must never get cut off.
 function headerRow(columns: ColumnDef[]): Row {
-  return columns.map((column): Cell => ({ value: column.header, type: String, fontWeight: 'bold' }));
+  return columns.map((column): Cell => ({ value: column.header, type: String, fontWeight: 'bold', wrap: true }));
 }
 
 function dataRow(row: WoonbehoefteReportRow, columns: ColumnDef[]): Row {
