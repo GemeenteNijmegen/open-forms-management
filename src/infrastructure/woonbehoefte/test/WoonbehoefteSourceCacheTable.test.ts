@@ -17,8 +17,14 @@ describe('WoonbehoefteSourceCacheTable', () => {
     handler: 'index.handler',
     code: Code.fromInline('exports.handler = async () => {};'),
   });
+  const reportreader = new Function(stack, 'reportreader', {
+    runtime: Runtime.NODEJS_24_X,
+    handler: 'index.handler',
+    code: Code.fromInline('exports.handler = async () => {};'),
+  });
   sourceCacheTable.grantWorkerAccess(worker);
   sourceCacheTable.grantFrontendAccess(frontend);
+  sourceCacheTable.grantReportWorkerAccess(reportreader);
   const template = Template.fromStack(stack);
 
   it('creates exactly one table with pk/sk as its keys and no GSI', () => {
@@ -55,5 +61,15 @@ describe('WoonbehoefteSourceCacheTable', () => {
       .flatMap((statement: any) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action])));
     expect(actions).toEqual(expect.arrayContaining(['dynamodb:GetItem', 'dynamodb:BatchGetItem', 'dynamodb:Query', 'dynamodb:UpdateItem']));
     expect(actions).not.toEqual(expect.arrayContaining(['dynamodb:PutItem', 'dynamodb:Scan', 'dynamodb:DeleteItem']));
+  });
+
+  it('grants the Excel report worker only GetItem/BatchGetItem/Query, never a write', () => {
+    const policies = template.findResources('AWS::IAM::Policy', Match.objectLike({
+      Properties: { Roles: Match.arrayWith([Match.objectLike({ Ref: Match.stringLikeRegexp('reportreader') })]) },
+    }));
+    const actions = Object.values(policies).flatMap((policy: any) => policy.Properties.PolicyDocument.Statement
+      .flatMap((statement: any) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action])));
+    expect(actions).toEqual(expect.arrayContaining(['dynamodb:GetItem', 'dynamodb:BatchGetItem', 'dynamodb:Query']));
+    expect(actions).not.toEqual(expect.arrayContaining(['dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem']));
   });
 });

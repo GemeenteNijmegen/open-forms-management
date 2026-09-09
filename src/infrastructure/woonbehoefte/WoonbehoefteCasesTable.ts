@@ -48,4 +48,9 @@ export class WoonbehoefteCasesTable extends Construct {
       'dynamodb:ConditionCheckItem',
     );
   }
+
+  // The Excel report worker only ever reads: the ~400-case Scan for the export, Query for a case's source links. Never a write.
+  grantReportWorkerAccess(grantee: IGrantable): Grant {
+    return this.table.grant(grantee, 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan');
+  }
 }

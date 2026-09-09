@@ -22,6 +22,7 @@ export const REGISTERED_PERMISSION_RESOURCES: PermissionResourceDefinition[] = [
     actions: [
       { action: 'view', label: 'Bekijken' },
       { action: 'manage', label: 'Behandelen' },
+      { action: 'exceloverzicht', label: 'Excel-overzichten' },
     ],
     scopes: [],
   },

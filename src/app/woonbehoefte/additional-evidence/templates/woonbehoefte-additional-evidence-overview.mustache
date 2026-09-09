@@ -3,8 +3,9 @@
   <h1 class="utrecht-heading-2">Woonbehoefte</h1>
 
   <nav class="woonbehoefte-tabs" aria-label="Woonbehoeftenavigatie">
-    <a class="woonbehoefte-tabs__link" href="/woonbehoefte">Aanvragen</a>
-    <a class="woonbehoefte-tabs__link woonbehoefte-tabs__link--active" href="/woonbehoefte/additional-evidence" aria-current="page">Extra bewijzen</a>
+    {{#tabs}}
+    <a class="woonbehoefte-tabs__link{{#active}} woonbehoefte-tabs__link--active{{/active}}" href="{{href}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>
+    {{/tabs}}
   </nav>
 
   {{#refreshStarted}}

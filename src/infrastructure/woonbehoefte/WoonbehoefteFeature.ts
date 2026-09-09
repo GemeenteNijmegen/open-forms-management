@@ -5,6 +5,7 @@ import { StartingPosition, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import { WoonbehoefteAdditionalEvidenceFeature } from './additional-evidence/WoonbehoefteAdditionalEvidenceFeature';
+import { WoonbehoefteReportsFeature } from './reports/WoonbehoefteReportsFeature';
 import { WoonbehoefteCasesTable } from './WoonbehoefteCasesTable';
 import { WoonbehoefteCaseVersionsTable } from './WoonbehoefteCaseVersionsTable';
 import { applyWoonbehoefteDataSourceAccess } from './WoonbehoefteDataSourceAccess';
@@ -95,6 +96,16 @@ export class WoonbehoefteFeature extends Construct {
       sourceCacheTable,
       casesTable,
       temporaryDownloadsBucket,
+    });
+
+    new WoonbehoefteReportsFeature(this, 'reports-feature', {
+      managementApi: props.managementApi,
+      permissionsTable: props.permissionsTable,
+      auditTrailTable: props.auditTrailTable,
+      sessionsTable: props.sessionsTable,
+      configuration: props.configuration,
+      sourceCacheTable,
+      casesTable,
     });
 
     const caseVersionWorkerFunction = new WoonbehoefteCaseVersionWorkerFunction(this, 'case-version-worker-function', {

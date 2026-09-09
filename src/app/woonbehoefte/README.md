@@ -96,16 +96,20 @@ als een nieuwe versie (v7 terugzetten op een live v12 wordt v13, niet v7). Er is
 
 ## Permissions
 
-Resource `woonbehoefte`, acties `view` en `manage`, geen scopes. Zoals overal in deze applicatie:
+Resource `woonbehoefte`, acties `view`, `manage` en `exceloverzicht`, geen scopes. Zoals overal in deze
+applicatie:
 
 - `woonbehoefte:view` - lezen, zoeken, filteren, documenten downloaden;
 - `woonbehoefte:manage` - alles wat hierboven staat, plus verversen, claimen, status/beoordeling/aantekeningen/checks;
+- `woonbehoefte:exceloverzicht` - los recht voor de Excel-overzichten-tab (zie hieronder), staat los van
+  `view`/`manage`;
 - `woonbehoefte:*` - resource-admin, kan via de bestaande Gebruikers-pagina Woonbehoefte-rechten van
   andere medewerkers beheren;
 - `*:*` - blijft overal superadmin.
 
-De generieke `PermissionEvaluator` kent geen actiehiërarchie: `manage` impliceert technisch geen `view`.
-Een behandelaar krijgt daarom in de praktijk beide rechten.
+De generieke `PermissionEvaluator` kent geen actiehiërarchie: `manage` impliceert technisch geen `view`,
+en `exceloverzicht` impliceert geen van beide (en andersom). Een behandelaar krijgt daarom in de praktijk
+alle drie de rechten; een medewerker die alleen rapporten mag genereren krijgt alleen `exceloverzicht`.
 
 ## Structuur
 
@@ -125,7 +129,8 @@ src/app/woonbehoefte/
 ├── templates/         de twee Mustache-pagina's (overzicht, detail)
 ├── woonbehoefte.lambda.ts             route-dispatcher van de page Lambda
 ├── woonbehoefte-function.ts           door projen gegenereerde Lambda-wrapper
-└── additional-evidence/               "Extra bewijzen"-subfeature, zie hieronder
+├── additional-evidence/               "Extra bewijzen"-subfeature, zie hieronder
+└── reports/                           "Excel-overzichten"-subfeature, zie hieronder
 
 src/infrastructure/woonbehoefte/
 ├── WoonbehoefteFeature.ts             composition root: tabellen, Lambda's, IAM, routes
@@ -133,7 +138,8 @@ src/infrastructure/woonbehoefte/
 ├── WoonbehoefteCasesTable.ts
 ├── WoonbehoefteCaseVersionsTable.ts
 ├── WoonbehoefteDataSourceAccess.ts    eigen kopie van het Objects/Open Zaak-credentialpatroon
-└── additional-evidence/               nested feature, zie hieronder
+├── additional-evidence/               nested feature, zie hieronder
+└── reports/                           nested feature, zie hieronder
 ```
 
 `AppStack.ts` kent alleen `WoonbehoefteFeature` en geeft de gedeelde platformresources door
@@ -192,12 +198,53 @@ Ontkoppelen of opnieuw koppelen bestaat niet. Een workitem dat eenmaal Gekoppeld
 niet handmatig terug naar Nieuw of Onbekend. De sourcelink, de aantekening en de activity zijn allemaal
 append-only en worden nooit verwijderd.
 
+## Excel-overzichten (reports)
+
+Derde tab naast Aanvragen en Extra bewijzen. Elke medewerker met `woonbehoefte:exceloverzicht` kan een
+Excel-export van de werkvoorraad aanvragen, met dezelfde filters als het gewone overzicht en twee losse
+opties: alle ruwe formuliervelden uit de originele CSV, en/of de bestandsnamen van alle bijlagen (primair
+plus gekoppelde Extra bewijzen).
+
+Eigen page Lambda en eigen Excel-workerLambda, los van de primary- en Extra bewijzen-page Lambda's:
+
+- de page Lambda leest/schrijft alleen de reports-tabel en -bucket en mag de worker asynchroon aanroepen;
+  hij heeft bewust geen toegang tot Cases, de source-cache, Open Zaak of Objects. Startjaar is daarom een
+  vrij tekstveld op het aanvraagformulier in plaats van dynamische checkboxes per jaar zoals het gewone
+  overzicht: die zouden actuele casedata nodig hebben, wat deze isolatie zou doorbreken voor een klein
+  UI-gemak.
+- de Excel-workerLambda heeft alleen read-only toegang tot Cases en de source-cache (`GetItem`/`Query`/
+  `BatchGetItem`, geen enkele write) en optioneel Open Zaak, nooit Objects. Open Zaak wordt alleen
+  aangeroepen als een van de twee opties aanstaat: de primaire CSV opnieuw ophalen voor "alle
+  formuliervelden", of documentmetadata voor bestandsnamen bij "bestandsnamen bijlagen".
+
+Twee eigen resources, gescheiden van de Cases-/SourceCache-tabellen:
+
+Resource | Inhoud | Removal policy | Wie schrijft
+--- | --- | --- | ---
+Reports-tabel (DynamoDB) | reportId, filter/opties, status, requestedBy, storageKey, warningCount | `RETAIN`, PITR aan, 30 dagen TTL (`expiresAt`) | page Lambda (aanmaken/lijst/soft-delete), worker (status/voortgang)
+Reports-bucket (S3) | het gegenereerde .xlsx-bestand | 30 dagen lifecycle-expiratie | alleen de worker (Put); page Lambda alleen Get/Delete, geen List
+
+Lifecycle: QUEUED -> BUILDING -> READY/TOO_LARGE/FAILED -> DELETED (soft-delete, verwijdert ook het
+S3-object best-effort, faalt de delete zelf nooit als dat misgaat). Een gestagneerd rapport (worker
+gecrasht zonder statusupdate) herstelt zichzelf bij de eerstvolgende lijstweergave: QUEUED ouder dan 10
+minuten of BUILDING ouder dan 20 minuten wordt alsnog FAILED. De worker checkt zijn eigen resterende
+Lambda-tijd tussen elke fase (nooit halverwege) en stopt ruim vóór de 15 minuten harde Lambda-timeout.
+Een dossier waarvan de bron ontbreekt, of waarvan een optionele CSV/bijlage niet opgehaald kon worden,
+faalt nooit het hele rapport: dat dossier krijgt een Bronwaarschuwing-kolom en telt mee in `warningCount`,
+de rest van het rapport bouwt gewoon door.
+
+Audit: `WOONBEHOEFTE_EXCEL_REQUESTED`/`GENERATED`/`GENERATION_FAILED`/`DOWNLOADED`/`DELETED`. Mens-acties
+(aanvragen, downloaden, verwijderen) krijgen de daadwerkelijke medewerker als actor; het genereren zelf
+gebeurt door de worker, zonder gekoppelde medewerker-actor. Metadata bevat nooit filterinhoud, zoektekst,
+bestandsnamen of andere burgerdata, alleen `reportId` en tellingen (`caseCount`/`warningCount`/
+`failureReason`).
+
 ## Verwijderen
 
 Als de aanvraagronde is afgerond, is de feature in principe met een paar deletes te verwijderen:
 
 1. `src/AppStack.ts` - de `WoonbehoefteFeature`-invocation en de bijbehorende import verwijderen.
-2. `src/Statics.ts` - de drie `woonbehoefte*TableName`-constanten verwijderen.
+2. `src/Statics.ts` - de vier `woonbehoefte*TableName`-constanten verwijderen (inclusief de reports-tabel).
 3. `src/shared/navigation/RegisteredFeatures.ts` - het `woonbehoefte`-item verwijderen.
 4. `src/app/permissions/catalog/RegisteredPermissionResources.ts` - de `woonbehoefte`-resource verwijderen.
 5. `src/shared/audit/AuditEvent.ts` - de `WOONBEHOEFTE_*`-eventtypes verwijderen (of laten staan als
@@ -208,13 +255,15 @@ Als de aanvraagronde is afgerond, is de feature in principe met een paar deletes
 7. De `.woonbehoefte-*`-CSS-blokken onderaan `src/app/static-resources/static/styles/screen.css`
    verwijderen.
 8. `src/app/woonbehoefte/`, `src/infrastructure/woonbehoefte/` en `src/preview/fixtures/woonbehoefte.ts`
-   volledig verwijderen.
+   volledig verwijderen (dit neemt de `reports/`-subfeatures in beide bomen vanzelf mee).
 9. `npx projen build` draaien zodat de gegenereerde `assets/app/woonbehoefte/**` en Lambda-wrapper-code
    verdwijnen.
-10. De **Cases-tabel** en de **CaseVersions-tabel** hebben beide `RemovalPolicy.RETAIN`: ze verdwijnen niet
-    automatisch bij een deploy na verwijdering van de CDK-constructs. Exporteer de inhoud van allebei (of
-    besluit bewust dat bewaren niet nodig is) en verwijder ze daarna handmatig. De SourceCache-tabel is
-    reproduceerbaar en mag volgens de huidige policy gewoon verdwijnen.
+10. De **Cases-tabel**, de **CaseVersions-tabel** en de **reports-tabel** hebben alle drie
+    `RemovalPolicy.RETAIN`; de **reports-bucket** heeft geen expliciete removal policy, wat bij een S3
+    Bucket ook op RETAIN neerkomt. Geen van deze verdwijnt automatisch bij een deploy na verwijdering van
+    de CDK-constructs. Exporteer de inhoud (of besluit bewust dat bewaren niet nodig is - een report is
+    sowieso al na 30 dagen leeg via de eigen TTL/lifecycle) en verwijder ze daarna handmatig. De
+    SourceCache-tabel is reproduceerbaar en mag volgens de huidige policy gewoon verdwijnen.
 
 Stap 9 en 10 zijn destructief/vereisen een bewuste keuze en horen bij een losse, expliciete
 opruimactie, niet bij een gewone code-PR.

@@ -11,9 +11,11 @@ import { visiblePermissionsFeature } from '../../permissions/PermissionsNavigati
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 import overviewTemplate from '../templates/woonbehoefte-overview.mustache';
+import { buildWoonbehoefteTabs } from '../WoonbehoefteTabs';
 
 const WOONBEHOEFTE_VIEW_CHECK = { resource: 'woonbehoefte', action: 'view' } as const;
 const WOONBEHOEFTE_MANAGE_CHECK = { resource: 'woonbehoefte', action: 'manage' } as const;
+const WOONBEHOEFTE_EXCELOVERZICHT_CHECK = { resource: 'woonbehoefte', action: 'exceloverzicht' } as const;
 
 /** Handles `GET /woonbehoefte`: the werkvoorraad overview. A normal read, so no ACCESS_GRANTED audit. */
 export class WoonbehoefteOverviewHandler {
@@ -33,6 +35,7 @@ export class WoonbehoefteOverviewHandler {
     }
 
     const canManage = context.evaluator.evaluate(WOONBEHOEFTE_MANAGE_CHECK) === 'ALLOW';
+    const canExcelOverview = context.evaluator.evaluate(WOONBEHOEFTE_EXCELOVERZICHT_CHECK) === 'ALLOW';
     const filter = resolveWoonbehoefteOverviewFilter(queryStringParameters);
     // Every viewer reaches this line with at least woonbehoefte:view, and refresh (unlike case mutations) only needs that.
     const csrf = issueCsrfToken();
@@ -55,7 +58,7 @@ export class WoonbehoefteOverviewHandler {
       {
         ...viewModel,
         canManage,
-        isAanvragenTab: true,
+        tabs: buildWoonbehoefteTabs('aanvragen', true, canExcelOverview),
         csrfToken: csrf.value,
         isRefreshing: refreshState?.status === 'REFRESHING',
         refreshStarted: queryStringParameters?.refresh === 'started',

@@ -23,7 +23,11 @@ export class AuthRequestHandler {
   constructor(private readonly props: AuthRequestHandlerProps) { }
 
   async handleRequest(): Promise<ApiGatewayV2Response> {
-    const session = new Session(this.props.cookies ?? '', this.props.dynamoDBClient);
+    const session = new Session(
+      this.props.cookies ?? '',
+      this.props.dynamoDBClient,
+      { ttlInMinutes: 60 },
+    );
     await session.init();
     if (session.sessionId === false) {
       logger.info('OIDC callback received without a pending login session');

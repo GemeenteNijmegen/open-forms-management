@@ -60,6 +60,8 @@ describe('AppStack authentication and routing wiring', () => {
     'src/app/permissions/permissions.lambda.ts',
     'src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts',
     'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
+    'src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts',
+    'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -71,7 +73,7 @@ describe('AppStack authentication and routing wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(13);
+    expect(Object.keys(logGroups)).toHaveLength(15);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {
@@ -212,6 +214,73 @@ describe('AppStack authentication and routing wiring', () => {
       'POST /woonbehoefte/additional-evidence/{submissionId}/status',
       'POST /woonbehoefte/additional-evidence/{submissionId}/link',
       'GET /woonbehoefte/additional-evidence/{submissionId}/documents/{documentId}',
+    ]));
+  });
+
+  it('gives the Excel report worker a 900s timeout, separate from the 10s HTTP-facing reports page function', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts',
+      Timeout: 900,
+    }));
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts',
+      Timeout: 10,
+    }));
+  });
+
+  // The worker never gets Objects credentials: it reads Cases/source-cache, not Objects. The page function
+  // needs neither - it only reads/writes the reports table and bucket, and invokes the worker.
+  it('gives the Excel report worker only Open Zaak access, never Objects, and the page function neither', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
+      Description: 'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts',
+      Environment: Match.objectLike({
+        Variables: Match.objectLike({
+          OPEN_ZAAK_DOCUMENTEN_BASE_URL: Match.anyValue(),
+          OPEN_ZAAK_CREDENTIALS_SECRET_NAME: Match.anyValue(),
+        }),
+      }),
+    }));
+    const workerFunctions = template.findResources('AWS::Lambda::Function', Match.objectLike({
+      Properties: { Description: 'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts' },
+    }));
+    const [workerFunction]: any[] = Object.values(workerFunctions);
+    const workerEnvironmentKeys = Object.keys(workerFunction.Properties.Environment.Variables);
+    expect(workerEnvironmentKeys).not.toContain('OBJECTS_BASE_URL');
+    expect(workerEnvironmentKeys).not.toContain('OBJECTS_CREDENTIALS_SECRET_NAME');
+
+    const pageFunctions = template.findResources('AWS::Lambda::Function', Match.objectLike({
+      Properties: { Description: 'src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts' },
+    }));
+    const [pageFunction]: any[] = Object.values(pageFunctions);
+    const pageEnvironmentKeys = Object.keys(pageFunction.Properties.Environment.Variables);
+    expect(pageEnvironmentKeys).not.toContain('OBJECTS_BASE_URL');
+    expect(pageEnvironmentKeys).not.toContain('OPEN_ZAAK_DOCUMENTEN_BASE_URL');
+  });
+
+  it('only lets the reports page function invoke the Excel report worker', () => {
+    const pageActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts'));
+    expect(pageActions).toContain('lambda:InvokeFunction');
+
+    const workerActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts'));
+    expect(workerActions).not.toContain('lambda:InvokeFunction');
+  });
+
+  // The table's own read-only grant is covered by WoonbehoefteCasesTable.test.ts/WoonbehoefteSourceCacheTable.test.ts;
+  // this only checks that the actual worker Lambda in the stack never gets a write action on either table.
+  it('never gives the Excel report worker a write action on Cases or the source-cache table', () => {
+    const workerActions = actionsGrantedToRole(template, roleLogicalIdFor(template, 'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts'));
+    expect(workerActions).not.toEqual(expect.arrayContaining([
+      'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:TransactWriteItems',
+    ]));
+  });
+
+  it('registers every Excel-overzichten route', () => {
+    const routeKeys = Object.values(template.findResources('AWS::ApiGatewayV2::Route')).map((route: any) => route.Properties.RouteKey);
+    expect(routeKeys).toEqual(expect.arrayContaining([
+      'GET /woonbehoefte/overzichten',
+      'POST /woonbehoefte/overzichten',
+      'GET /woonbehoefte/overzichten/{reportId}/download',
+      'POST /woonbehoefte/overzichten/{reportId}/delete',
     ]));
   });
 

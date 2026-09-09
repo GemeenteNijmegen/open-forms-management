@@ -17,8 +17,14 @@ describe('WoonbehoefteCasesTable', () => {
     handler: 'index.handler',
     code: Code.fromInline('exports.handler = async () => {};'),
   });
+  const reportreader = new Function(stack, 'reportreader', {
+    runtime: Runtime.NODEJS_24_X,
+    handler: 'index.handler',
+    code: Code.fromInline('exports.handler = async () => {};'),
+  });
   casesTable.grantWorkerAccess(worker);
   casesTable.grantFrontendAccess(frontend);
+  casesTable.grantReportWorkerAccess(reportreader);
   const template = Template.fromStack(stack);
 
   it('creates exactly one table with pk/sk as its keys, PITR enabled and no GSI', () => {
@@ -60,5 +66,17 @@ describe('WoonbehoefteCasesTable', () => {
       'dynamodb:ConditionCheckItem',
     ]));
     expect(actions).not.toEqual(expect.arrayContaining(['dynamodb:DeleteItem']));
+  });
+
+  it('grants the Excel report worker only read actions: GetItem/Query/Scan, never a write', () => {
+    const policies = template.findResources('AWS::IAM::Policy', Match.objectLike({
+      Properties: { Roles: Match.arrayWith([Match.objectLike({ Ref: Match.stringLikeRegexp('reportreader') })]) },
+    }));
+    const actions = Object.values(policies).flatMap((policy: any) => policy.Properties.PolicyDocument.Statement
+      .flatMap((statement: any) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action])));
+    expect(actions).toEqual(expect.arrayContaining(['dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan']));
+    expect(actions).not.toEqual(expect.arrayContaining([
+      'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:TransactWriteItems',
+    ]));
   });
 });

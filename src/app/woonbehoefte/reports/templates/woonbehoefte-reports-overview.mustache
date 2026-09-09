@@ -1,0 +1,144 @@
+{{>header}}
+<main id="main-content" class="woonbehoefte-overview">
+  <h1 class="utrecht-heading-2">Woonbehoefte - Excel-overzichten</h1>
+
+  <nav class="woonbehoefte-tabs" aria-label="Woonbehoeftenavigatie">
+    {{#tabs}}
+    <a class="woonbehoefte-tabs__link{{#active}} woonbehoefte-tabs__link--active{{/active}}" href="{{href}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>
+    {{/tabs}}
+  </nav>
+
+  <p class="utrecht-paragraph"><strong>Download alleen als dat nodig is.</strong> Een Excel-overzicht bevat persoonsgegevens. Werk waar mogelijk met de gegevens in deze beheeromgeving.</p>
+
+  {{#message}}
+  <div class="utrecht-alert utrecht-alert--success" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{message}}</p>
+    </div>
+  </div>
+  {{/message}}
+
+  <details class="woonbehoefte-filter">
+    <summary class="utrecht-form-label">Overzicht maken</summary>
+    <form method="post" action="/woonbehoefte/overzichten">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="search">Zoeken op OF-nummer, project of contactgegevens</label>
+        <input type="text" class="utrecht-textbox" id="search" name="search">
+      </div>
+
+      <fieldset>
+        <legend class="utrecht-form-label">Status</legend>
+        {{#statusOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-status-{{value}}" name="status" value="{{value}}">
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-status-{{value}}">{{label}}</label>
+        </div>
+        {{/statusOptions}}
+      </fieldset>
+
+      <fieldset>
+        <legend class="utrecht-form-label">Type aanvrager</legend>
+        {{#applicantTypeOptions}}
+        <div class="utrecht-form-field utrecht-form-field--checkbox">
+          <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-applicanttype-{{value}}" name="applicantType" value="{{value}}">
+          <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-applicanttype-{{value}}">{{label}}</label>
+        </div>
+        {{/applicantTypeOptions}}
+      </fieldset>
+
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="report-start-year">Vastgesteld startjaar (komma-gescheiden, bijvoorbeeld 2028, 2029)</label>
+        <input type="text" class="utrecht-textbox" id="report-start-year" name="startYear">
+      </div>
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-start-year-none" name="startYear" value="nog-niet-vastgesteld">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-start-year-none">Nog niet vastgesteld</label>
+      </div>
+
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="report-assignment">Behandelaar</label>
+        <select class="utrecht-select utrecht-select--html-select" id="report-assignment" name="assignment">
+          <option value="all">Alle</option>
+          <option value="unclaimed">Ongeclaimd</option>
+        </select>
+      </div>
+
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-check-requested" name="check" value="requested">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-check-requested">Alleen check gevraagd</label>
+      </div>
+
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-include-all-form-fields" name="includeAllFormFields">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-include-all-form-fields">Ook alle formuliervelden opnemen</label>
+      </div>
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-include-attachments" name="includeAttachmentFilenames">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-include-attachments">Bestandsnamen van bijlagen opnemen</label>
+      </div>
+
+      <button type="submit" class="utrecht-button utrecht-button--primary-action woonbehoefte-filter__submit">Overzicht maken</button>
+    </form>
+  </details>
+
+  <p class="woonbehoefte-count">Overzichten</p>
+
+  {{#hasReports}}
+  <div>
+    {{#reports}}
+    <article class="nijmegen-search-results woonbehoefte-record">
+      <div class="nijmegen-search-results__content">
+        <div class="woonbehoefte-record__summary">
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Status</span>
+            <span class="woonbehoefte-badge woonbehoefte-badge--{{statusVariant}}">{{statusLabel}}</span>
+          </div>
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Aangevraagd door</span>
+            <span>{{requestedByLabel}}</span>
+          </div>
+          <div class="woonbehoefte-record__field">
+            <span class="woonbehoefte-record__field-label">Aangevraagd op</span>
+            <span>{{requestedAtLabel}}</span>
+          </div>
+        </div>
+        <ul class="nijmegen-metadata">
+          {{#caseCountLabel}}
+          <li class="nijmegen-metadata__item">Aantal dossiers: {{caseCountLabel}}</li>
+          {{/caseCountLabel}}
+          {{#warningCountLabel}}
+          <li class="nijmegen-metadata__item">Bronwaarschuwingen: {{warningCountLabel}}</li>
+          {{/warningCountLabel}}
+          <li class="nijmegen-metadata__item">Alle formuliervelden: {{includeAllFormFieldsLabel}}</li>
+          <li class="nijmegen-metadata__item">Bestandsnamen bijlagen: {{includeAttachmentFilenamesLabel}}</li>
+          {{#expiresAtLabel}}
+          <li class="nijmegen-metadata__item">Beschikbaar tot: {{expiresAtLabel}}</li>
+          {{/expiresAtLabel}}
+        </ul>
+        <div class="woonbehoefte-actions">
+          {{#canDownload}}
+          <a class="utrecht-button utrecht-button--primary-action" href="/woonbehoefte/overzichten/{{reportId}}/download">Downloaden</a>
+          {{/canDownload}}
+          {{#canDelete}}
+          <form method="post" action="/woonbehoefte/overzichten/{{reportId}}/delete">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen</button>
+          </form>
+          {{/canDelete}}
+        </div>
+      </div>
+    </article>
+    {{/reports}}
+  </div>
+  {{/hasReports}}
+  {{^hasReports}}
+  <div class="nijmegen-action-card">
+    <div class="nijmegen-action-card__content">
+      <p class="utrecht-paragraph">Er zijn nog geen Excel-overzichten.</p>
+    </div>
+  </div>
+  {{/hasReports}}
+</main>
+{{>footer}}

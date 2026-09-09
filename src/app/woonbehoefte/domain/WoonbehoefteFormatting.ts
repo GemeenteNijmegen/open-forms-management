@@ -16,6 +16,10 @@ export function periodYear(period: number | undefined): number | undefined {
   return period === undefined ? undefined : Math.floor(period / 100);
 }
 
+export function periodMonth(period: number | undefined): number | undefined {
+  return period === undefined ? undefined : period % 100;
+}
+
 /** `YYYY-MM-DD` from a form/source date-only field, formatted `30 augustus 2028`. */
 export function formatDutchDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-');
