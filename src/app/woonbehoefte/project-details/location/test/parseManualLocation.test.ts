@@ -23,6 +23,16 @@ describe('parseManualLocation', () => {
     expect(result).toEqual({ valid: true, polygon: { type: 'Polygon', coordinates: [VALID_RING] } });
   });
 
+  it('accepteert een losse Feature, met properties in de invoer maar lege properties in de uitvoer', () => {
+    const text = JSON.stringify({
+      type: 'Feature', properties: { naam: 'projectgebied' }, geometry: { type: 'Polygon', coordinates: [VALID_RING] },
+    });
+
+    const result = parseManualLocation(text);
+
+    expect(result).toEqual({ valid: true, polygon: { type: 'Polygon', coordinates: [VALID_RING] } });
+  });
+
   it('weigert de drie-feature-export: een Nijmegen-rechthoek, een nul-oppervlak-polygon en de bedoelde polygon', () => {
     const text = JSON.stringify({
       type: 'FeatureCollection',

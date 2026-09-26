@@ -4,7 +4,7 @@ export interface ProjectGeoJson {
   readonly type: 'FeatureCollection';
   readonly features: readonly [{
     readonly type: 'Feature';
-    readonly properties: { readonly ofKenmerk: string; readonly projectnaam: string };
+    readonly properties: Record<string, never>;
     readonly geometry: ProjectPolygon;
   }];
 }
@@ -12,14 +12,15 @@ export interface ProjectGeoJson {
 /**
  * Bouwt de downloadbare FeatureCollection pas op het moment van downloaden, nooit vooraf opgeslagen. Werkt
  * uitsluitend op een polygon die checkProjectPolygon al heeft goedgekeurd; coördinaten blijven exact zoals
- * opgeslagen, geen ringrichtingconversie.
+ * opgeslagen, geen ringrichtingconversie. Geen dossiergegevens in de properties: het OF-kenmerk staat al in
+ * de bestandsnaam, en een importvoorwaarde voor extra properties bestaat niet.
  */
-export function buildProjectGeoJson(caseReference: string, fullProjectName: string, polygon: ProjectPolygon): ProjectGeoJson {
+export function buildProjectGeoJson(polygon: ProjectPolygon): ProjectGeoJson {
   return {
     type: 'FeatureCollection',
     features: [{
       type: 'Feature',
-      properties: { ofKenmerk: caseReference, projectnaam: fullProjectName },
+      properties: {},
       geometry: polygon,
     }],
   };

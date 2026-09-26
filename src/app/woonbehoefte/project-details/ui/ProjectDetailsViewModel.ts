@@ -50,6 +50,7 @@ export interface ProjectDetailsViewModel extends ProjectDetailsLocationViewModel
   readableProjectName?: string;
   projectDescription?: string;
   additionalInformation?: string;
+  mijnAansluitingKenmerk?: string;
   projectWideNotes?: string;
   housingLines: ProjectDetailsLineCardViewModel[];
   hasHousingLines: boolean;
@@ -143,6 +144,7 @@ export function buildProjectDetailsViewModel(
         readableProjectName: workVersion.readableProjectName,
         projectDescription: workVersion.projectDescription,
         additionalInformation: workVersion.additionalInformation,
+        mijnAansluitingKenmerk: workVersion.mijnAansluitingKenmerk ?? '',
         projectWideNotes: workVersion.projectWideNotes,
       }
       : {}),

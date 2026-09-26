@@ -67,6 +67,16 @@ describe('buildProjectDetailsViewModel', () => {
     expect(vm.fullProjectName).toBe('OF-2026-042');
   });
 
+  it('shows mijnAansluitingKenmerk as an empty string for an already ingeladen werkversie that lacks it', () => {
+    const vm = buildProjectDetailsViewModel('OF-1', workVersion(), undefined, true, 'token', '');
+    expect(vm.mijnAansluitingKenmerk).toBe('');
+  });
+
+  it('passes a filled mijnAansluitingKenmerk through unchanged', () => {
+    const vm = buildProjectDetailsViewModel('OF-1', workVersion({ mijnAansluitingKenmerk: 'MA-12345' }), undefined, true, 'token', '');
+    expect(vm.mijnAansluitingKenmerk).toBe('MA-12345');
+  });
+
   it('orders line cards by their stored order and numbers them 1-based for display', () => {
     const vm = buildProjectDetailsViewModel('OF-1', workVersion({
       housingLines: {

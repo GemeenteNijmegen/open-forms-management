@@ -44,6 +44,8 @@ export interface ProjectDetailsWorkVersion {
   readableProjectName: string;
   projectDescription: string;
   additionalInformation: string;
+  /** Eigen veld bij de werkversie, los van OF-kenmerk/projectnaam/bron. Afwezig bij een al ingeladen werkversie die het nog niet heeft; toon dan als lege string. */
+  mijnAansluitingKenmerk?: string;
   projectWideNotes: string;
   housingLines: Record<string, HousingLine>;
   collectiveFacilityLines: Record<string, FacilityLine>;

@@ -2,7 +2,6 @@ import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-htt
 import { EmployeeIdentity } from '../../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../../shared/authorization/AuthorizationService';
 import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
-import { composeFullProjectName } from '../domain/ProjectDetails';
 import { buildProjectGeoJson } from '../location/buildProjectGeoJson';
 import { ProjectDetailsStore } from '../persistence/ProjectDetailsStore';
 
@@ -47,8 +46,7 @@ export class ProjectDetailsLocationDownloadHandler {
       return Response.error(404);
     }
 
-    const fullProjectName = composeFullProjectName(caseReference, workVersion.readableProjectName);
-    const geoJson = buildProjectGeoJson(caseReference, fullProjectName, polygon);
+    const geoJson = buildProjectGeoJson(polygon);
     const filename = sanitizeFilenameSegment(caseReference);
 
     return {

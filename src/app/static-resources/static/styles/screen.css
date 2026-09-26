@@ -799,3 +799,10 @@ footer {
   background-color: var(--nijmegen-color-background-hover);
   border-radius: var(--nijmegen-space-50);
 }
+
+/* Twee voorbeelden naast elkaar; op smalle schermen vallen ze terug op onder elkaar in plaats van afgesneden te worden. */
+.woonbehoefte-project-details__example-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nijmegen-space-200);
+}

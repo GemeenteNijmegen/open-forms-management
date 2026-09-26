@@ -116,12 +116,13 @@ export class ProjectDetailsActionHandler {
     }
     const { form, back } = begun;
     const additionalInformation = form.get('additionalInformation') ?? '';
-    if (!withinLength(additionalInformation, MAX_FREE_TEXT_LENGTH)) {
+    const mijnAansluitingKenmerk = form.get('mijnAansluitingKenmerk') ?? '';
+    if (!withinLength(additionalInformation, MAX_FREE_TEXT_LENGTH) || !withinLength(mijnAansluitingKenmerk, MAX_SHORT_FIELD_LENGTH)) {
       return Response.error(400);
     }
 
     const actorEmail = identity.email ?? identity.principalId;
-    const result = await this.store.updateAdditionalInformation(caseReference, additionalInformation, actorEmail);
+    const result = await this.store.updateAdditionalInformation(caseReference, additionalInformation, mijnAansluitingKenmerk, actorEmail);
     return this.redirectAfter(caseReference, result, back, 'ADDITIONAL_INFO_UPDATED', actorEmail, 'pd-additional-information-card');
   }
 

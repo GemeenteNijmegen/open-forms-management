@@ -14,6 +14,7 @@ import { WoonbehoefteSourceRecord } from '../../app/woonbehoefte/domain/Woonbeho
 import { resolveWoonbehoefteOverviewFilter } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewFilter';
 import { buildWoonbehoefteOverviewViewModel, joinCasesWithSources } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewViewModel';
 import { FacilityLine, HousingLine, KovaLine, ProjectDetailsWorkVersion } from '../../app/woonbehoefte/project-details/domain/ProjectDetails';
+import { ProjectPolygon } from '../../app/woonbehoefte/project-details/location/ProjectLocation';
 import { buildProjectDetailsViewModel } from '../../app/woonbehoefte/project-details/ui/ProjectDetailsViewModel';
 import { WoonbehoefteReport } from '../../app/woonbehoefte/reports/domain/WoonbehoefteReport';
 import {
@@ -656,12 +657,12 @@ export const woonbehoefteDetailSaved = {
 };
 
 // Fictieve, niet uit een echt dossier afkomstige polygonen (zie 01-context.md: geen echte dossierdata in previews).
-const PREVIEW_SOURCE_POLYGON = {
-  type: 'Polygon' as const,
+const PREVIEW_SOURCE_POLYGON: ProjectPolygon = {
+  type: 'Polygon',
   coordinates: [[[5.811185, 51.851814], [5.846297, 51.851682], [5.846124, 51.83477], [5.811026, 51.834902], [5.811185, 51.851814]]],
 };
-const PREVIEW_MANUAL_POLYGON = {
-  type: 'Polygon' as const,
+const PREVIEW_MANUAL_POLYGON: ProjectPolygon = {
+  type: 'Polygon',
   coordinates: [[[5.858952, 51.84241], [5.859964, 51.841259], [5.860509, 51.842102], [5.858952, 51.84241]]],
 };
 
@@ -737,6 +738,7 @@ const projectDetailsOnePerCategoryWorkVersion = projectDetailsWorkVersion({
 // Met een geldige bronlocatie, zodat deze preview ook toont dat de locatiekaart onder veel herhalende groepen bruikbaar blijft.
 const projectDetailsManyLinesWorkVersion = projectDetailsWorkVersion({
   caseReference: 'OF-2026-00142',
+  mijnAansluitingKenmerk: 'MA-2026-00142',
   sourceLocationPolygon: PREVIEW_SOURCE_POLYGON,
   housingLines: Object.fromEntries(Array.from({ length: 6 }, (_, index) => {
     const lineId = `wonen-${index + 1}`;

@@ -183,10 +183,11 @@ export class ProjectDetailsStore {
     );
   }
 
+  /** additionalInformation en mijnAansluitingKenmerk komen uit hetzelfde formulier en worden dus in één transactie samen bijgewerkt. */
   async updateAdditionalInformation(
-    caseReference: string, additionalInformation: string, actor: string, now: Date = new Date(),
+    caseReference: string, additionalInformation: string, mijnAansluitingKenmerk: string, actor: string, now: Date = new Date(),
   ): Promise<LineMutationResult> {
-    return this.updateWorkVersionFields(caseReference, { additionalInformation }, 'ADDITIONAL_INFO_UPDATED', actor, now);
+    return this.updateWorkVersionFields(caseReference, { additionalInformation, mijnAansluitingKenmerk }, 'ADDITIONAL_INFO_UPDATED', actor, now);
   }
 
   async updateProjectWideNotes(caseReference: string, projectWideNotes: string, actor: string, now: Date = new Date()): Promise<LineMutationResult> {

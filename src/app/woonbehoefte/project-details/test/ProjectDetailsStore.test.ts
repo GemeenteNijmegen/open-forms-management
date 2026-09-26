@@ -130,6 +130,19 @@ describe('ProjectDetailsStore', () => {
     expect(result).toBe('NOT_FOUND');
   });
 
+  it('updates additionalInformation and mijnAansluitingKenmerk together in one transaction, for an existing werkversie', async () => {
+    documentMock.on(TransactWriteCommand).resolves({});
+
+    const result = await newStore().updateAdditionalInformation('OF-1', 'Aanvullende tekst', 'MA-12345', 'medewerker@example.nl');
+
+    expect(result).toBe('OK');
+    const call = documentMock.commandCalls(TransactWriteCommand)[0];
+    const [update, history] = call.args[0].input.TransactItems!;
+    expect(update.Update?.ConditionExpression).toBe('attribute_exists(pk)');
+    expect(update.Update?.ExpressionAttributeValues).toMatchObject({ ':f0': 'Aanvullende tekst', ':f1': 'MA-12345' });
+    expect(history.Put?.Item).toMatchObject({ action: 'ADDITIONAL_INFO_UPDATED' });
+  });
+
   it('stores a manual polygon and records LOCATION_ADDED when isNew, without touching sourceLocationPolygon', async () => {
     documentMock.on(TransactWriteCommand).resolves({});
     const polygon = { type: 'Polygon' as const, coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] };

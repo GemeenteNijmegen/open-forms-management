@@ -285,6 +285,10 @@
           <label class="utrecht-form-label" for="pd-additional-information">Aanvullende informatie voor Mijn Aansluiting</label>
           <textarea class="utrecht-textarea" id="pd-additional-information" name="additionalInformation" rows="2" {{^canManage}}readonly{{/canManage}}>{{additionalInformation}}</textarea>
         </div>
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-mijn-aansluiting-kenmerk">Kenmerk Mijn Aansluiting</label>
+          <input class="utrecht-textbox" type="text" id="pd-mijn-aansluiting-kenmerk" name="mijnAansluitingKenmerk" value="{{mijnAansluitingKenmerk}}" {{^canManage}}readonly{{/canManage}}>
+        </div>
         {{#canManage}}
         <button type="submit" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
         {{/canManage}}
@@ -557,12 +561,15 @@
         <summary>Hoe teken ik een projectlocatie?</summary>
         <ol>
           <li class="utrecht-paragraph">Open de ingediende locatie-PDF bij de dossierdocumenten en gebruik die als referentie. De applicatie leest de PDF niet automatisch.</li>
-          <li class="utrecht-paragraph">Teken één vlak op <a class="utrecht-link" href="https://geojson.io">geojson.io</a>. Verwijder losse zoekresultaten, punten, de eventuele rechthoek rond Nijmegen en andere extra vlakken voordat je kopieert/exporteert.</li>
-          <li class="utrecht-paragraph">Kopieer de volledige JSON met precies één feature en plak haar in het tekstblok hierboven. Een losse Polygon mag ook.</li>
-          <li class="utrecht-paragraph">Controleer de projectgrens op de kaart en klik Locatie opslaan. De applicatie voegt OF-kenmerk en projectnaam bij downloaden toe.</li>
+          <li class="utrecht-paragraph">Teken één vlak op <a class="utrecht-link" href="https://geojson.io">geojson.io</a>. Verwijder losse zoekresultaten, punten, de eventuele rechthoek rond Nijmegen en andere getekende vlakken voordat je kopieert/exporteert: er mag maar één vlak overblijven.</li>
+          <li class="utrecht-paragraph">Plak de JSON in het tekstblok hierboven. Dat mag een losse Polygon zijn, één Feature, of een FeatureCollection met precies één Feature.</li>
+          <li class="utrecht-paragraph">Controleer de projectgrens op de kaart en klik Locatie opslaan.</li>
         </ol>
-        <p class="utrecht-paragraph">Verwacht voorbeeld (fictieve coördinaten rond Nijmegen):</p>
-        <pre class="woonbehoefte-project-details__example"><code>{
+        <p class="utrecht-paragraph">Twee geldige voorbeelden (fictieve coördinaten rond Nijmegen):</p>
+        <div class="woonbehoefte-project-details__example-group">
+          <div>
+            <p class="utrecht-paragraph">Losse Polygon</p>
+            <pre class="woonbehoefte-project-details__example"><code>{
   "type": "Polygon",
   "coordinates": [[
     [5.8600, 51.8450],
@@ -572,6 +579,28 @@
     [5.8600, 51.8450]
   ]]
 }</code></pre>
+          </div>
+          <div>
+            <p class="utrecht-paragraph">FeatureCollection met één Feature</p>
+            <pre class="woonbehoefte-project-details__example"><code>{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "properties": {},
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [5.8600, 51.8450],
+        [5.8620, 51.8450],
+        [5.8620, 51.8465],
+        [5.8600, 51.8465],
+        [5.8600, 51.8450]
+      ]]
+    }
+  }]
+}</code></pre>
+          </div>
+        </div>
       </details>
     </details>
     {{/isReady}}

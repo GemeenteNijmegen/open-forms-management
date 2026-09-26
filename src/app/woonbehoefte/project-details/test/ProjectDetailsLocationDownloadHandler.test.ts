@@ -94,8 +94,9 @@ describe('ProjectDetailsLocationDownloadHandler', () => {
     expect(response.headers?.['Content-Type']).toBe('application/json');
     expect(response.headers?.['Content-Disposition']).toBe('attachment; filename="OF-1.json"');
     const body = JSON.parse(response.body as string);
+    expect(body.features).toHaveLength(1);
     expect(body.features[0].geometry).toEqual(SOURCE_POLYGON);
-    expect(body.features[0].properties).toEqual({ ofKenmerk: 'OF-1', projectnaam: 'OF-1 - Voorbeeldproject' });
+    expect(body.features[0].properties).toEqual({});
   });
 
   it('prefers the handmatige polygon over the bronpolygon when both exist', async () => {
@@ -112,36 +113,6 @@ describe('ProjectDetailsLocationDownloadHandler', () => {
 
     const body = JSON.parse(response.body as string);
     expect(body.features[0].geometry).toEqual(MANUAL_POLYGON);
-  });
-
-  it('reflects a renamed project on the next download, without changing the geometry', async () => {
-    const caseRepository = makeCaseRepository();
-    const store = makeStore();
-    store.getWorkVersion.mockResolvedValue(workVersion({ sourceLocationPolygon: SOURCE_POLYGON, readableProjectName: 'Nieuwe naam' }) as never);
-    const handler = new ProjectDetailsLocationDownloadHandler(
-      makeAuthorizationService(), caseRepository as unknown as WoonbehoefteCaseRepository, store as unknown as ProjectDetailsStore,
-    );
-
-    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-1');
-
-    const body = JSON.parse(response.body as string);
-    expect(body.features[0].properties.projectnaam).toBe('OF-1 - Nieuwe naam');
-    expect(body.features[0].geometry).toEqual(SOURCE_POLYGON);
-  });
-
-  it('falls back to only the OF-kenmerk for a handmatig leeg gestarte werkversie, instead of blocking the download', async () => {
-    const caseRepository = makeCaseRepository();
-    const store = makeStore();
-    store.getWorkVersion.mockResolvedValue(workVersion({ readableProjectName: '', manualLocationPolygon: MANUAL_POLYGON }) as never);
-    const handler = new ProjectDetailsLocationDownloadHandler(
-      makeAuthorizationService(), caseRepository as unknown as WoonbehoefteCaseRepository, store as unknown as ProjectDetailsStore,
-    );
-
-    const response = await handler.handleRequest({ principalId: 'medewerker' }, 'OF-1');
-
-    expect(response.statusCode).toBe(200);
-    const body = JSON.parse(response.body as string);
-    expect(body.features[0].properties.projectnaam).toBe('OF-1');
   });
 
   it('checks woonbehoefte:view, not woonbehoefte:manage: a view-only medewerker can download', async () => {

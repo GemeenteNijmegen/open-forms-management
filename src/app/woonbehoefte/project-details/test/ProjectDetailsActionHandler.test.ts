@@ -108,6 +108,32 @@ describe('ProjectDetailsActionHandler', () => {
     expect(store.updateProject).not.toHaveBeenCalled();
   });
 
+  it('updates additionalInformation and mijnAansluitingKenmerk together, from the same POST', async () => {
+    const store = makeStore();
+    const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, makeAuditTrail());
+
+    const response = await handler.handleAdditionalInformation(
+      { principalId: 'medewerker', email: 'medewerker@example.nl' }, 'OF-1', cookieHeader,
+      form({ csrfToken, additionalInformation: 'Extra tekst', mijnAansluitingKenmerk: 'MA-12345' }), false,
+    );
+
+    expect(response.statusCode).toBe(303);
+    expect(response.headers?.Location).toContain('#pd-additional-information-card');
+    expect(store.updateAdditionalInformation).toHaveBeenCalledWith('OF-1', 'Extra tekst', 'MA-12345', 'medewerker@example.nl');
+  });
+
+  it('accepts an empty mijnAansluitingKenmerk, clearing a previously filled value', async () => {
+    const store = makeStore();
+    const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, makeAuditTrail());
+
+    const response = await handler.handleAdditionalInformation(
+      { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, additionalInformation: 'Extra tekst' }), false,
+    );
+
+    expect(response.statusCode).toBe(303);
+    expect(store.updateAdditionalInformation).toHaveBeenCalledWith('OF-1', 'Extra tekst', '', 'medewerker');
+  });
+
   it('starts an empty werkversie for a NEW dossier and audits MANUALLY_STARTED, not INITIALIZED', async () => {
     const store = makeStore();
     store.getWorkVersion.mockResolvedValue(undefined);

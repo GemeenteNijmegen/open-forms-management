@@ -19,15 +19,19 @@ interface UnresolvedGeometry {
 }
 
 /**
- * Herkent zowel een losse Polygon als de één-feature-FeatureCollection-export van geojson.io en geeft de
- * geometrie terug die checkProjectPolygon moet keuren. Bij meer dan één feature wordt geweigerd: de code
- * kiest nooit zelf welk van meerdere getekende vlakken bedoeld is.
+ * Herkent een losse Polygon, een losse Feature of de één-feature-FeatureCollection-export van geojson.io en
+ * geeft de geometrie terug die checkProjectPolygon moet keuren. Properties, bbox of andere metadata op een
+ * Feature worden genegeerd, alleen de geometry telt. Bij meer dan één feature wordt geweigerd: de code kiest
+ * nooit zelf welk van meerdere getekende vlakken bedoeld is.
  */
 function resolveGeometry(parsed: unknown): ResolvedGeometry | UnresolvedGeometry {
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     return { ok: false, issue: 'INVALID_SHAPE' };
   }
-  const candidate = parsed as { type?: unknown; features?: unknown };
+  const candidate = parsed as { type?: unknown; features?: unknown; geometry?: unknown };
+  if (candidate.type === 'Feature') {
+    return { ok: true, geometry: candidate.geometry };
+  }
   if (candidate.type !== 'FeatureCollection') {
     return { ok: true, geometry: parsed };
   }
