@@ -216,6 +216,112 @@ describe('buildWoonbehoefteReportSheetData', () => {
   });
 });
 
+describe('buildWoonbehoefteReportSheetData - Mijn Aansluiting-kolommen', () => {
+  const PROJECT_DETAILS_HEADERS = [
+    'Mijn Aansluiting - Aanvullende informatie',
+    'Mijn Aansluiting - Kenmerk',
+    'Mijn Aansluiting - Projectnaam',
+    'Mijn Aansluiting - Projecttoelichting',
+    'Mijn Aansluiting - Wonen',
+    'Mijn Aansluiting - Collectieve voorzieningen',
+    'Mijn Aansluiting - KOVA',
+    'Mijn Aansluiting - Projectbrede gegevens',
+    'Mijn Aansluiting - Herkomst projectlocatie',
+    'Mijn Aansluiting - Projectlocatie GeoJSON',
+  ];
+
+  function projectDetails(overrides: Partial<NonNullable<WoonbehoefteReportRow['projectDetails']>> = {}) {
+    return {
+      additionalInformation: '',
+      mijnAansluitingKenmerk: '',
+      projectName: '',
+      projectDescription: '',
+      housingLinesText: '',
+      facilityLinesText: '',
+      kovaLinesText: '',
+      projectWideNotes: '',
+      locationOriginLabel: '',
+      locationGeoJson: '',
+      ...overrides,
+    };
+  }
+
+  it('adds no Mijn Aansluiting-kolom at all when includeProjectDetails is off, even if a row happens to carry projectDetails', () => {
+    const [header] = buildWoonbehoefteReportSheetData([baseRow({ projectDetails: projectDetails() })], false);
+    const headerValues = header.map((cell) => (cell as CellObject).value);
+
+    for (const projectDetailsHeader of PROJECT_DETAILS_HEADERS) {
+      expect(headerValues).not.toContain(projectDetailsHeader);
+    }
+  });
+
+  it('adds all ten Mijn Aansluiting-koppen even for an empty selection, driven by the option, not by row content', () => {
+    const [header] = buildWoonbehoefteReportSheetData([], true);
+    const headerValues = header.map((cell) => (cell as CellObject).value);
+
+    expect(headerValues).toEqual(expect.arrayContaining(PROJECT_DETAILS_HEADERS));
+  });
+
+  it('places the Mijn Aansluiting-block after the fixed dossierkolommen and before Formulier/Bijlagen/Bronwaarschuwing', () => {
+    const rawFormFields = { headers: ['projectNaam'], values: { projectNaam: 'Project Een' } };
+    const [header] = buildWoonbehoefteReportSheetData([baseRow({ projectDetails: projectDetails(), rawFormFields })], true);
+    const headerValues = header.map((cell) => (cell as CellObject).value);
+
+    const kovaIndex = headerValues.indexOf('KOVA');
+    const projectDetailsIndices = PROJECT_DETAILS_HEADERS.map((label) => headerValues.indexOf(label));
+    const formulierIndex = headerValues.indexOf('Formulier - projectNaam');
+    const bijlagenIndex = headerValues.indexOf('Bijlagen');
+
+    expect(Math.min(...projectDetailsIndices)).toBeGreaterThan(kovaIndex);
+    expect(Math.max(...projectDetailsIndices)).toBeLessThan(formulierIndex);
+    expect(Math.max(...projectDetailsIndices)).toBeLessThan(bijlagenIndex);
+    expect(projectDetailsIndices).toEqual([...projectDetailsIndices].sort((a, b) => a - b));
+  });
+
+  it('gives Wonen, Collectieve voorzieningen, KOVA and de GeoJSON-kolom a wide wrapped column, aligned to the top', () => {
+    const [header] = buildWoonbehoefteReportSheetData([baseRow({ projectDetails: projectDetails() })], true);
+
+    const wideLabels = [
+      'Mijn Aansluiting - Wonen',
+      'Mijn Aansluiting - Collectieve voorzieningen',
+      'Mijn Aansluiting - KOVA',
+      'Mijn Aansluiting - Projectlocatie GeoJSON',
+    ];
+    for (const label of wideLabels) {
+      const cell = header.find((c) => (c as CellObject).value === label) as CellObject;
+      expect(cell.wrap).toBe(true);
+    }
+  });
+
+  it('never turns a Kenmerk starting with = into a Formula cell', () => {
+    const [header, dataRow] = buildWoonbehoefteReportSheetData(
+      [baseRow({ projectDetails: projectDetails({ mijnAansluitingKenmerk: '=1+1' }) })], true,
+    );
+
+    expect(cellFor(header, dataRow, 'Mijn Aansluiting - Kenmerk')).toEqual({ value: '=1+1', type: String, format: '@' });
+  });
+
+  it('writes a geldige, geformatteerde FeatureCollection with lege properties in the GeoJSON-cell, matching buildProjectGeoJson', () => {
+    const polygon = { type: 'Polygon', coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] };
+    const geoJson = JSON.stringify({ type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: polygon }] }, null, 2);
+    const [header, dataRow] = buildWoonbehoefteReportSheetData(
+      [baseRow({ projectDetails: projectDetails({ locationGeoJson: geoJson }) })], true,
+    );
+
+    const cell = cellFor(header, dataRow, 'Mijn Aansluiting - Projectlocatie GeoJSON');
+    expect(cell.type).not.toBe('Formula');
+    expect(JSON.parse(cell.value as string)).toEqual({
+      type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: polygon }],
+    });
+  });
+
+  it('leaves the GeoJSON-cell empty when no bruikbare locatie exists, never a placeholder', () => {
+    const [header, dataRow] = buildWoonbehoefteReportSheetData([baseRow({ projectDetails: projectDetails() })], true);
+
+    expect(cellFor(header, dataRow, 'Mijn Aansluiting - Projectlocatie GeoJSON').value).toBe('');
+  });
+});
+
 describe('writeWoonbehoefteReportExcel', () => {
   it('produces a non-empty, valid XLSX (ZIP) buffer', async () => {
     const buffer = await writeWoonbehoefteReportExcel([baseRow()]);

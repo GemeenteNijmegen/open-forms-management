@@ -38,4 +38,9 @@ export class ProjectDetailsTable extends Construct {
       grantee, 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:TransactWriteItems',
     );
   }
+
+  // De Excel-reportworker leest alleen de actuele werkversie per dossier (GetItem op pk/sk), nooit een Query/Scan en nooit een mutatie.
+  grantReportWorkerAccess(grantee: IGrantable): Grant {
+    return this.table.grant(grantee, 'dynamodb:GetItem');
+  }
 }

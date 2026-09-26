@@ -78,6 +78,10 @@
         <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-include-attachments" name="includeAttachmentFilenames">
         <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-include-attachments">Bestandsnamen van bijlagen opnemen</label>
       </div>
+      <div class="utrecht-form-field utrecht-form-field--checkbox">
+        <input type="checkbox" class="utrecht-form-field__input utrecht-checkbox" id="report-include-project-details" name="includeProjectDetails">
+        <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="report-include-project-details">Mijn Aansluiting-velden opnemen</label>
+      </div>
 
       <button type="submit" class="utrecht-button utrecht-button--primary-action woonbehoefte-filter__submit">Overzicht maken</button>
     </form>
@@ -113,6 +117,7 @@
           {{/warningCountLabel}}
           <li class="nijmegen-metadata__item">Alle formuliervelden: {{includeAllFormFieldsLabel}}</li>
           <li class="nijmegen-metadata__item">Bestandsnamen bijlagen: {{includeAttachmentFilenamesLabel}}</li>
+          <li class="nijmegen-metadata__item">Mijn Aansluiting-velden: {{includeProjectDetailsLabel}}</li>
           {{#expiresAtLabel}}
           <li class="nijmegen-metadata__item">Beschikbaar tot: {{expiresAtLabel}}</li>
           {{/expiresAtLabel}}

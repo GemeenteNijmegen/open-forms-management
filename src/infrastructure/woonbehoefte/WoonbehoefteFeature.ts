@@ -117,6 +117,7 @@ export class WoonbehoefteFeature extends Construct {
       configuration: props.configuration,
       sourceCacheTable,
       casesTable,
+      projectDetailsTable: projectDetailsFeature.table,
     });
 
     const caseVersionWorkerFunction = new WoonbehoefteCaseVersionWorkerFunction(this, 'case-version-worker-function', {

@@ -28,3 +28,15 @@ describe('buildWoonbehoefteReportsListViewModel status colors', () => {
     expect(item.statusVariant).toBe(variant);
   });
 });
+
+describe('buildWoonbehoefteReportsListViewModel includeProjectDetailsLabel', () => {
+  it('shows Nee for an older report without the option, and Ja once it was requested', () => {
+    const older = report('READY');
+    const [olderItem] = buildWoonbehoefteReportsListViewModel([older]).reports;
+    expect(olderItem.includeProjectDetailsLabel).toBe('Nee');
+
+    const withOption = { ...report('READY'), options: { ...older.options, includeProjectDetails: true } };
+    const [newItem] = buildWoonbehoefteReportsListViewModel([withOption]).reports;
+    expect(newItem.includeProjectDetailsLabel).toBe('Ja');
+  });
+});

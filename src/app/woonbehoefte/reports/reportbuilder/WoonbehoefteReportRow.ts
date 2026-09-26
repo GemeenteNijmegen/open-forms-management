@@ -1,3 +1,4 @@
+import { WoonbehoefteReportProjectDetailsColumns } from '../projectdetails/buildWoonbehoefteReportProjectDetailsColumns';
 import { WoonbehoefteRawFormRow } from '../rawformfields/WoonbehoefteRawFormFields';
 
 /**
@@ -63,6 +64,9 @@ export interface WoonbehoefteReportRow {
 
   /** Only set when includeAllFormFields is on and the fetch/parse succeeded for this case. */
   rawFormFields?: WoonbehoefteRawFormRow;
+
+  /** Only set when includeProjectDetails is on; then always present, even all-empty for a case without a werkversie. */
+  projectDetails?: WoonbehoefteReportProjectDetailsColumns;
 
   /** Always present, empty unless includeAttachmentFilenames is on. One filename per line, primary attachments first. */
   attachmentFilenamesText: string;

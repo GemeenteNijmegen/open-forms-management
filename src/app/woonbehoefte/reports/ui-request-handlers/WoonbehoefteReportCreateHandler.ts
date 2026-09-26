@@ -19,6 +19,7 @@ function resolveOptions(form: URLSearchParams): WoonbehoefteReportOptions {
   return {
     includeAllFormFields: form.get('includeAllFormFields') === 'on',
     includeAttachmentFilenames: form.get('includeAttachmentFilenames') === 'on',
+    includeProjectDetails: form.get('includeProjectDetails') === 'on',
   };
 }
 
@@ -72,6 +73,7 @@ export class WoonbehoefteReportCreateHandler {
         reportId: report.reportId,
         includeAllFormFields: options.includeAllFormFields,
         includeAttachmentFilenames: options.includeAttachmentFilenames,
+        includeProjectDetails: options.includeProjectDetails ?? false,
       },
     });
 

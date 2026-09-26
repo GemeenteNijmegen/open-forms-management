@@ -14,6 +14,7 @@ export interface WoonbehoefteReportListItem {
   warningCountLabel?: string;
   includeAllFormFieldsLabel: string;
   includeAttachmentFilenamesLabel: string;
+  includeProjectDetailsLabel: string;
   expiresAtLabel?: string;
   canDownload: boolean;
   canDelete: boolean;
@@ -86,6 +87,7 @@ function toListItem(report: WoonbehoefteReport): WoonbehoefteReportListItem {
     ...(report.warningCount ? { warningCountLabel: String(report.warningCount) } : {}),
     includeAllFormFieldsLabel: report.options.includeAllFormFields ? 'Ja' : 'Nee',
     includeAttachmentFilenamesLabel: report.options.includeAttachmentFilenames ? 'Ja' : 'Nee',
+    includeProjectDetailsLabel: (report.options.includeProjectDetails ?? false) ? 'Ja' : 'Nee',
     ...(report.status === 'READY' ? { expiresAtLabel: formatDutchDateTime(new Date(report.expiresAt * 1000).toISOString()) } : {}),
     canDownload: report.status === 'READY',
     canDelete: true,

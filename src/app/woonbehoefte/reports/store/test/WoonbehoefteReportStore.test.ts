@@ -102,6 +102,30 @@ describe('WoonbehoefteReportStore', () => {
     await expect(newStore().findMatchingActive(filter, options)).resolves.toBeUndefined();
   });
 
+  it('treats an older report without includeProjectDetails as false, still matching a new false request', async () => {
+    documentMock.on(ScanCommand).resolves({
+      Items: [report({ reportId: 'old-report', status: 'QUEUED', filter, options, updatedAt: new Date().toISOString() })],
+    });
+
+    const match = await newStore().findMatchingActive(filter, { ...options, includeProjectDetails: false });
+
+    expect(match?.reportId).toBe('old-report');
+  });
+
+  it('does not match an active report when includeProjectDetails differs', async () => {
+    documentMock.on(ScanCommand).resolves({
+      Items: [report({
+        reportId: 'with-project-details',
+        status: 'QUEUED',
+        filter,
+        options: { ...options, includeProjectDetails: true },
+        updatedAt: new Date().toISOString(),
+      })],
+    });
+
+    await expect(newStore().findMatchingActive(filter, options)).resolves.toBeUndefined();
+  });
+
   it('lets the worker claim a QUEUED report for building, but a duplicate claim on the same report loses the race', async () => {
     documentMock.on(UpdateCommand).resolvesOnce({}).rejectsOnce(
       Object.assign(new Error('The conditional request failed'), { name: 'ConditionalCheckFailedException' }),

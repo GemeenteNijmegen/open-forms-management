@@ -6,10 +6,13 @@ import {
 import { TernaryAssessment } from '../../domain/WoonbehoefteCase';
 import { formatDutchDateTime, periodMonth, periodYear } from '../../domain/WoonbehoefteFormatting';
 import { WoonbehoefteCaseWithSource } from '../../overview/WoonbehoefteOverviewViewModel';
+import { ProjectDetailsWorkVersion } from '../../project-details/domain/ProjectDetails';
 import { AttachmentFilenamesOutcome } from '../attachments/WoonbehoefteReportAttachments';
+import { buildWoonbehoefteReportProjectDetailsColumns } from '../projectdetails/buildWoonbehoefteReportProjectDetailsColumns';
 import { RawFormFieldsOutcome } from '../rawformfields/fetchWoonbehoefteRawFormFields';
 
 const MISSING_SOURCE_WARNING = 'Primaire bron ontbreekt of heeft een bronconflict.';
+const PROJECT_DETAILS_MISSING_WARNING = 'Mijn Aansluiting-werkversie nog niet ingeladen.';
 
 function ternaryLabel(value: TernaryAssessment | undefined): string {
   return value ? TERNARY_ASSESSMENT_LABELS[value] : TERNARY_ASSESSMENT_UNASSESSED_LABEL;
@@ -28,11 +31,15 @@ export function buildWoonbehoefteReportRows(
   entries: WoonbehoefteCaseWithSource[],
   rawFormFieldsByCaseReference: Map<string, RawFormFieldsOutcome> = new Map(),
   attachmentFilenamesByCaseReference: Map<string, AttachmentFilenamesOutcome> = new Map(),
+  workVersionsByCaseReference: Map<string, ProjectDetailsWorkVersion> = new Map(),
+  includeProjectDetails: boolean = false,
 ): WoonbehoefteReportRow[] {
   return entries.map((entry) => buildRow(
     entry,
     rawFormFieldsByCaseReference.get(entry.woonbehoefteCase.caseReference),
     attachmentFilenamesByCaseReference.get(entry.woonbehoefteCase.caseReference),
+    workVersionsByCaseReference.get(entry.woonbehoefteCase.caseReference),
+    includeProjectDetails,
   ));
 }
 
@@ -40,6 +47,8 @@ function buildRow(
   { woonbehoefteCase: c, source, hasSourceConflict }: WoonbehoefteCaseWithSource,
   rawOutcome?: RawFormFieldsOutcome,
   attachmentOutcome?: AttachmentFilenamesOutcome,
+  workVersion?: ProjectDetailsWorkVersion,
+  includeProjectDetails: boolean = false,
 ): WoonbehoefteReportRow {
   const a = c.assessment;
   const readiness = a.assessedProjectReadiness;
@@ -103,11 +112,13 @@ function buildRow(
     kovaLabel: booleanLabel(source?.hasKova),
 
     rawFormFields: rawOutcome?.fields,
+    ...(includeProjectDetails ? { projectDetails: buildWoonbehoefteReportProjectDetailsColumns(workVersion) } : {}),
     attachmentFilenamesText: attachmentOutcome?.filenamesText ?? '',
     sourceWarning: [
       hasSourceConflict || !source ? MISSING_SOURCE_WARNING : undefined,
       rawOutcome?.warning,
       attachmentOutcome?.warning,
+      includeProjectDetails && !workVersion ? PROJECT_DETAILS_MISSING_WARNING : undefined,
     ].filter((warning): warning is string => Boolean(warning)).join('\n'),
   };
 }
