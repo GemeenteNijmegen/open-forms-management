@@ -5,11 +5,18 @@ import { AdditionalEvidenceSourceCacheStore } from '../../additional-evidence/so
 import { WoonbehoefteCaseItems, WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
 import { WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceFailure } from '../../domain/WoonbehoefteSource';
+import { ProjectDetailsStore } from '../../project-details/persistence/ProjectDetailsStore';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteDetailHandler } from '../WoonbehoefteDetailHandler';
 
 function noAdditionalSourceCacheStore(): AdditionalEvidenceSourceCacheStore {
   return { getItems: jest.fn().mockResolvedValue(new Map()) } as unknown as AdditionalEvidenceSourceCacheStore;
+}
+
+function noProjectDetails(): ProjectDetailsStore {
+  return {
+    getWorkVersion: jest.fn().mockResolvedValue(undefined), getAttempt: jest.fn().mockResolvedValue(undefined),
+  } as unknown as ProjectDetailsStore;
 }
 
 function makeCase(overrides: Partial<WoonbehoefteCase> = {}): WoonbehoefteCase {
@@ -45,13 +52,35 @@ describe('WoonbehoefteDetailHandler', () => {
     const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = {} as unknown as OpenZaakClient;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(),
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('Claim vrijgeven');
+  });
+
+  it('keeps rendering the rest of the detailpagina when the projectdetails werkversie/pogingstatus read itself fails', async () => {
+    const caseItems: WoonbehoefteCaseItems = {
+      woonbehoefteCase: makeCase({ claimedBy: 'employee-1' }), sourceLinks: [], notes: [], activities: [],
+    };
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {} as unknown as OpenZaakClient;
+    const brokenProjectDetailsStore = {
+      getWorkVersion: jest.fn().mockRejectedValue(new Error('DynamoDB unavailable')),
+      getAttempt: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ProjectDetailsStore;
+    const handler = new WoonbehoefteDetailHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), brokenProjectDetailsStore,
+    );
+
+    const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('Claim vrijgeven');
+    expect(response.body).toContain('Projectdetails kon niet worden geladen');
   });
 
   it('keeps the PDF/attachments a FAILED source still carries visible, even though the case shows a bronfout', async () => {
@@ -74,7 +103,7 @@ describe('WoonbehoefteDetailHandler', () => {
     const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', failedSource]])) } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = { getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijsstuk.jpeg' }) } as unknown as OpenZaakClient;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(),
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
@@ -121,7 +150,7 @@ describe('WoonbehoefteDetailHandler', () => {
     } as unknown as AdditionalEvidenceSourceCacheStore;
     const openZaakClient = { getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijs.pdf' }) } as unknown as OpenZaakClient;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, noProjectDetails(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);

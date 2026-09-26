@@ -16,6 +16,9 @@ import {
   woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
   woonbehoefteAdditionalEvidenceOverviewSearch,
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
+  woonbehoefteDetailProjectDetailsFailed, woonbehoefteDetailProjectDetailsNew, woonbehoefteDetailProjectDetailsPending,
+  woonbehoefteDetailProjectDetailsReadOnly, woonbehoefteDetailProjectDetailsReadyEmptyCategory, woonbehoefteDetailProjectDetailsReadyManyLines,
+  woonbehoefteDetailProjectDetailsReadyOnePerCategory,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
   woonbehoefteDetailWithAdditionalEvidence,
   woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
@@ -187,6 +190,27 @@ export async function renderAll(): Promise<void> {
       woonbehoefteDetailTemplate, woonbehoefteDetailWithAdditionalEvidence.page, woonbehoefteDetailWithAdditionalEvidence.data,
     ),
     'woonbehoefte-detail-saved': render(woonbehoefteDetailTemplate, woonbehoefteDetailSaved.page, woonbehoefteDetailSaved.data),
+    'woonbehoefte-detail-project-details-new': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsNew.page, woonbehoefteDetailProjectDetailsNew.data,
+    ),
+    'woonbehoefte-detail-project-details-pending': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsPending.page, woonbehoefteDetailProjectDetailsPending.data,
+    ),
+    'woonbehoefte-detail-project-details-failed': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsFailed.page, woonbehoefteDetailProjectDetailsFailed.data,
+    ),
+    'woonbehoefte-detail-project-details-ready-one-per-category': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsReadyOnePerCategory.page, woonbehoefteDetailProjectDetailsReadyOnePerCategory.data,
+    ),
+    'woonbehoefte-detail-project-details-ready-many-lines': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsReadyManyLines.page, woonbehoefteDetailProjectDetailsReadyManyLines.data,
+    ),
+    'woonbehoefte-detail-project-details-ready-empty-category': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsReadyEmptyCategory.page, woonbehoefteDetailProjectDetailsReadyEmptyCategory.data,
+    ),
+    'woonbehoefte-detail-project-details-read-only': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsReadOnly.page, woonbehoefteDetailProjectDetailsReadOnly.data,
+    ),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));

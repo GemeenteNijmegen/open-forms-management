@@ -717,3 +717,58 @@ footer {
 .woonbehoefte-case-lookup-result {
   margin-block-start: var(--nijmegen-space-200);
 }
+
+.woonbehoefte-project-details__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-100);
+  max-width: 34rem;
+  margin-block-end: var(--nijmegen-space-150);
+}
+
+/* Elk onderdeel (Aanvullende informatie, Project, Wonen, Voorzieningen, KOVA, Projectbrede gegevens) is een eigen inklapbare <details>; deze regel scheidt ze visueel van elkaar. */
+.woonbehoefte-project-details > details + details {
+  margin-block-start: var(--nijmegen-space-150);
+  padding-block-start: var(--nijmegen-space-150);
+  border-top: 1px solid var(--nijmegen-color-border-subdued);
+}
+
+.woonbehoefte-project-details__category-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nijmegen-space-100);
+}
+
+/* Regelkaarten staan visueel los van elkaar, ook op smalle viewport waar de category-header al wrapt. */
+.woonbehoefte-project-details__line {
+  margin-block-start: var(--nijmegen-space-150);
+  padding: var(--nijmegen-space-100);
+  border: 1px solid var(--nijmegen-color-border-subdued);
+  border-radius: var(--nijmegen-space-50);
+}
+
+/* De regelkop is nu een <summary> (elke regel is zelf ook inklapbaar), die krijgt geen vetgedrukte stijl van de browser zoals een <h4> dat wel had. */
+.woonbehoefte-project-details__line-heading {
+  margin: 0 0 var(--nijmegen-space-100) 0;
+  font-weight: 600;
+}
+
+.woonbehoefte-project-details__full-name {
+  margin: 0;
+}
+
+.woonbehoefte-project-details__note {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
+  margin: 0 0 var(--nijmegen-space-100) 0;
+}
+
+/* Opslaan (bij het formulier via het form-attribuut) en Verwijderen staan naast elkaar, niet onder elkaar. */
+.woonbehoefte-project-details__line-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--nijmegen-space-100);
+  margin-block-start: var(--nijmegen-space-100);
+}

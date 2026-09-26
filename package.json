@@ -29,6 +29,8 @@
     "bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda:watch": "projen bundle:app/woonbehoefte/additional-evidence/additionalEvidence.lambda:watch",
     "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda": "projen bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda",
     "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda:watch": "projen bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda:watch",
+    "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda": "projen bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda",
+    "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda:watch": "projen bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda:watch",
     "bundle:app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda": "projen bundle:app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda",
     "bundle:app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda:watch": "projen bundle:app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda:watch",
     "bundle:app/woonbehoefte/reports/woonbehoefteReports.lambda": "projen bundle:app/woonbehoefte/reports/woonbehoefteReports.lambda",

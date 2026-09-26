@@ -1,5 +1,7 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { buildWoonbehoefteDetailViewModel, WoonbehoefteSourceAvailability } from './WoonbehoefteDetailViewModel';
+import { errorReason } from '../../../observability/errorReason';
+import { logger } from '../../../observability/Logger';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
@@ -15,6 +17,8 @@ import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository'
 import { loadWoonbehoefteDocuments, WoonbehoefteDocumentSource } from '../documents/WoonbehoefteDocumentsLoader';
 import { isFailedSource, isReadySource, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
 import { sanitizeWoonbehoefteFilterQuery } from '../overview/WoonbehoefteOverviewFilter';
+import { ProjectDetailsStore } from '../project-details/persistence/ProjectDetailsStore';
+import { buildProjectDetailsViewModel, buildUnavailableProjectDetailsViewModel, ProjectDetailsViewModel } from '../project-details/ui/ProjectDetailsViewModel';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 import detailTemplate from '../templates/woonbehoefte-detail.mustache';
 
@@ -31,6 +35,7 @@ const SAVED_MESSAGES: Record<string, string> = {
   'check-completed': 'Check afgerond.',
   'note': 'Aantekening toegevoegd.',
   'assessment': 'Beoordeling opgeslagen. Controleer of de status van de aanvraag nog klopt.',
+  'project-details': 'Wijziging opgeslagen.',
 };
 
 /**
@@ -46,6 +51,7 @@ export class WoonbehoefteDetailHandler {
     private readonly sourceCacheStore: WoonbehoefteSourceCacheStore,
     private readonly openZaakClient: OpenZaakClient,
     private readonly additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore,
+    private readonly projectDetailsStore: ProjectDetailsStore,
   ) { }
 
   async handleRequest(
@@ -110,12 +116,29 @@ export class WoonbehoefteDetailHandler {
       csrf?.value, additionalDocumentGroups,
     );
 
+    // Alleen de eigen werkversie/pogingstatus, nooit een CSV-fetch: de detailpagina blijft bruikbaar tijdens PENDING/FAILED.
+    // Een leesfout hier mag de rest van de detailpagina niet meeslepen; de sectie toont dan alleen zichzelf als onbeschikbaar.
+    let projectDetails: ProjectDetailsViewModel;
+    try {
+      const [projectDetailsWorkVersion, projectDetailsAttempt] = await Promise.all([
+        this.projectDetailsStore.getWorkVersion(caseReference),
+        this.projectDetailsStore.getAttempt(caseReference),
+      ]);
+      projectDetails = buildProjectDetailsViewModel(
+        caseReference, projectDetailsWorkVersion, projectDetailsAttempt, canManage, csrf?.value, backQuery,
+      );
+    } catch (error) {
+      logger.error('Projectdetails: werkversie/pogingstatus konden niet worden gelezen', { caseReference, reason: errorReason(error) });
+      projectDetails = buildUnavailableProjectDetailsViewModel(caseReference, canManage, csrf?.value, backQuery);
+    }
+
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
       detailTemplate,
       { title: `${viewModel.caseReference} - Woonbehoefte`, features, currentPath: `/woonbehoefte/cases/${caseReference}`, actorEmail: identity.email },
       {
         ...viewModel,
+        projectDetails,
         showStaleWarning: queryStringParameters?.status === 'stale',
         ...(queryStringParameters?.saved && SAVED_MESSAGES[queryStringParameters.saved]
           ? { savedMessage: SAVED_MESSAGES[queryStringParameters.saved] }

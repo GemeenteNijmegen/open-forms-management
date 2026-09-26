@@ -116,6 +116,9 @@
         },
         {
           "spawn": "bundle:app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda"
+        },
+        {
+          "spawn": "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda"
         }
       ]
     },
@@ -296,6 +299,24 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda": {
+      "name": "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda",
+      "description": "Create a JavaScript bundle from src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda:watch": {
+      "name": "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

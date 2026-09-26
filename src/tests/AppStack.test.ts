@@ -62,6 +62,7 @@ describe('AppStack authentication and routing wiring', () => {
     'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
     'src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts',
     'src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts',
+    'src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts',
   ])('enables X-Ray active tracing on %s', (description) => {
     template.hasResourceProperties('AWS::Lambda::Function', Match.objectLike({
       Description: description,
@@ -73,7 +74,7 @@ describe('AppStack authentication and routing wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(15);
+    expect(Object.keys(logGroups)).toHaveLength(16);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {

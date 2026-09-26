@@ -5,6 +5,7 @@ import { StartingPosition, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import { WoonbehoefteAdditionalEvidenceFeature } from './additional-evidence/WoonbehoefteAdditionalEvidenceFeature';
+import { ProjectDetailsFeature } from './project-details/ProjectDetailsFeature';
 import { WoonbehoefteReportsFeature } from './reports/WoonbehoefteReportsFeature';
 import { WoonbehoefteCasesTable } from './WoonbehoefteCasesTable';
 import { WoonbehoefteCaseVersionsTable } from './WoonbehoefteCaseVersionsTable';
@@ -98,6 +99,16 @@ export class WoonbehoefteFeature extends Construct {
       temporaryDownloadsBucket,
     });
 
+    const projectDetailsFeature = new ProjectDetailsFeature(this, 'project-details-feature', {
+      configuration: props.configuration,
+      sourceCacheTable,
+      casesTable,
+    });
+    projectDetailsFeature.table.grantFrontendAccess(pageFunction);
+    projectDetailsFeature.workerFunction.grantInvoke(pageFunction);
+    pageFunction.addEnvironment('WOONBEHOEFTE_PROJECT_DETAILS_TABLE', projectDetailsFeature.table.table.tableName);
+    pageFunction.addEnvironment('WOONBEHOEFTE_PROJECT_DETAILS_WORKER_FUNCTION_NAME', projectDetailsFeature.workerFunction.functionName);
+
     new WoonbehoefteReportsFeature(this, 'reports-feature', {
       managementApi: props.managementApi,
       permissionsTable: props.permissionsTable,
@@ -144,5 +155,26 @@ export class WoonbehoefteFeature extends Construct {
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/check/request', methods: [HttpMethod.POST], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/check/complete', methods: [HttpMethod.POST], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/inadmissible/confirm', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/project-details/refresh', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/project-details/start', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/start-empty', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/project-details/project', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/additional-information', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/project-wide', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}/{lineId}', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}/{lineId}/delete', methods: [HttpMethod.POST], integration,
+    });
   }
 }
