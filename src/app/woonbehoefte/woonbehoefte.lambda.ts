@@ -17,6 +17,7 @@ import { WoonbehoefteOverviewHandler } from './overview/WoonbehoefteOverviewHand
 import { WoonbehoefteRefreshHandler } from './overview/WoonbehoefteRefreshHandler';
 import { createProjectDetailsStore } from './project-details/persistence/createProjectDetailsStore';
 import { ProjectDetailsActionHandler } from './project-details/ui/ProjectDetailsActionHandler';
+import { ProjectDetailsLocationDownloadHandler } from './project-details/ui/ProjectDetailsLocationDownloadHandler';
 import { ProjectDetailsTriggerHandler } from './project-details/ui/ProjectDetailsTriggerHandler';
 import { createWoonbehoefteSourceCacheStore } from './source/createWoonbehoefteSourceCacheStore';
 import { errorReason } from '../../observability/errorReason';
@@ -49,6 +50,7 @@ const assessmentHandler = new WoonbehoefteAssessmentHandler(authorizationService
 const noteHandler = new WoonbehoefteNoteHandler(authorizationService, caseRepository, auditTrail);
 const checkHandler = new WoonbehoefteCheckHandler(authorizationService, caseRepository, auditTrail);
 const projectDetailsActionHandler = new ProjectDetailsActionHandler(authorizationService, projectDetailsStore, auditTrail);
+const projectDetailsLocationDownloadHandler = new ProjectDetailsLocationDownloadHandler(authorizationService, caseRepository, projectDetailsStore);
 
 /**
  * Dispatches every Woonbehoefte page/action route, the same single-Lambda-multiple-routes shape
@@ -99,6 +101,9 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
         authorizationService, caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, projectDetailsStore,
       );
       return await detailHandler.handleRequest(identity, caseReference, event.queryStringParameters);
+    }
+    if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}/project-details/location.geojson') {
+      return await projectDetailsLocationDownloadHandler.handleRequest(identity, caseReference);
     }
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}/documents/{documentId}') {
       const openZaakClient = await getOpenZaakClient();

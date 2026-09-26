@@ -61,6 +61,15 @@ export interface ProjectDetailsWorkVersion {
   updatedBy: string;
 }
 
+/**
+ * Zelfde samenstelling voor de detailpagina en de GeoJSON-download, zodat beide altijd dezelfde naam tonen.
+ * Een lege leesbare naam (een handmatig leeg gestarte werkversie) valt terug op alleen het OF-kenmerk, in
+ * plaats van een kaal "OF-kenmerk - " over te houden.
+ */
+export function composeFullProjectName(caseReference: string, readableProjectName: string): string {
+  return readableProjectName ? `${caseReference} - ${readableProjectName}` : caseReference;
+}
+
 export type ProjectDetailsAttemptStatus = 'PENDING' | 'FAILED';
 
 /** Pogingstatus (`sk = ATTEMPT`) van de laatste voorinvulling; alleen relevant zolang er geen werkversie bestaat. */

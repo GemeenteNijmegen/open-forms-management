@@ -1,6 +1,6 @@
 import {
-  deriveProjectDetailsStatus, FacilityLine, HOUSING_LINE_TYPES, HousingLine, HousingLineType, KovaLine, ProjectDetailsAttempt,
-  ProjectDetailsWorkVersion,
+  composeFullProjectName, deriveProjectDetailsStatus, FacilityLine, HOUSING_LINE_TYPES, HousingLine, HousingLineType, KovaLine,
+  ProjectDetailsAttempt, ProjectDetailsWorkVersion,
 } from '../domain/ProjectDetails';
 
 export const HOUSING_LINE_TYPE_LABELS: Record<HousingLineType, string> = {
@@ -136,7 +136,7 @@ export function buildProjectDetailsViewModel(
     caseReference,
     ...(workVersion
       ? {
-        fullProjectName: `${caseReference} - ${workVersion.readableProjectName}`,
+        fullProjectName: composeFullProjectName(caseReference, workVersion.readableProjectName),
         readableProjectName: workVersion.readableProjectName,
         projectDescription: workVersion.projectDescription,
         additionalInformation: workVersion.additionalInformation,

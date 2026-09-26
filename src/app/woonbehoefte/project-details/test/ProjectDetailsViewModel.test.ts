@@ -62,6 +62,11 @@ describe('buildProjectDetailsViewModel', () => {
     expect(vm.fullProjectName).toBe('OF-2026-042 - Park Fluvium');
   });
 
+  it('falls back to only the OF-kenmerk when a handmatig leeg gestarte werkversie has no readable name yet', () => {
+    const vm = buildProjectDetailsViewModel('OF-2026-042', workVersion({ readableProjectName: '' }), undefined, true, 'token', '');
+    expect(vm.fullProjectName).toBe('OF-2026-042');
+  });
+
   it('orders line cards by their stored order and numbers them 1-based for display', () => {
     const vm = buildProjectDetailsViewModel('OF-1', workVersion({
       housingLines: {
