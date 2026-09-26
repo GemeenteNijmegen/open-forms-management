@@ -1,3 +1,5 @@
+import { ProjectLocationIssueCode, ProjectPolygon } from '../location/ProjectLocation';
+
 /**
  * Werkregel-type voor Wonen, afgeleid uit `typeWoonobject` en `isCollectieveWoonvorm` in
  * ProjectDetailsCsvParser; nooit rechtstreeks uit een enkel bronveld overgenomen.
@@ -46,6 +48,13 @@ export interface ProjectDetailsWorkVersion {
   housingLines: Record<string, HousingLine>;
   collectiveFacilityLines: Record<string, FacilityLine>;
   kovaLines: Record<string, KovaLine>;
+  /** Geometrie uit de formulier-CSV. Afwezig zolang de bron leeg, onleesbaar of ongeldig was; zie sourceLocationIssue voor de reden. */
+  sourceLocationPolygon?: ProjectPolygon;
+  sourceLocationIssue?: ProjectLocationIssueCode;
+  /** Door een medewerker geplakte polygon. Heeft voorrang boven sourceLocationPolygon zodra aanwezig. */
+  manualLocationPolygon?: ProjectPolygon;
+  manualLocationSetAt?: string;
+  manualLocationSetBy?: string;
   createdAt: string;
   createdBy: string;
   updatedAt: string;

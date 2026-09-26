@@ -35,5 +35,8 @@ export function buildProjectDetailsPrefill(csvData: ProjectDetailsCsvData): NewW
     housingLines: buildHousingLines(csvData.housingRows, csvData.isCollectiveHousing),
     collectiveFacilityLines: buildFacilityLines(csvData.facilityRows),
     kovaLines: buildKovaLines(csvData.kovaRows),
+    ...(csvData.sourceLocation.valid
+      ? { sourceLocationPolygon: csvData.sourceLocation.polygon }
+      : { sourceLocationIssue: csvData.sourceLocation.issue }),
   };
 }

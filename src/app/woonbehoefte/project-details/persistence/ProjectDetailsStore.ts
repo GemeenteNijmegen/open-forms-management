@@ -4,6 +4,7 @@ import {
   FacilityLine, HousingLine, KovaLine, ProjectDetailsAttempt, ProjectDetailsAttemptStatus, ProjectDetailsBatchState, ProjectDetailsHistoryAction,
   ProjectDetailsLineCategory, ProjectDetailsWorkVersion,
 } from '../domain/ProjectDetails';
+import { ProjectLocationIssueCode, ProjectPolygon } from '../location/ProjectLocation';
 
 function partitionKey(caseReference: string): string {
   return `CASE#${caseReference}`;
@@ -48,6 +49,8 @@ export interface NewWorkVersionInput {
   housingLines: Record<string, HousingLine>;
   collectiveFacilityLines: Record<string, FacilityLine>;
   kovaLines: Record<string, KovaLine>;
+  sourceLocationPolygon?: ProjectPolygon;
+  sourceLocationIssue?: ProjectLocationIssueCode;
 }
 
 /**

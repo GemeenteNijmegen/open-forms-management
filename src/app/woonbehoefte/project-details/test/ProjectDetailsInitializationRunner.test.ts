@@ -84,6 +84,8 @@ describe('initializeCase', () => {
     expect(store.setAttempt).toHaveBeenCalledWith('OF-1', 'PENDING', undefined, expect.any(Date));
     const [, input] = store.createWorkVersionIfMissing.mock.calls[0] as [string, NewWorkVersionInput];
     expect(input.readableProjectName).toBe('Voorbeeldproject');
+    // CATEGORY_1_SAMPLE bevat een geldige projectLocatie: dezelfde CSV-fetch levert dus ook de bronlocatie.
+    expect(input.sourceLocationPolygon).toBeDefined();
   });
 
   it('fails a case without a primary source link, without ever calling Open Zaak', async () => {
@@ -171,6 +173,21 @@ describe('runProjectDetailsBatch', () => {
     const secondRun = await runProjectDetailsBatch(deps, () => false, 'run-2');
 
     expect(firstRun).toMatchObject({ created: 1, skipped: 0, failed: 0 });
+    expect(secondRun).toMatchObject({ created: 0, skipped: 1, failed: 0 });
+    expect(store.createWorkVersionIfMissing).toHaveBeenCalledTimes(1);
+  });
+
+  it('a second batch run never touches a werkversie with a handmatig ingevoerde locatie', async () => {
+    const { deps, store } = makeDeps();
+    store.getWorkVersion
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce({
+        caseReference: 'OF-1', manualLocationPolygon: { type: 'Polygon', coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] },
+      });
+
+    await runProjectDetailsBatch(deps, () => false, 'run-1');
+    const secondRun = await runProjectDetailsBatch(deps, () => false, 'run-2');
+
     expect(secondRun).toMatchObject({ created: 0, skipped: 1, failed: 0 });
     expect(store.createWorkVersionIfMissing).toHaveBeenCalledTimes(1);
   });

@@ -124,28 +124,53 @@ describe('ProjectDetails prefill against real-data samples', () => {
     expect(kovaCounts).toEqual([10, 2, 2, 1, 1, 1, 1]);
   });
 
+  it('maximaal gevuld dossier met locatie: het grootste werkversie-item blijft ruim onder de DynamoDB-itemgrens (400 KB)', () => {
+    const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-maximaal-gevuld-met-locatie.csv'), 'OF-15');
+    const prefill = buildProjectDetailsPrefill(data);
+    const storedItem = {
+      pk: 'CASE#OF-15',
+      sk: 'WORKVERSION',
+      caseReference: 'OF-15',
+      ...prefill,
+      createdAt: '2026-09-26T00:00:00.000Z',
+      createdBy: 'woonbehoefte-project-details-worker',
+      updatedAt: '2026-09-26T00:00:00.000Z',
+      updatedBy: 'woonbehoefte-project-details-worker',
+    };
+
+    const itemSizeInBytes = Buffer.byteLength(JSON.stringify(storedItem), 'utf-8');
+
+    expect(itemSizeInBytes).toBeLessThan(50_000);
+  });
+
   describe('projectLocatie', () => {
-    it('geldige bron: een echte Python-achtige Polygon geeft een geldige bronlocatie naast de rest van de prefill', () => {
+    it('geldige bron: een echte Python-achtige Polygon komt als sourceLocationPolygon in de prefill terecht', () => {
       const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-locatie-geldig.csv'), 'OF-11');
 
       expect(data.sourceLocation.valid).toBe(true);
       const prefill = buildProjectDetailsPrefill(data);
+      expect(prefill.sourceLocationPolygon).toBeDefined();
+      expect(prefill.sourceLocationIssue).toBeUndefined();
       expect(Object.values(prefill.housingLines)).toHaveLength(1);
     });
 
-    it('lege cel: een ontbrekende bronlocatie geeft een reden, de rest van de CSV blijft bruikbaar', () => {
+    it('lege cel: een ontbrekende bronlocatie geeft een reden in de prefill, de rest van de CSV blijft bruikbaar', () => {
       const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-locatie-leeg.csv'), 'OF-12');
 
       expect(data.sourceLocation).toEqual({ valid: false, issue: 'MISSING' });
       const prefill = buildProjectDetailsPrefill(data);
+      expect(prefill.sourceLocationPolygon).toBeUndefined();
+      expect(prefill.sourceLocationIssue).toBe('MISSING');
       expect(Object.values(prefill.housingLines)).toHaveLength(1);
     });
 
-    it('zelfkruisende bron: een bow-tie polygon geeft een reden, de rest van de CSV blijft bruikbaar', () => {
+    it('zelfkruisende bron: een bow-tie polygon geeft een reden in de prefill, de rest van de CSV blijft bruikbaar', () => {
       const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-locatie-zelfkruisend.csv'), 'OF-13');
 
       expect(data.sourceLocation).toEqual({ valid: false, issue: 'SELF_INTERSECTING' });
       const prefill = buildProjectDetailsPrefill(data);
+      expect(prefill.sourceLocationPolygon).toBeUndefined();
+      expect(prefill.sourceLocationIssue).toBe('SELF_INTERSECTING');
       expect(Object.values(prefill.housingLines)).toHaveLength(1);
     });
 

@@ -57,8 +57,21 @@ describe('ProjectDetailsStore', () => {
     const call = documentMock.commandCalls(TransactWriteCommand)[0];
     const [workVersionItem, historyItem] = call.args[0].input.TransactItems!;
     expect(workVersionItem.Put?.Item).toMatchObject({ pk: 'CASE#OF-1', sk: 'WORKVERSION', readableProjectName: '' });
+    expect(workVersionItem.Put?.Item).not.toHaveProperty('sourceLocationPolygon');
+    expect(workVersionItem.Put?.Item).not.toHaveProperty('sourceLocationIssue');
     expect(workVersionItem.Put?.ConditionExpression).toBe('attribute_not_exists(pk)');
     expect(historyItem.Put?.Item).toMatchObject({ pk: 'CASE#OF-1', action: 'MANUALLY_STARTED' });
+  });
+
+  it('stores a bronpolygon on the werkversie when the prefill input carries one', async () => {
+    documentMock.on(TransactWriteCommand).resolves({});
+    const polygon = { type: 'Polygon' as const, coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] };
+
+    await newStore().createWorkVersionIfMissing('OF-1', { ...emptyWorkVersionInput(), sourceLocationPolygon: polygon }, 'worker');
+
+    const call = documentMock.commandCalls(TransactWriteCommand)[0];
+    const [workVersionItem] = call.args[0].input.TransactItems!;
+    expect(workVersionItem.Put?.Item).toMatchObject({ sourceLocationPolygon: polygon });
   });
 
   it('never overwrites an existing werkversie: a repeated init is SKIPPED and writes nothing new', async () => {
