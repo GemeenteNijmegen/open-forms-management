@@ -2,6 +2,8 @@ import { parse } from 'csv-parse/sync';
 import { z } from 'zod';
 import { parseRepeatingGroupRows, RawSourceRow } from './parser/RepeatingGroupValueParser';
 import { logger } from '../../../../observability/Logger';
+import { parseSubmittedLocation } from '../location/parseSubmittedLocation';
+import { ProjectLocationOutcome } from '../location/ProjectLocation';
 
 /** Loose: net als WoonbehoefteCsvParser draagt de CSV veel meer Open Forms-kolommen die deze feature niet nodig heeft. */
 const projectDetailsCsvRowSchema = z.looseObject({
@@ -17,6 +19,8 @@ const projectDetailsCsvRowSchema = z.looseObject({
   projectLaadpalenAchterMeter: z.string(),
   projectAantalLaadpalen: z.string(),
   projectMaxPiekvermogenLaadpalenKw: z.string(),
+  // Optioneel: een CSV van vóór deze feature mist de kolom, dan blijft de rest van de rij gewoon te parsen.
+  projectLocatie: z.string().optional(),
 });
 
 export type ProjectDetailsCsvRow = z.infer<typeof projectDetailsCsvRowSchema>;
@@ -38,6 +42,7 @@ export interface ProjectDetailsCsvData {
   facilityRows: RawSourceRow[];
   kovaRows: RawSourceRow[];
   projectWideFields: ProjectDetailsProjectWideFields;
+  sourceLocation: ProjectLocationOutcome;
 }
 
 /** Zelfde één-rij-eis als WoonbehoefteCsvParser en WoonbehoefteRawFormFields: één Open Forms-inzending per CSV. */
@@ -68,6 +73,15 @@ function parseDictListColumn(value: string, reference: string, columnName: strin
   }
 }
 
+/** Een ongeldige projectLocatie is een locatieprobleem in een verder bruikbare CSV, geen parserfout van de hele rij. */
+function parseSourceLocationColumn(value: string | undefined, reference: string): ProjectLocationOutcome {
+  const outcome = parseSubmittedLocation(value);
+  if (!outcome.valid) {
+    logger.warn('Projectdetails CSV projectLocatie is niet bruikbaar', { reference, issue: outcome.issue });
+  }
+  return outcome;
+}
+
 /**
  * Parst de primaire CSV naar de ruwe vorm die buildProjectDetailsPrefill omzet naar werkregels. Logt bij
  * een fout alleen de kolomnaam en de reden, nooit de veldinhoud zelf.
@@ -83,6 +97,7 @@ export function parseProjectDetailsCsv(csvText: string, reference: string): Proj
     housingRows: parseDictListColumn(row.woningenEnAansluitingen, reference, 'woningenEnAansluitingen'),
     facilityRows: parseDictListColumn(row.collectieveVoorzieningenAansluitingen, reference, 'collectieveVoorzieningenAansluitingen'),
     kovaRows: parseDictListColumn(row.kovaAansluitingen, reference, 'kovaAansluitingen'),
+    sourceLocation: parseSourceLocationColumn(row.projectLocatie, reference),
     projectWideFields: {
       ...(row.projectZonnepanelenAchterMeter ? { solarPanelsBehindMeter: row.projectZonnepanelenAchterMeter } : {}),
       ...(row.projectAantalZonnepanelen ? { solarPanelCount: row.projectAantalZonnepanelen } : {}),

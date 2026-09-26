@@ -124,6 +124,38 @@ describe('ProjectDetails prefill against real-data samples', () => {
     expect(kovaCounts).toEqual([10, 2, 2, 1, 1, 1, 1]);
   });
 
+  describe('projectLocatie', () => {
+    it('geldige bron: een echte Python-achtige Polygon geeft een geldige bronlocatie naast de rest van de prefill', () => {
+      const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-locatie-geldig.csv'), 'OF-11');
+
+      expect(data.sourceLocation.valid).toBe(true);
+      const prefill = buildProjectDetailsPrefill(data);
+      expect(Object.values(prefill.housingLines)).toHaveLength(1);
+    });
+
+    it('lege cel: een ontbrekende bronlocatie geeft een reden, de rest van de CSV blijft bruikbaar', () => {
+      const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-locatie-leeg.csv'), 'OF-12');
+
+      expect(data.sourceLocation).toEqual({ valid: false, issue: 'MISSING' });
+      const prefill = buildProjectDetailsPrefill(data);
+      expect(Object.values(prefill.housingLines)).toHaveLength(1);
+    });
+
+    it('zelfkruisende bron: een bow-tie polygon geeft een reden, de rest van de CSV blijft bruikbaar', () => {
+      const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-locatie-zelfkruisend.csv'), 'OF-13');
+
+      expect(data.sourceLocation).toEqual({ valid: false, issue: 'SELF_INTERSECTING' });
+      const prefill = buildProjectDetailsPrefill(data);
+      expect(Object.values(prefill.housingLines)).toHaveLength(1);
+    });
+
+    it('ontbrekende kolom: een CSV van vóór deze feature blijft parsebaar met MISSING als locatie-uitkomst', () => {
+      const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-woonhuis.csv'), 'OF-14');
+
+      expect(data.sourceLocation).toEqual({ valid: false, issue: 'MISSING' });
+    });
+  });
+
   describe('foutpaden', () => {
     // Kolomnamen komen uit een echte sample; de rij zelf is bewust kapot/onvolledig, dus niet uit een sample te halen.
     const header = sample('woonbehoefte-project-details-woonhuis.csv').split('\n')[0];
