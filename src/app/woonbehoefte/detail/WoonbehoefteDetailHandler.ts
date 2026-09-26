@@ -125,7 +125,7 @@ export class WoonbehoefteDetailHandler {
         this.projectDetailsStore.getAttempt(caseReference),
       ]);
       projectDetails = buildProjectDetailsViewModel(
-        caseReference, projectDetailsWorkVersion, projectDetailsAttempt, canManage, csrf?.value, backQuery,
+        caseReference, projectDetailsWorkVersion, projectDetailsAttempt, canManage, csrf?.value, backQuery, queryStringParameters?.locationError,
       );
     } catch (error) {
       logger.error('Projectdetails: werkversie/pogingstatus konden niet worden gelezen', { caseReference, reason: errorReason(error) });

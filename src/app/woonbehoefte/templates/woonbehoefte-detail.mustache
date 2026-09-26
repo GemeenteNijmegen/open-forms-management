@@ -500,6 +500,80 @@
         {{/canManage}}
       </form>
     </details>
+
+    <details id="pd-project-location-card" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Projectlocatie</summary>
+
+      {{#locationErrorMessage}}
+      <div class="utrecht-alert utrecht-alert--error" role="status">
+        <div class="utrecht-alert__content">
+          <p class="utrecht-alert__message">{{locationErrorMessage}}</p>
+        </div>
+      </div>
+      {{/locationErrorMessage}}
+
+      {{#isLocationManual}}
+      <p class="utrecht-paragraph">Handmatig aangepast door {{locationManualSetByLabel}} op {{locationManualSetAtLabel}}.</p>
+      {{#isLocationBronUnusableContext}}
+      <p class="woonbehoefte-project-details__location-issue woonbehoefte-project-details__location-issue--context">
+        Oorspronkelijke formulierlocatie was niet bruikbaar: {{locationBronIssueMessage}}.
+      </p>
+      {{/isLocationBronUnusableContext}}
+      {{/isLocationManual}}
+      {{^isLocationManual}}
+      {{#isLocationBronValid}}
+      <p class="utrecht-paragraph">Bron: locatie uit formulier.</p>
+      {{/isLocationBronValid}}
+      {{#isLocationBronMissing}}
+      <p class="utrecht-paragraph">Geen getekende locatie in het formulier; gebruik het ingediende locatiebestand als referentie.</p>
+      {{/isLocationBronMissing}}
+      {{#isLocationBronUnusablePrimary}}
+      <p class="woonbehoefte-project-details__location-issue">De getekende locatie uit het formulier is niet bruikbaar: {{locationBronIssueMessage}}.</p>
+      {{/isLocationBronUnusablePrimary}}
+      {{/isLocationManual}}
+
+      {{#locationCanDownload}}
+      <p class="utrecht-paragraph">
+        <a class="utrecht-link" href="/woonbehoefte/cases/{{caseReference}}/project-details/location.geojson">Download GeoJSON</a>
+      </p>
+      {{/locationCanDownload}}
+
+      {{#canManage}}
+      {{#locationCanDownload}}
+      <p class="woonbehoefte-project-details__note">Een nieuwe locatie hieronder vervangt de huidige.</p>
+      {{/locationCanDownload}}
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/location" class="woonbehoefte-project-details__form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-project-location">GeoJSON van de projectlocatie</label>
+          <textarea class="utrecht-textarea" id="pd-project-location" name="location" rows="6"></textarea>
+        </div>
+        <button type="submit" class="utrecht-button utrecht-button--primary-action">Locatie opslaan</button>
+      </form>
+      {{/canManage}}
+
+      <details class="woonbehoefte-details woonbehoefte-details--inline">
+        <summary>Hoe teken ik een projectlocatie?</summary>
+        <ol>
+          <li class="utrecht-paragraph">Open de ingediende locatie-PDF bij de dossierdocumenten en gebruik die als referentie. De applicatie leest de PDF niet automatisch.</li>
+          <li class="utrecht-paragraph">Teken één vlak op <a class="utrecht-link" href="https://geojson.io">geojson.io</a>. Verwijder losse zoekresultaten, punten, de eventuele rechthoek rond Nijmegen en andere extra vlakken voordat je kopieert/exporteert.</li>
+          <li class="utrecht-paragraph">Kopieer de volledige JSON met precies één feature en plak haar in het tekstblok hierboven. Een losse Polygon mag ook.</li>
+          <li class="utrecht-paragraph">Controleer de projectgrens op de kaart en klik Locatie opslaan. De applicatie voegt OF-kenmerk en projectnaam bij downloaden toe.</li>
+        </ol>
+        <p class="utrecht-paragraph">Verwacht voorbeeld (fictieve coördinaten rond Nijmegen):</p>
+        <pre class="woonbehoefte-project-details__example"><code>{
+  "type": "Polygon",
+  "coordinates": [[
+    [5.8600, 51.8450],
+    [5.8620, 51.8450],
+    [5.8620, 51.8465],
+    [5.8600, 51.8465],
+    [5.8600, 51.8450]
+  ]]
+}</code></pre>
+      </details>
+    </details>
     {{/isReady}}
   </section>
   {{/projectDetails}}

@@ -61,9 +61,13 @@ actie, welke regel). Geen versienummer, geen optimistic locking: de laatste schr
 
 - domain, het type ProjectDetailsWorkVersion en de statuslogica (NEW/PENDING/READY/FAILED).
 - source, de CSV- en notatie-parsers, met de kolomparsers en gedeelde hulpfuncties in source/parser.
+- location, de polygon-kant: bronlocatie uit de CSV, handmatige correctie uit een geplakte Polygon of
+  geojson.io-FeatureCollection, de gedeelde geometriecontrole (checkProjectPolygon) en het on demand bouwen
+  van de downloadbare GeoJSON.
 - persistence, ProjectDetailsStore: alle DynamoDB-lees- en schrijfacties, inclusief history.
 - initialization, de batch/losse-poging-logica en de worker-Lambda.
-- ui, viewmodel en actiehandlers voor de detailpagina (bekijken, bewerken, regel toevoegen/verwijderen).
+- ui, viewmodel en actiehandlers voor de detailpagina (bekijken, bewerken, regel toevoegen/verwijderen,
+  projectlocatie).
 - test, echte geanonimiseerde CSV-samples plus de tests die de volledige pijplijn erop uitproberen.
 
 ## Niet in scope

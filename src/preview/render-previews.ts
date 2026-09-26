@@ -16,7 +16,11 @@ import {
   woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
   woonbehoefteAdditionalEvidenceOverviewSearch,
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
-  woonbehoefteDetailProjectDetailsFailed, woonbehoefteDetailProjectDetailsNew, woonbehoefteDetailProjectDetailsPending,
+  woonbehoefteDetailProjectDetailsFailed,
+  woonbehoefteDetailProjectDetailsLocationManualCorrected, woonbehoefteDetailProjectDetailsLocationMissing,
+  woonbehoefteDetailProjectDetailsLocationReadOnly, woonbehoefteDetailProjectDetailsLocationSelfIntersecting,
+  woonbehoefteDetailProjectDetailsLocationSourceValid,
+  woonbehoefteDetailProjectDetailsNew, woonbehoefteDetailProjectDetailsPending,
   woonbehoefteDetailProjectDetailsReadOnly, woonbehoefteDetailProjectDetailsReadyEmptyCategory, woonbehoefteDetailProjectDetailsReadyManyLines,
   woonbehoefteDetailProjectDetailsReadyOnePerCategory,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
@@ -210,6 +214,25 @@ export async function renderAll(): Promise<void> {
     ),
     'woonbehoefte-detail-project-details-read-only': render(
       woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsReadOnly.page, woonbehoefteDetailProjectDetailsReadOnly.data,
+    ),
+    'woonbehoefte-detail-project-details-location-source-valid': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsLocationSourceValid.page, woonbehoefteDetailProjectDetailsLocationSourceValid.data,
+    ),
+    'woonbehoefte-detail-project-details-location-missing': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsLocationMissing.page, woonbehoefteDetailProjectDetailsLocationMissing.data,
+    ),
+    'woonbehoefte-detail-project-details-location-self-intersecting': render(
+      woonbehoefteDetailTemplate,
+      woonbehoefteDetailProjectDetailsLocationSelfIntersecting.page,
+      woonbehoefteDetailProjectDetailsLocationSelfIntersecting.data,
+    ),
+    'woonbehoefte-detail-project-details-location-manual-corrected': render(
+      woonbehoefteDetailTemplate,
+      woonbehoefteDetailProjectDetailsLocationManualCorrected.page,
+      woonbehoefteDetailProjectDetailsLocationManualCorrected.data,
+    ),
+    'woonbehoefte-detail-project-details-location-read-only': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsLocationReadOnly.page, woonbehoefteDetailProjectDetailsLocationReadOnly.data,
     ),
   };
 

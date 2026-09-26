@@ -28,7 +28,7 @@ describe('buildProjectDetailsViewModel', () => {
   it('is PENDING while a poging loopt en er nog geen werkversie is', () => {
     const vm = buildProjectDetailsViewModel(
       'OF-1', undefined, { caseReference: 'OF-1', status: 'PENDING', attemptedAt: '2026-09-25T10:00:00.000Z' }, true, 'token', '',
-      new Date('2026-09-25T10:05:00.000Z'),
+      undefined, new Date('2026-09-25T10:05:00.000Z'),
     );
     expect(vm).toMatchObject({ status: 'PENDING', isPending: true });
   });
@@ -36,7 +36,7 @@ describe('buildProjectDetailsViewModel', () => {
   it('treats a PENDING poging older than the Lambda-timeout as FAILED, so a crashed worker can be retried', () => {
     const vm = buildProjectDetailsViewModel(
       'OF-1', undefined, { caseReference: 'OF-1', status: 'PENDING', attemptedAt: '2026-09-25T10:00:00.000Z' }, true, 'token', '',
-      new Date('2026-09-25T10:30:00.000Z'),
+      undefined, new Date('2026-09-25T10:30:00.000Z'),
     );
     expect(vm).toMatchObject({ status: 'FAILED', isFailed: true });
   });
@@ -101,5 +101,19 @@ describe('buildProjectDetailsViewModel', () => {
     expect(vm).toMatchObject({
       isUnavailable: true, isNew: false, isPending: false, isReady: false, isFailed: false, hasHousingLines: false,
     });
+  });
+
+  it('threads the werkversie location fields through into the overall viewmodel', () => {
+    const vm = buildProjectDetailsViewModel('OF-1', workVersion({
+      sourceLocationPolygon: { type: 'Polygon', coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] },
+    }), undefined, true, 'token', '');
+
+    expect(vm).toMatchObject({ isLocationBronValid: true, locationCanDownload: true });
+  });
+
+  it('translates a locationError query-param code into a readable message on the viewmodel', () => {
+    const vm = buildProjectDetailsViewModel('OF-1', workVersion(), undefined, true, 'token', '', 'SELF_INTERSECTING');
+
+    expect(vm.locationErrorMessage).toBe('Deze polygon kruist zichzelf.');
   });
 });

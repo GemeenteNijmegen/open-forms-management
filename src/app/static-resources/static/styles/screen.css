@@ -765,10 +765,28 @@ footer {
   margin: 0 0 var(--nijmegen-space-100) 0;
 }
 
+/* Onbruikbare bronlocatie, ook als context onder een handmatige locatie; zelfde rood als de rest van de site's foutmeldingen. */
+.woonbehoefte-project-details__location-issue {
+  color: var(--nijmegen-color-feedback-error-default);
+}
+
+.woonbehoefte-project-details__location-issue--context {
+  font-size: var(--utrecht-paragraph-small-font-size);
+}
+
 /* Opslaan (bij het formulier via het form-attribuut) en Verwijderen staan naast elkaar, niet onder elkaar. */
 .woonbehoefte-project-details__line-actions {
   display: flex;
   align-items: center;
   gap: var(--nijmegen-space-100);
   margin-block-start: var(--nijmegen-space-100);
+}
+
+/* Fictief GeoJSON-voorbeeld in de tekenhulp; alleen leesbaar maken, geen decoratie. */
+.woonbehoefte-project-details__example {
+  max-width: 34rem;
+  overflow-x: auto;
+  padding: var(--nijmegen-space-100);
+  background-color: var(--nijmegen-color-background-hover);
+  border-radius: var(--nijmegen-space-50);
 }

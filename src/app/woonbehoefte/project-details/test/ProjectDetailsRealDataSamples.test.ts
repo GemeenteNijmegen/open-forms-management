@@ -127,11 +127,15 @@ describe('ProjectDetails prefill against real-data samples', () => {
   it('maximaal gevuld dossier met locatie: het grootste werkversie-item blijft ruim onder de DynamoDB-itemgrens (400 KB)', () => {
     const data = parseProjectDetailsCsv(sample('woonbehoefte-project-details-maximaal-gevuld-met-locatie.csv'), 'OF-15');
     const prefill = buildProjectDetailsPrefill(data);
+    // Worstcasegrootte: sourceLocationPolygon blijft staan nadat een medewerker ook een manualLocationPolygon heeft opgeslagen.
     const storedItem = {
       pk: 'CASE#OF-15',
       sk: 'WORKVERSION',
       caseReference: 'OF-15',
       ...prefill,
+      manualLocationPolygon: prefill.sourceLocationPolygon,
+      manualLocationSetAt: '2026-09-26T00:00:00.000Z',
+      manualLocationSetBy: 'medewerker@example.nl',
       createdAt: '2026-09-26T00:00:00.000Z',
       createdBy: 'woonbehoefte-project-details-worker',
       updatedAt: '2026-09-26T00:00:00.000Z',

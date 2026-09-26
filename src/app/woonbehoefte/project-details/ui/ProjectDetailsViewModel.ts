@@ -1,3 +1,4 @@
+import { buildProjectDetailsLocationViewModel, ProjectDetailsLocationViewModel } from './ProjectDetailsLocationViewModel';
 import {
   composeFullProjectName, deriveProjectDetailsStatus, FacilityLine, HOUSING_LINE_TYPES, HousingLine, HousingLineType, KovaLine,
   ProjectDetailsAttempt, ProjectDetailsWorkVersion,
@@ -33,7 +34,7 @@ export interface ProjectDetailsLineCardViewModel {
   backQuery: string;
 }
 
-export interface ProjectDetailsViewModel {
+export interface ProjectDetailsViewModel extends ProjectDetailsLocationViewModel {
   status: string;
   isNew: boolean;
   isPending: boolean;
@@ -117,12 +118,14 @@ function byOrder<T extends { order: number }>(lines: Record<string, T>): T[] {
  */
 export function buildProjectDetailsViewModel(
   caseReference: string, workVersion: ProjectDetailsWorkVersion | undefined, attempt: ProjectDetailsAttempt | undefined,
-  canManage: boolean, csrfToken: string | undefined, backQuery: string, now: Date = new Date(),
+  canManage: boolean, csrfToken: string | undefined, backQuery: string, locationErrorCode: string | undefined = undefined,
+  now: Date = new Date(),
 ): ProjectDetailsViewModel {
   const status = deriveProjectDetailsStatus(workVersion, attempt, now);
   const lineContext: LineCardContext = { caseReference, canManage, backQuery, ...(csrfToken ? { csrfToken } : {}) };
 
   return {
+    ...buildProjectDetailsLocationViewModel(workVersion, locationErrorCode),
     status,
     isNew: status === 'NEW',
     isPending: status === 'PENDING',
@@ -158,6 +161,7 @@ export function buildUnavailableProjectDetailsViewModel(
   caseReference: string, canManage: boolean, csrfToken: string | undefined, backQuery: string,
 ): ProjectDetailsViewModel {
   return {
+    ...buildProjectDetailsLocationViewModel(undefined, undefined),
     status: 'UNAVAILABLE',
     isNew: false,
     isPending: false,

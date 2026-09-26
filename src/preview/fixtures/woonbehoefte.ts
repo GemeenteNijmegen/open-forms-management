@@ -593,6 +593,16 @@ export const woonbehoefteDetailSaved = {
   },
 };
 
+// Fictieve, niet uit een echt dossier afkomstige polygonen (zie 01-context.md: geen echte dossierdata in previews).
+const PREVIEW_SOURCE_POLYGON = {
+  type: 'Polygon' as const,
+  coordinates: [[[5.811185, 51.851814], [5.846297, 51.851682], [5.846124, 51.83477], [5.811026, 51.834902], [5.811185, 51.851814]]],
+};
+const PREVIEW_MANUAL_POLYGON = {
+  type: 'Polygon' as const,
+  coordinates: [[[5.858952, 51.84241], [5.859964, 51.841259], [5.860509, 51.842102], [5.858952, 51.84241]]],
+};
+
 function projectDetailsWorkVersion(overrides: Partial<ProjectDetailsWorkVersion> & { caseReference: string }): ProjectDetailsWorkVersion {
   return {
     readableProjectName: 'Nieuwbouwproject Dukenburg',
@@ -662,8 +672,10 @@ const projectDetailsOnePerCategoryWorkVersion = projectDetailsWorkVersion({
 });
 
 // 6 wonen, 15 voorzieningen, 18 KOVA: het grootst realistisch gevulde dossier uit de gemeten voorbeelden (01-context-en-besluiten.md).
+// Met een geldige bronlocatie, zodat deze preview ook toont dat de locatiekaart onder veel herhalende groepen bruikbaar blijft.
 const projectDetailsManyLinesWorkVersion = projectDetailsWorkVersion({
   caseReference: 'OF-2026-00142',
+  sourceLocationPolygon: PREVIEW_SOURCE_POLYGON,
   housingLines: Object.fromEntries(Array.from({ length: 6 }, (_, index) => {
     const lineId = `wonen-${index + 1}`;
     return [lineId, projectDetailsHousingLine({
@@ -762,5 +774,68 @@ export const woonbehoefteDetailProjectDetailsReadOnly = {
   data: {
     ...baseDetailData(false, 'kijker@example.invalid'),
     projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsOnePerCategoryWorkVersion, undefined, false, undefined, ''),
+  },
+};
+
+const projectDetailsLocationSourceValidWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  sourceLocationPolygon: PREVIEW_SOURCE_POLYGON,
+});
+
+const projectDetailsLocationSourceSelfIntersectingWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  sourceLocationIssue: 'SELF_INTERSECTING',
+});
+
+const projectDetailsLocationManualCorrectedWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  sourceLocationIssue: 'SELF_INTERSECTING',
+  manualLocationPolygon: PREVIEW_MANUAL_POLYGON,
+  manualLocationSetAt: '2026-09-20T14:32:00.000Z',
+  manualLocationSetBy: 'medewerker@example.invalid',
+});
+
+export const woonbehoefteDetailProjectDetailsLocationSourceValid = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsLocationSourceValidWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+// Geen bronlocatie ingevuld en geen handmatige correctie: dezelfde werkversie als de "één per categorie"-preview.
+export const woonbehoefteDetailProjectDetailsLocationMissing = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsOnePerCategoryWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsLocationSelfIntersecting = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel(
+      'OF-2026-00142', projectDetailsLocationSourceSelfIntersectingWorkVersion, undefined, true, 'preview-csrf-token', '',
+    ),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsLocationManualCorrected = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel(
+      'OF-2026-00142', projectDetailsLocationManualCorrectedWorkVersion, undefined, true, 'preview-csrf-token', '',
+    ),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsLocationReadOnly = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(false, 'kijker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsLocationSourceValidWorkVersion, undefined, false, undefined, ''),
   },
 };

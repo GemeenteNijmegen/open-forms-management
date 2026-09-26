@@ -83,6 +83,39 @@ describe('WoonbehoefteDetailHandler', () => {
     expect(response.body).toContain('Projectdetails kon niet worden geladen');
   });
 
+  it('shows a precieze locationError message on the projectlocatie-kaart, translated from the query-param reden-code', async () => {
+    const caseItems: WoonbehoefteCaseItems = {
+      woonbehoefteCase: makeCase({ claimedBy: 'employee-1' }), sourceLinks: [], notes: [], activities: [],
+    };
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {} as unknown as OpenZaakClient;
+    const readyProjectDetailsStore = {
+      getWorkVersion: jest.fn().mockResolvedValue({
+        caseReference: 'OF-1',
+        readableProjectName: 'Voorbeeldproject',
+        projectDescription: '',
+        additionalInformation: '',
+        projectWideNotes: '',
+        housingLines: {},
+        collectiveFacilityLines: {},
+        kovaLines: {},
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        updatedBy: '',
+      }),
+      getAttempt: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ProjectDetailsStore;
+    const handler = new WoonbehoefteDetailHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), readyProjectDetailsStore,
+    );
+
+    const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', { locationError: 'SELF_INTERSECTING' });
+
+    expect(response.body).toContain('Deze polygon kruist zichzelf.');
+  });
+
   it('keeps the PDF/attachments a FAILED source still carries visible, even though the case shows a bronfout', async () => {
     const caseItems: WoonbehoefteCaseItems = {
       woonbehoefteCase: makeCase(),
