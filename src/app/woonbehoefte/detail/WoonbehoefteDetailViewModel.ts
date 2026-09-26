@@ -4,7 +4,7 @@ import {
   APPLICANT_TYPE_LABELS, CASE_STATUS_LABELS, CHECK_OUTCOME_LABELS, NOTE_CATEGORY_LABELS, PROJECT_READINESS_CONDITIONS,
   PROJECT_READINESS_LABELS, TERNARY_ASSESSMENT_LABELS, TERNARY_ASSESSMENT_UNASSESSED_LABEL,
 } from '../domain/CaseLabels';
-import { CaseStatus } from '../domain/CaseStatus';
+import { CaseStatus, GENERIC_CASE_STATUSES } from '../domain/CaseStatus';
 import {
   CaseActivity, CaseActivityChange, CaseAssessment, CaseNote, CaseNoteCategory, TernaryAssessment, WoonbehoefteCase,
 } from '../domain/WoonbehoefteCase';
@@ -14,8 +14,6 @@ import { WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
 export type WoonbehoefteSourceAvailability = 'READY' | 'FAILED' | 'MISSING';
 
 const TERNARY_VALUES: TernaryAssessment[] = ['YES', 'NO', 'NOT_APPLICABLE', 'UNKNOWN'];
-/** Statuses a medewerker can freely switch between via the generic select; `PROPOSED_INADMISSIBLE`/`INADMISSIBLE` each need their own dedicated action instead. */
-const GENERIC_STATUSES: CaseStatus[] = ['NEW', 'IN_PROGRESS', 'WAITING_FOR_ADDITIONAL_INFORMATION', 'READY_FOR_RANKING'];
 const MONTH_OPTION_LABELS = [
   'januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december',
 ];
@@ -242,7 +240,7 @@ export function buildWoonbehoefteDetailViewModel(
   const assessment: CaseAssessment = woonbehoefteCase.assessment;
   const sortedNotes = [...notes].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const sortedActivities = [...activities].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
-  const canUseGenericStatusSelect = (GENERIC_STATUSES as string[]).includes(woonbehoefteCase.status);
+  const canUseGenericStatusSelect = (GENERIC_CASE_STATUSES as readonly string[]).includes(woonbehoefteCase.status);
   const checkRequestNoteText = woonbehoefteCase.check.requested && woonbehoefteCase.check.requestNoteId
     ? notes.find((note) => note.noteId === woonbehoefteCase.check.requestNoteId)?.text
     : undefined;
@@ -321,7 +319,7 @@ export function buildWoonbehoefteDetailViewModel(
     canRelease: canManage && woonbehoefteCase.claimedBy === actorEmail,
     canTakeOver: canManage && woonbehoefteCase.claimedBy !== undefined && woonbehoefteCase.claimedBy !== actorEmail,
     canUseGenericStatusSelect,
-    statusOptions: GENERIC_STATUSES.map((status) => ({
+    statusOptions: GENERIC_CASE_STATUSES.map((status) => ({
       value: status, label: CASE_STATUS_LABELS[status], selected: status === woonbehoefteCase.status,
     })),
     isProposedInadmissible: woonbehoefteCase.status === 'PROPOSED_INADMISSIBLE',

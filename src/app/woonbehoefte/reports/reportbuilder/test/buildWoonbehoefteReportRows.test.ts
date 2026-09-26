@@ -79,6 +79,17 @@ describe('buildWoonbehoefteReportRows', () => {
     expect(row.sourceWarning).toBe('');
   });
 
+  it('builds the Dutch statusLabel for one of the new statuses, e.g. CAPACITY_MA_SUBMITTED', () => {
+    const entry: WoonbehoefteCaseWithSource = {
+      woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-13', status: 'CAPACITY_MA_SUBMITTED' }),
+      source: source({ caseReference: 'OF-13' }),
+    };
+
+    const [row] = buildWoonbehoefteReportRows([entry]);
+
+    expect(row.statusLabel).toBe('Capaciteit MA ingediend');
+  });
+
   it('keeps assessed (vastgesteld) and submitted (ingediend) project readiness clearly separate', () => {
     const entry: WoonbehoefteCaseWithSource = {
       woonbehoefteCase: woonbehoefteCase({ caseReference: 'OF-2', assessment: { assessedProjectReadiness: 1 } }),

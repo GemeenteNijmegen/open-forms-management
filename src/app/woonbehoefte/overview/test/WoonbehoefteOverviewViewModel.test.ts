@@ -140,6 +140,20 @@ describe('WoonbehoefteOverviewViewModel', () => {
     expect(buildWoonbehoefteOverviewViewModel(entries, filter, undefined).rows.map((r) => r.caseReference)).toEqual(['OF-individual']);
   });
 
+  it('filters on one of the new statuses (CAPACITY_MA_SUBMITTED), with the Dutch label and a checked filter option', () => {
+    const entries = joinCasesWithSources([
+      makeCase({ caseReference: 'OF-submitted', status: 'CAPACITY_MA_SUBMITTED' }),
+      makeCase({ caseReference: 'OF-other', status: 'IN_PROGRESS' }),
+    ], []);
+
+    const filter = resolveWoonbehoefteOverviewFilter({ status: 'CAPACITY_MA_SUBMITTED' });
+    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, undefined);
+
+    expect(viewModel.rows.map((r) => r.caseReference)).toEqual(['OF-submitted']);
+    expect(viewModel.rows[0].statusLabel).toBe('Capaciteit MA ingediend');
+    expect(viewModel.statusOptions.find((o) => o.value === 'CAPACITY_MA_SUBMITTED')).toMatchObject({ label: 'Capaciteit MA ingediend', checked: true });
+  });
+
   it('paginates: only the first 30 render by default, with visible=60 revealing more', () => {
     const entries = joinCasesWithSources(
       Array.from({ length: 35 }, (_, index) => makeCase({ caseReference: `OF-${index}` })), [],

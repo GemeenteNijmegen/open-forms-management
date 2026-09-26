@@ -83,6 +83,20 @@ describe('WoonbehoefteStatusHandler', () => {
     expect(caseRepository.changeStatus).toHaveBeenCalledWith('OF-1', 'medewerker', 5, 'READY_FOR_RANKING', 'IN_PROGRESS');
   });
 
+  it('moves to a new generic status like CORRECTION_NEEDED through the same generic route, with audit', async () => {
+    const caseRepository = {
+      getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', status: 'READY_FOR_RANKING', version: 5 }),
+      changeStatus: jest.fn().mockResolvedValue('OK'),
+    };
+    const auditTrail = { record: jest.fn() } as unknown as AuditTrail;
+    const handler = new WoonbehoefteStatusHandler(makeAuthorizationService(), caseRepository as unknown as WoonbehoefteCaseRepository, auditTrail);
+
+    await handler.handleChangeStatus({ principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ expectedVersion: '5', status: 'CORRECTION_NEEDED', csrfToken }), false);
+
+    expect(caseRepository.changeStatus).toHaveBeenCalledWith('OF-1', 'medewerker', 5, 'READY_FOR_RANKING', 'CORRECTION_NEEDED');
+    expect(auditTrail.record).toHaveBeenCalled();
+  });
+
   it('resubmitting the same status is a no-op: no mutation, no audit, plain redirect', async () => {
     const caseRepository = {
       getCase: jest.fn().mockResolvedValue({ caseReference: 'OF-1', status: 'IN_PROGRESS', version: 5 }),

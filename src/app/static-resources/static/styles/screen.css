@@ -444,18 +444,27 @@ footer {
 
 .woonbehoefte-badge--waiting-for-additional-information,
 .woonbehoefte-badge--proposed-inadmissible,
+.woonbehoefte-badge--correction-waiting-for-response,
 .woonbehoefte-badge--check,
 .woonbehoefte-badge--unknown {
   background-color: var(--nijmegen-color-feedback-warning-subdued);
   color: var(--nijmegen-color-feedback-warning-default);
 }
 
-.woonbehoefte-badge--inadmissible {
+.woonbehoefte-badge--correction-needed {
+  background-color: var(--nijmegen-color-geel-200);
+  color: var(--nijmegen-color-geel-600);
+}
+
+.woonbehoefte-badge--inadmissible,
+.woonbehoefte-badge--withdrawn {
   background-color: var(--nijmegen-color-feedback-error-subdued);
   color: var(--nijmegen-color-feedback-error-default);
 }
 
 .woonbehoefte-badge--ready-for-ranking,
+.woonbehoefte-badge--ready-mijn-aansluiting,
+.woonbehoefte-badge--capacity-ma-submitted,
 .woonbehoefte-badge--linked {
   background-color: var(--nijmegen-color-feedback-success-subdued);
   color: var(--nijmegen-color-feedback-success-default);

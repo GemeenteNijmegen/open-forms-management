@@ -15,6 +15,7 @@ import {
   woonbehoefteAdditionalEvidenceDetailLinked,
   woonbehoefteAdditionalEvidenceDetailNormal, woonbehoefteAdditionalEvidenceDetailSourceError, woonbehoefteAdditionalEvidenceOverview,
   woonbehoefteAdditionalEvidenceOverviewSearch,
+  woonbehoefteDetailCorrectionNeeded,
   woonbehoefteDetailInadmissible, woonbehoefteDetailManyDocuments, woonbehoefteDetailNormal,
   woonbehoefteDetailProjectDetailsFailed,
   woonbehoefteDetailProjectDetailsLocationManualCorrected, woonbehoefteDetailProjectDetailsLocationMissing,
@@ -25,7 +26,8 @@ import {
   woonbehoefteDetailProjectDetailsReadyOnePerCategory,
   woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
   woonbehoefteDetailWithAdditionalEvidence,
-  woonbehoefteOverviewEmpty, woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
+  woonbehoefteOverviewEmpty, woonbehoefteOverviewNewStatuses, woonbehoefteOverviewNewStatusesFilterSelected,
+  woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
   woonbehoefteReportsOverview, woonbehoefteReportsOverviewEmpty,
 } from './fixtures/woonbehoefte';
 import homeTemplate from '../app/home/templates/home.mustache';
@@ -157,6 +159,10 @@ export async function renderAll(): Promise<void> {
     'woonbehoefte-overview-mix': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewWithMix.page, woonbehoefteOverviewWithMix.data),
     'woonbehoefte-overview-empty': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewEmpty.page, woonbehoefteOverviewEmpty.data),
     'woonbehoefte-overview-view-only': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewViewOnly.page, woonbehoefteOverviewViewOnly.data),
+    'woonbehoefte-overview-new-statuses': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewNewStatuses.page, woonbehoefteOverviewNewStatuses.data),
+    'woonbehoefte-overview-new-statuses-filter-selected': render(
+      woonbehoefteOverviewTemplate, woonbehoefteOverviewNewStatusesFilterSelected.page, woonbehoefteOverviewNewStatusesFilterSelected.data,
+    ),
     'woonbehoefte-reports-overview': render(woonbehoefteReportsOverviewTemplate, woonbehoefteReportsOverview.page, woonbehoefteReportsOverview.data),
     'woonbehoefte-reports-overview-empty': render(
       woonbehoefteReportsOverviewTemplate, woonbehoefteReportsOverviewEmpty.page, woonbehoefteReportsOverviewEmpty.data,
@@ -189,6 +195,7 @@ export async function renderAll(): Promise<void> {
       woonbehoefteDetailTemplate, woonbehoefteDetailProposedInadmissible.page, woonbehoefteDetailProposedInadmissible.data,
     ),
     'woonbehoefte-detail-inadmissible': render(woonbehoefteDetailTemplate, woonbehoefteDetailInadmissible.page, woonbehoefteDetailInadmissible.data),
+    'woonbehoefte-detail-correction-needed': render(woonbehoefteDetailTemplate, woonbehoefteDetailCorrectionNeeded.page, woonbehoefteDetailCorrectionNeeded.data),
     'woonbehoefte-detail-view-only': render(woonbehoefteDetailTemplate, woonbehoefteDetailViewOnly.page, woonbehoefteDetailViewOnly.data),
     'woonbehoefte-detail-with-additional-evidence': render(
       woonbehoefteDetailTemplate, woonbehoefteDetailWithAdditionalEvidence.page, woonbehoefteDetailWithAdditionalEvidence.data,

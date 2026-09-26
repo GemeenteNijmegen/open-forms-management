@@ -157,6 +157,58 @@ export const woonbehoefteOverviewWithMix = {
   },
 };
 
+// De vijf nieuwe statussen naast elkaar: geel/oranje/groen/groen/rood, en de lengte van "Correctie wacht op antwoord" naast de kortere labels.
+const casesWithNewStatuses: WoonbehoefteCase[] = [
+  woonbehoefteCase({ caseReference: 'OF-2026-00301', status: 'READY_FOR_RANKING', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00302', status: 'CORRECTION_NEEDED', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00303', status: 'CORRECTION_WAITING_FOR_RESPONSE', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00304', status: 'READY_MIJN_AANSLUITING', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00305', status: 'CAPACITY_MA_SUBMITTED', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00306', status: 'WITHDRAWN', claimedBy: 'medewerker@example.invalid' }),
+];
+
+const sourcesForNewStatuses: WoonbehoefteSourceRecord[] = [
+  source({ caseReference: 'OF-2026-00301', projectName: 'Nieuwbouwproject Hatertseveld', applicantType: 'PROJECT_APPLICANT' }),
+  source({ caseReference: 'OF-2026-00302', projectName: 'Verbouwing Bottendaal', applicantType: 'INDIVIDUAL' }),
+  source({ caseReference: 'OF-2026-00303', projectName: 'Nieuwbouw Weezenhof fase 2', applicantType: 'PROJECT_APPLICANT' }),
+  source({ caseReference: 'OF-2026-00304', projectName: 'Uitbreiding zorgcomplex Hees', applicantType: 'PROJECT_APPLICANT' }),
+  source({ caseReference: 'OF-2026-00305', projectName: 'Nieuwbouw Grootstal', applicantType: 'MUNICIPALITY_NIJMEGEN' }),
+  source({ caseReference: 'OF-2026-00306', projectName: 'Ingetrokken aanvraag Neerbosch', applicantType: 'INDIVIDUAL' }),
+];
+
+export const woonbehoefteOverviewNewStatuses = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildWoonbehoefteOverviewViewModel(
+      joinCasesWithSources(casesWithNewStatuses, sourcesForNewStatuses), resolveWoonbehoefteOverviewFilter(undefined), 'medewerker@example.invalid',
+    ),
+    canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+  },
+};
+
+// Toont de uitgebreide statusfilter (elf opties) met een aantal van de nieuwe statussen al aangevinkt.
+export const woonbehoefteOverviewNewStatusesFilterSelected = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildWoonbehoefteOverviewViewModel(
+      joinCasesWithSources(casesWithNewStatuses, sourcesForNewStatuses),
+      resolveWoonbehoefteOverviewFilter({ status: 'CORRECTION_NEEDED,CORRECTION_WAITING_FOR_RESPONSE,READY_MIJN_AANSLUITING,CAPACITY_MA_SUBMITTED,WITHDRAWN' }),
+      'medewerker@example.invalid',
+    ),
+    canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+  },
+};
+
 export const woonbehoefteOverviewEmpty = {
   page: woonbehoeftePage('medewerker@example.invalid'),
   data: {
@@ -524,6 +576,16 @@ export const woonbehoefteDetailProposedInadmissible = {
       check: { requested: true, requestedBy: 'medewerker@example.invalid', requestedAt: '2026-08-18T09:00:00.000Z' },
     }),
     source({ caseReference: 'OF-2026-00075', projectName: 'Uitbreiding sportpark Oost', applicantType: 'MUNICIPALITY_NIJMEGEN' }),
+    'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+  ),
+};
+
+// Zaak in één van de nieuwe gewone statussen: de select toont alle negen gewone statussen in de vaste volgorde, Ingetrokken onderaan.
+export const woonbehoefteDetailCorrectionNeeded = {
+  page: detailPage('OF-2026-00302'),
+  data: buildWoonbehoefteDetailViewModel(
+    woonbehoefteCase({ caseReference: 'OF-2026-00302', status: 'CORRECTION_NEEDED', claimedBy: 'medewerker@example.invalid' }),
+    source({ caseReference: 'OF-2026-00302', projectName: 'Verbouwing Bottendaal', applicantType: 'INDIVIDUAL' }),
     'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
   ),
 };
