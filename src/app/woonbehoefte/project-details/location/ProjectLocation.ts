@@ -13,7 +13,9 @@ export type ProjectLocationIssueCode =
   | 'HOLE'
   | 'ZERO_AREA'
   | 'SELF_INTERSECTING'
-  | 'IMPLAUSIBLE_COORDINATES';
+  | 'IMPLAUSIBLE_COORDINATES'
+  | 'MULTIPLE_FEATURES'
+  | 'TOO_LARGE';
 
 export type ProjectLocationOutcome =
   | { readonly valid: true; readonly polygon: ProjectPolygon }

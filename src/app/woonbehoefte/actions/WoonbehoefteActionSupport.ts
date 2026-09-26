@@ -51,7 +51,7 @@ export function isActionRejected(result: WoonbehoefteActionRequest | ApiGatewayV
 
 /** `back`, if given, must already be sanitized (`sanitizeWoonbehoefteFilterQuery`) - this never trusts a raw query string. */
 export function redirectToWoonbehoefteCase(
-  caseReference: string, options: { status?: string; back?: string; saved?: string; fragment?: string } = {},
+  caseReference: string, options: { status?: string; back?: string; saved?: string; fragment?: string; locationError?: string } = {},
 ): ApiGatewayV2Response {
   const params = new URLSearchParams();
   if (options.status) {
@@ -62,6 +62,9 @@ export function redirectToWoonbehoefteCase(
   }
   if (options.saved) {
     params.set('saved', options.saved);
+  }
+  if (options.locationError) {
+    params.set('locationError', options.locationError);
   }
   const query = params.toString();
   const fragment = options.fragment ? `#${encodeURIComponent(options.fragment)}` : '';

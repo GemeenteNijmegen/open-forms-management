@@ -16,6 +16,13 @@ const PLAUSIBLE_LATITUDE_RANGE = [51.6, 52.1] as const;
  */
 const ZERO_AREA_EPSILON = 1e-12;
 
+/**
+ * Bovengrens voor het aantal punten in de ring. De langste echte bronring in de acceptatiedataset heeft
+ * 23 punten; deze grens ligt daar ruim boven, maar voorkomt dat een extreem grote handmatige tekening de
+ * zelfkruisingscheck (die elk paar randen vergelijkt) onnodig zwaar maakt.
+ */
+const MAX_RING_POINTS = 1_000;
+
 function invalid(issue: ProjectLocationIssueCode): ProjectLocationOutcome {
   return { valid: false, issue };
 }
@@ -135,7 +142,13 @@ export function checkProjectPolygon(value: unknown): ProjectLocationOutcome {
   }
 
   const ring = rings[0];
-  if (!Array.isArray(ring) || ring.length < 4 || !ring.every(isPosition)) {
+  if (!Array.isArray(ring) || ring.length < 4) {
+    return invalid('INVALID_SHAPE');
+  }
+  if (ring.length > MAX_RING_POINTS) {
+    return invalid('TOO_LARGE');
+  }
+  if (!ring.every(isPosition)) {
     return invalid('INVALID_SHAPE');
   }
   const positions = ring as [number, number][];

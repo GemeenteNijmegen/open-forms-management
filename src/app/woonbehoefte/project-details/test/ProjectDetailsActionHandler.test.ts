@@ -25,7 +25,7 @@ function form(fields: Record<string, string>): string {
 function makeStore(): jest.Mocked<Pick<
   ProjectDetailsStore,
   'getWorkVersion' | 'getAttempt' | 'updateProject' | 'updateAdditionalInformation' | 'updateProjectWideNotes' | 'upsertLine' | 'deleteLine'
-  | 'startEmptyWorkVersion'
+  | 'startEmptyWorkVersion' | 'setManualLocation'
 >> {
   return {
     getWorkVersion: jest.fn(),
@@ -36,8 +36,39 @@ function makeStore(): jest.Mocked<Pick<
     upsertLine: jest.fn().mockResolvedValue('OK'),
     deleteLine: jest.fn().mockResolvedValue('OK'),
     startEmptyWorkVersion: jest.fn().mockResolvedValue('CREATED'),
+    setManualLocation: jest.fn().mockResolvedValue('OK'),
   };
 }
+
+function readyWorkVersion(overrides: Partial<ReturnType<typeof baseWorkVersion>> = {}): ReturnType<typeof baseWorkVersion> {
+  return { ...baseWorkVersion(), ...overrides };
+}
+
+function baseWorkVersion() {
+  return {
+    caseReference: 'OF-1',
+    readableProjectName: '',
+    projectDescription: '',
+    additionalInformation: '',
+    projectWideNotes: '',
+    housingLines: {},
+    collectiveFacilityLines: {},
+    kovaLines: {},
+    createdAt: '',
+    createdBy: '',
+    updatedAt: '',
+    updatedBy: '',
+  };
+}
+
+// De geojson.io-export uit 05-tests-en-samples.md: vijf unieke hoekpunten plus sluitpunt.
+const VALID_MANUAL_POLYGON_TEXT = JSON.stringify({
+  type: 'Polygon',
+  coordinates: [[
+    [5.861824, 51.8464654], [5.8623068, 51.8464787], [5.8622317, 51.8462732],
+    [5.8619313, 51.84626], [5.8614271, 51.8463528], [5.861824, 51.8464654],
+  ]],
+});
 
 function makeAuditTrail(): AuditTrail {
   return { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditTrail;
@@ -342,5 +373,142 @@ describe('ProjectDetailsActionHandler', () => {
 
     expect(response.statusCode).toBe(400);
     expect(store.deleteLine).not.toHaveBeenCalled();
+  });
+
+  describe('handleLocation', () => {
+    it('requires an existing werkversie: a dossier that never had one gets a 404, no store write', async () => {
+      const store = makeStore();
+      store.getWorkVersion.mockResolvedValue(undefined);
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, makeAuditTrail());
+
+      const response = await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, location: VALID_MANUAL_POLYGON_TEXT }), false,
+      );
+
+      expect(response.statusCode).toBe(404);
+      expect(store.setManualLocation).not.toHaveBeenCalled();
+    });
+
+    it('adds a first manual location, audits LOCATION_ADDED and redirects to the location card', async () => {
+      const store = makeStore();
+      store.getWorkVersion.mockResolvedValue(readyWorkVersion());
+      const auditTrail = makeAuditTrail();
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, auditTrail);
+
+      const response = await handler.handleLocation(
+        { principalId: 'medewerker', email: 'medewerker@example.nl' }, 'OF-1', cookieHeader,
+        form({ csrfToken, location: VALID_MANUAL_POLYGON_TEXT }), false,
+      );
+
+      expect(response.statusCode).toBe(303);
+      expect(response.headers?.Location).toContain('#pd-project-location-card');
+      const [, polygon, isNew, actor] = store.setManualLocation.mock.calls[0];
+      expect(isNew).toBe(true);
+      expect(actor).toBe('medewerker@example.nl');
+      expect(polygon).toMatchObject({ type: 'Polygon' });
+      expect((auditTrail.record as jest.Mock)).toHaveBeenCalledWith(expect.objectContaining({
+        metadata: expect.objectContaining({ caseReference: 'OF-1', changeAction: 'LOCATION_ADDED' }),
+      }));
+    });
+
+    it('replaces an existing manual location and audits LOCATION_REPLACED, not LOCATION_ADDED', async () => {
+      const store = makeStore();
+      store.getWorkVersion.mockResolvedValue(readyWorkVersion({
+        manualLocationPolygon: { type: 'Polygon', coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] },
+      } as never));
+      const auditTrail = makeAuditTrail();
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, auditTrail);
+
+      await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, location: VALID_MANUAL_POLYGON_TEXT }), false,
+      );
+
+      const [, , isNew] = store.setManualLocation.mock.calls[0];
+      expect(isNew).toBe(false);
+      expect((auditTrail.record as jest.Mock)).toHaveBeenCalledWith(expect.objectContaining({
+        metadata: expect.objectContaining({ changeAction: 'LOCATION_REPLACED' }),
+      }));
+    });
+
+    it('rejects a three-feature export instead of guessing which vlak is meant, and writes nothing', async () => {
+      const store = makeStore();
+      store.getWorkVersion.mockResolvedValue(readyWorkVersion());
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, makeAuditTrail());
+      const threeFeatures = JSON.stringify({
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[5.8, 51.8], [5.9, 51.8], [5.9, 51.9], [5.8, 51.9], [5.8, 51.8]]] } },
+          { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[5.86, 51.85], [5.86, 51.85], [5.86, 51.85], [5.86, 51.85]]] } },
+          { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[5.861824, 51.8464654], [5.8623068, 51.8464787], [5.8622317, 51.8462732], [5.861824, 51.8464654]]] } },
+        ],
+      });
+
+      const response = await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, location: threeFeatures }), false,
+      );
+
+      expect(response.statusCode).toBe(303);
+      expect(response.headers?.Location).toContain('locationError=MULTIPLE_FEATURES');
+      expect(store.setManualLocation).not.toHaveBeenCalled();
+    });
+
+    it('rejects a self-intersecting bow-tie polygon, leaving any previous polygon untouched', async () => {
+      const store = makeStore();
+      store.getWorkVersion.mockResolvedValue(readyWorkVersion());
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, makeAuditTrail());
+      const bowtie = JSON.stringify({ type: 'Polygon', coordinates: [[[5.85, 51.85], [5.86, 51.86], [5.86, 51.85], [5.85, 51.86], [5.85, 51.85]]] });
+
+      const response = await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, location: bowtie }), false,
+      );
+
+      expect(response.statusCode).toBe(303);
+      expect(response.headers?.Location).toContain('locationError=SELF_INTERSECTING');
+      expect(store.setManualLocation).not.toHaveBeenCalled();
+    });
+
+    it('never audits when the store reports NOT_FOUND (werkversie disappeared between read and write)', async () => {
+      const store = makeStore();
+      store.getWorkVersion.mockResolvedValue(readyWorkVersion());
+      store.setManualLocation.mockResolvedValue('NOT_FOUND');
+      const auditTrail = makeAuditTrail();
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, auditTrail);
+
+      await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, location: VALID_MANUAL_POLYGON_TEXT }), false,
+      );
+
+      expect((auditTrail.record as jest.Mock)).not.toHaveBeenCalled();
+    });
+
+    it('denies a view-only medewerker (no manage permission), never reaching parseManualLocation or the store', async () => {
+      const authorizationService = {
+        loadContext: jest.fn().mockResolvedValue({ identity: { principalId: 'medewerker' } }),
+        requireAuthorization: jest.fn().mockResolvedValue({ statusCode: 403 }),
+        denyAccess: jest.fn().mockResolvedValue({ statusCode: 403 }),
+      } as unknown as AuthorizationService;
+      const store = makeStore();
+      const handler = new ProjectDetailsActionHandler(authorizationService, store as unknown as ProjectDetailsStore, makeAuditTrail());
+
+      const response = await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken, location: VALID_MANUAL_POLYGON_TEXT }), false,
+      );
+
+      expect(response.statusCode).toBe(403);
+      expect(store.getWorkVersion).not.toHaveBeenCalled();
+      expect(store.setManualLocation).not.toHaveBeenCalled();
+    });
+
+    it('denies a POST with a missing or wrong CSRF token', async () => {
+      const store = makeStore();
+      const handler = new ProjectDetailsActionHandler(makeAuthorizationService(), store as unknown as ProjectDetailsStore, makeAuditTrail());
+
+      const response = await handler.handleLocation(
+        { principalId: 'medewerker' }, 'OF-1', cookieHeader, form({ csrfToken: 'wrong-token', location: VALID_MANUAL_POLYGON_TEXT }), false,
+      );
+
+      expect(response.statusCode).toBe(403);
+      expect(store.setManualLocation).not.toHaveBeenCalled();
+    });
   });
 });

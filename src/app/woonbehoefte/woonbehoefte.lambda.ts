@@ -155,6 +155,9 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/project-wide') {
       return await projectDetailsActionHandler.handleProjectWide(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
     }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/location') {
+      return await projectDetailsActionHandler.handleLocation(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/lines/{category}') {
       return await projectDetailsActionHandler.handleLineCreate(identity, caseReference, category, cookieHeader, event.body, isBase64Encoded);
     }

@@ -10,6 +10,7 @@ import { redirectToWoonbehoefteCase } from '../../actions/WoonbehoefteActionSupp
 import {
   deriveProjectDetailsStatus, FacilityLine, HousingLine, isHousingLineType, KovaLine, ProjectDetailsLineCategory, ProjectDetailsWorkVersion,
 } from '../domain/ProjectDetails';
+import { parseManualLocation } from '../location/parseManualLocation';
 import { LineMutationResult, ProjectDetailsStore } from '../persistence/ProjectDetailsStore';
 
 const CATEGORY_URL_PARAMS: Record<string, ProjectDetailsLineCategory> = { wonen: 'WONEN', voorziening: 'VOORZIENING', kova: 'KOVA' };
@@ -176,6 +177,42 @@ export class ProjectDetailsActionHandler {
       await auditProjectDetailsChange(this.auditTrail, actorEmail, caseReference, 'MANUALLY_STARTED');
     }
     return redirectToWoonbehoefteCase(caseReference, { back, fragment: 'pd-project-card', ...(result === 'CREATED' ? { saved: 'project-details' } : {}) });
+  }
+
+  /**
+   * Een READY werkversie is verplicht: de kaart met dit formulier verschijnt alleen dan. Een ongeldige
+   * POST muteert niets, dus de vorige handmatige of bronpolygon blijft intact; de medewerker krijgt de
+   * reden terug via locationError, niet via een generieke 400-pagina.
+   */
+  async handleLocation(
+    identity: EmployeeIdentity, caseReference: string | undefined, cookieHeader: string | undefined,
+    body: string | undefined, isBase64Encoded: boolean,
+  ): Promise<ApiGatewayV2Response> {
+    if (!caseReference) {
+      return Response.error(400);
+    }
+    const begun = await beginProjectDetailsAction(this.authorizationService, identity, cookieHeader, body, isBase64Encoded);
+    if (isProjectDetailsActionRejected(begun)) {
+      return begun;
+    }
+    const { form, back } = begun;
+
+    const workVersion = await this.store.getWorkVersion(caseReference);
+    if (!workVersion) {
+      return Response.error(404);
+    }
+
+    const outcome = parseManualLocation(form.get('location') ?? '');
+    if (!outcome.valid) {
+      return redirectToWoonbehoefteCase(caseReference, { back, fragment: 'pd-project-location-card', locationError: outcome.issue });
+    }
+
+    const actorEmail = identity.email ?? identity.principalId;
+    const isNew = !workVersion.manualLocationPolygon;
+    const result = await this.store.setManualLocation(caseReference, outcome.polygon, isNew, actorEmail);
+    return this.redirectAfter(
+      caseReference, result, back, isNew ? 'LOCATION_ADDED' : 'LOCATION_REPLACED', actorEmail, 'pd-project-location-card',
+    );
   }
 
   async handleLineCreate(

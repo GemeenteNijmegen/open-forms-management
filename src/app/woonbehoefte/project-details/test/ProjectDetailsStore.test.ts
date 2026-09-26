@@ -130,6 +130,41 @@ describe('ProjectDetailsStore', () => {
     expect(result).toBe('NOT_FOUND');
   });
 
+  it('stores a manual polygon and records LOCATION_ADDED when isNew, without touching sourceLocationPolygon', async () => {
+    documentMock.on(TransactWriteCommand).resolves({});
+    const polygon = { type: 'Polygon' as const, coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] };
+
+    const result = await newStore().setManualLocation('OF-1', polygon, true, 'medewerker@example.nl', new Date('2026-09-25T10:00:00Z'));
+
+    expect(result).toBe('OK');
+    const call = documentMock.commandCalls(TransactWriteCommand)[0];
+    const [update, history] = call.args[0].input.TransactItems!;
+    expect(update.Update?.ConditionExpression).toBe('attribute_exists(pk)');
+    expect(update.Update?.ExpressionAttributeValues).toMatchObject({ ':manualLocationPolygon': polygon, ':manualLocationSetBy': 'medewerker@example.nl' });
+    expect(update.Update?.ExpressionAttributeValues).not.toHaveProperty(':sourceLocationPolygon');
+    expect(history.Put?.Item).toMatchObject({ action: 'LOCATION_ADDED' });
+  });
+
+  it('records LOCATION_REPLACED instead of LOCATION_ADDED when isNew is false', async () => {
+    documentMock.on(TransactWriteCommand).resolves({});
+    const polygon = { type: 'Polygon' as const, coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] };
+
+    await newStore().setManualLocation('OF-1', polygon, false, 'medewerker@example.nl');
+
+    const call = documentMock.commandCalls(TransactWriteCommand)[0];
+    const [, history] = call.args[0].input.TransactItems!;
+    expect(history.Put?.Item).toMatchObject({ action: 'LOCATION_REPLACED' });
+  });
+
+  it('returns NOT_FOUND when setManualLocation targets a case without a werkversie, writing nothing', async () => {
+    documentMock.on(TransactWriteCommand).rejects(transactionCancelled());
+    const polygon = { type: 'Polygon' as const, coordinates: [[[5.86, 51.85], [5.87, 51.85], [5.87, 51.86], [5.86, 51.85]]] };
+
+    const result = await newStore().setManualLocation('OF-1', polygon, true, 'medewerker@example.nl');
+
+    expect(result).toBe('NOT_FOUND');
+  });
+
   it('rethrows a cancellation on a project update that is not caused by our own conditional check', async () => {
     documentMock.on(TransactWriteCommand).rejects(transactionCancelled([{ Code: 'ThroughputExceeded' }, { Code: 'None' }]));
 

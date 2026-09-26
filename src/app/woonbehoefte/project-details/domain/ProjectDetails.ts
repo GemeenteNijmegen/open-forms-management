@@ -148,7 +148,9 @@ export type ProjectDetailsHistoryAction =
   | 'PROJECT_WIDE_NOTES_UPDATED'
   | 'LINE_CREATED'
   | 'LINE_UPDATED'
-  | 'LINE_DELETED';
+  | 'LINE_DELETED'
+  | 'LOCATION_ADDED'
+  | 'LOCATION_REPLACED';
 
 /** Immutable (`sk = HISTORY#<occurredAt>#<historyId>`); nooit vrije tekst of brondata, alleen wat een wijziging herleidbaar maakt. */
 export interface ProjectDetailsHistoryEntry {

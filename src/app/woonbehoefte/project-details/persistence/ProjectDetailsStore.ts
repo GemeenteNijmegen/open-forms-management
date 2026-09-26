@@ -193,6 +193,33 @@ export class ProjectDetailsStore {
     return this.updateWorkVersionFields(caseReference, { projectWideNotes }, 'PROJECT_WIDE_NOTES_UPDATED', actor, now);
   }
 
+  /**
+   * isNew bepaalt de action (LOCATION_ADDED vs LOCATION_REPLACED) op basis van of er al een handmatige
+   * polygon stond, niet van of er een bronpolygon was: die laatste blijft in sourceLocationPolygon staan
+   * en wordt door deze write niet aangeraakt.
+   */
+  async setManualLocation(
+    caseReference: string, polygon: ProjectPolygon, isNew: boolean, actor: string, now: Date = new Date(),
+  ): Promise<LineMutationResult> {
+    const nowIso = now.toISOString();
+    const names: Record<string, string> = {
+      '#manualLocationPolygon': 'manualLocationPolygon',
+      '#manualLocationSetAt': 'manualLocationSetAt',
+      '#manualLocationSetBy': 'manualLocationSetBy',
+      '#updatedAt': 'updatedAt',
+      '#updatedBy': 'updatedBy',
+    };
+    const values: Record<string, unknown> = {
+      ':manualLocationPolygon': polygon, ':manualLocationSetAt': nowIso, ':manualLocationSetBy': actor, ':updatedAt': nowIso, ':updatedBy': actor,
+    };
+    const setExpressionBody = '#manualLocationPolygon = :manualLocationPolygon, #manualLocationSetAt = :manualLocationSetAt, '
+      + '#manualLocationSetBy = :manualLocationSetBy, #updatedAt = :updatedAt, #updatedBy = :updatedBy';
+    const action: ProjectDetailsHistoryAction = isNew ? 'LOCATION_ADDED' : 'LOCATION_REPLACED';
+    const historyEntry = { historyId: randomUUID(), caseReference, actor, occurredAt: nowIso, action };
+
+    return this.transactUpdateWorkVersion(caseReference, setExpressionBody, names, values, 'attribute_exists(pk)', historyEntry);
+  }
+
   private async updateWorkVersionFields(
     caseReference: string, fields: Record<string, string>, action: ProjectDetailsHistoryAction, actor: string, now: Date,
   ): Promise<LineMutationResult> {

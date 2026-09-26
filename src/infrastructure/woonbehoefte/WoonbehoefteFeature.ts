@@ -168,6 +168,9 @@ export class WoonbehoefteFeature extends Construct {
       path: '/woonbehoefte/cases/{caseReference}/project-details/project-wide', methods: [HttpMethod.POST], integration,
     });
     props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/location', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
       path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}', methods: [HttpMethod.POST], integration,
     });
     props.managementApi.api.addRoutes({
