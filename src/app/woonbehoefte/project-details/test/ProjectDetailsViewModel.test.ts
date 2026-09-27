@@ -28,7 +28,7 @@ describe('buildProjectDetailsViewModel', () => {
   it('is PENDING while a poging loopt en er nog geen werkversie is', () => {
     const vm = buildProjectDetailsViewModel(
       'OF-1', undefined, { caseReference: 'OF-1', status: 'PENDING', attemptedAt: '2026-09-25T10:00:00.000Z' }, true, 'token', '',
-      undefined, new Date('2026-09-25T10:05:00.000Z'),
+      undefined, undefined, new Date('2026-09-25T10:05:00.000Z'),
     );
     expect(vm).toMatchObject({ status: 'PENDING', isPending: true });
   });
@@ -36,7 +36,7 @@ describe('buildProjectDetailsViewModel', () => {
   it('treats a PENDING poging older than the Lambda-timeout as FAILED, so a crashed worker can be retried', () => {
     const vm = buildProjectDetailsViewModel(
       'OF-1', undefined, { caseReference: 'OF-1', status: 'PENDING', attemptedAt: '2026-09-25T10:00:00.000Z' }, true, 'token', '',
-      undefined, new Date('2026-09-25T10:30:00.000Z'),
+      undefined, undefined, new Date('2026-09-25T10:30:00.000Z'),
     );
     expect(vm).toMatchObject({ status: 'FAILED', isFailed: true });
   });
@@ -59,12 +59,24 @@ describe('buildProjectDetailsViewModel', () => {
 
   it('composes the full project name from the OF-kenmerk and the readable name, never the original projectName', () => {
     const vm = buildProjectDetailsViewModel('OF-2026-042', workVersion({ readableProjectName: 'Park Fluvium' }), undefined, true, 'token', '');
-    expect(vm.fullProjectName).toBe('OF-2026-042 - Park Fluvium');
+    expect(vm.fullProjectName).toBe('OF-2026-042-Park Fluvium');
   });
 
   it('falls back to only the OF-kenmerk when a handmatig leeg gestarte werkversie has no readable name yet', () => {
     const vm = buildProjectDetailsViewModel('OF-2026-042', workVersion({ readableProjectName: '' }), undefined, true, 'token', '');
     expect(vm.fullProjectName).toBe('OF-2026-042');
+  });
+
+  it('prefixes the full project name with the live ranking position when the dossier is ranked', () => {
+    const vm = buildProjectDetailsViewModel(
+      'OF-2026-042', workVersion({ readableProjectName: 'Park Fluvium' }), undefined, true, 'token', '', undefined, 2,
+    );
+    expect(vm.fullProjectName).toBe('2-OF-2026-042-Park Fluvium');
+  });
+
+  it('prefixes only the OF-kenmerk with the position when there is no readable name yet', () => {
+    const vm = buildProjectDetailsViewModel('OF-2026-042', workVersion({ readableProjectName: '' }), undefined, true, 'token', '', undefined, 2);
+    expect(vm.fullProjectName).toBe('2-OF-2026-042');
   });
 
   it('shows mijnAansluitingKenmerk as an empty string for an already ingeladen werkversie that lacks it', () => {

@@ -109,6 +109,77 @@ describe('WoonbehoefteDetailHandler', () => {
     expect(response.body).toContain('Ranking kon niet worden geladen');
   });
 
+  it('prefixes the copyable full project name with the live ranking position', async () => {
+    const caseItems: WoonbehoefteCaseItems = {
+      woonbehoefteCase: makeCase(), sourceLinks: [], notes: [], activities: [],
+    };
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {} as unknown as OpenZaakClient;
+    const readyProjectDetailsStore = {
+      getWorkVersion: jest.fn().mockResolvedValue({
+        caseReference: 'OF-1',
+        readableProjectName: 'Voorbeeldproject',
+        projectDescription: '',
+        additionalInformation: '',
+        projectWideNotes: '',
+        housingLines: {},
+        collectiveFacilityLines: {},
+        kovaLines: {},
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        updatedBy: '',
+      }),
+      getAttempt: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ProjectDetailsStore;
+    const rankedStore = {
+      getCurrentList: jest.fn().mockResolvedValue({ orderedCaseReferences: ['OF-0', 'OF-1'], revision: 1 }),
+    } as unknown as RankingStore;
+    const handler = new WoonbehoefteDetailHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(),
+      readyProjectDetailsStore, rankedStore,
+    );
+
+    const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
+
+    expect(response.body).toContain('2-OF-1-Voorbeeldproject');
+  });
+
+  it('shows the copyable full project name without a rank prefix for an unranked dossier', async () => {
+    const caseItems: WoonbehoefteCaseItems = {
+      woonbehoefteCase: makeCase(), sourceLinks: [], notes: [], activities: [],
+    };
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {} as unknown as OpenZaakClient;
+    const readyProjectDetailsStore = {
+      getWorkVersion: jest.fn().mockResolvedValue({
+        caseReference: 'OF-1',
+        readableProjectName: 'Voorbeeldproject',
+        projectDescription: '',
+        additionalInformation: '',
+        projectWideNotes: '',
+        housingLines: {},
+        collectiveFacilityLines: {},
+        kovaLines: {},
+        createdAt: '',
+        createdBy: '',
+        updatedAt: '',
+        updatedBy: '',
+      }),
+      getAttempt: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ProjectDetailsStore;
+    const handler = new WoonbehoefteDetailHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(),
+      readyProjectDetailsStore, noRanking(),
+    );
+
+    const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
+
+    expect(response.body).toContain('>OF-1-Voorbeeldproject<');
+  });
+
   it('shows a precieze locationError message on the projectlocatie-kaart, translated from the query-param reden-code', async () => {
     const caseItems: WoonbehoefteCaseItems = {
       woonbehoefteCase: makeCase({ claimedBy: 'employee-1' }), sourceLinks: [], notes: [], activities: [],

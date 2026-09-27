@@ -1,6 +1,6 @@
 import { buildProjectDetailsLocationViewModel, ProjectDetailsLocationViewModel } from './ProjectDetailsLocationViewModel';
 import {
-  composeFullProjectName, deriveProjectDetailsStatus, FacilityLine, HOUSING_LINE_TYPES, HousingLine, HousingLineType, KovaLine,
+  deriveProjectDetailsStatus, FacilityLine, HOUSING_LINE_TYPES, HousingLine, HousingLineType, KovaLine,
   ProjectDetailsAttempt, ProjectDetailsWorkVersion,
 } from '../domain/ProjectDetails';
 
@@ -112,6 +112,13 @@ function byOrder<T extends { order: number }>(lines: Record<string, T>): T[] {
   return Object.values(lines).sort((a, b) => a.order - b.order);
 }
 
+// Detail-page only: prefixes the copyable full project name with the live ranking position, if any.
+// Uses plain hyphens (no spaces) to stay distinct from composeFullProjectName, which the Excel export still uses unchanged.
+function composeRankedProjectName(rank: number | undefined, caseReference: string, readableProjectName: string): string {
+  const base = readableProjectName ? `${caseReference}-${readableProjectName}` : caseReference;
+  return rank !== undefined ? `${rank}-${base}` : base;
+}
+
 /**
  * READY toont de volledige bewerkbare sectie; NEW/PENDING/FAILED tonen alleen een statusmelding (en bij
  * NEW/FAILED, met `manage`, een startknop). `csrfToken`/`backQuery` komen van de bestaande detailpagina,
@@ -120,7 +127,7 @@ function byOrder<T extends { order: number }>(lines: Record<string, T>): T[] {
 export function buildProjectDetailsViewModel(
   caseReference: string, workVersion: ProjectDetailsWorkVersion | undefined, attempt: ProjectDetailsAttempt | undefined,
   canManage: boolean, csrfToken: string | undefined, backQuery: string, locationErrorCode: string | undefined = undefined,
-  now: Date = new Date(),
+  rank: number | undefined = undefined, now: Date = new Date(),
 ): ProjectDetailsViewModel {
   const status = deriveProjectDetailsStatus(workVersion, attempt, now);
   const lineContext: LineCardContext = { caseReference, canManage, backQuery, ...(csrfToken ? { csrfToken } : {}) };
@@ -140,7 +147,7 @@ export function buildProjectDetailsViewModel(
     caseReference,
     ...(workVersion
       ? {
-        fullProjectName: composeFullProjectName(caseReference, workVersion.readableProjectName),
+        fullProjectName: composeRankedProjectName(rank, caseReference, workVersion.readableProjectName),
         readableProjectName: workVersion.readableProjectName,
         projectDescription: workVersion.projectDescription,
         additionalInformation: workVersion.additionalInformation,

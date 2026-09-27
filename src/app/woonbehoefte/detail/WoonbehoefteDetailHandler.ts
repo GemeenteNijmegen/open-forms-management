@@ -126,6 +126,17 @@ export class WoonbehoefteDetailHandler {
       csrf?.value, additionalDocumentGroups,
     );
 
+    // A ranking read-error is limited to this section: the rest of the detail page stays fully usable.
+    // Read first so its live position can feed the copyable project name below, without a second ranking-store read.
+    let ranking;
+    try {
+      const rankingList = await this.rankingStore.getCurrentList();
+      ranking = buildRankingDetailViewModel(caseReference, rankingList, caseItems.woonbehoefteCase.status, canManage, backQuery, csrf?.value);
+    } catch (error) {
+      logger.error('Ranking kon niet worden gelezen', { caseReference, reason: errorReason(error) });
+      ranking = buildUnavailableRankingDetailViewModel(caseReference, canManage, backQuery, csrf?.value);
+    }
+
     // Alleen de eigen werkversie/pogingstatus, nooit een CSV-fetch: de detailpagina blijft bruikbaar tijdens PENDING/FAILED.
     // Een leesfout hier mag de rest van de detailpagina niet meeslepen; de sectie toont dan alleen zichzelf als onbeschikbaar.
     let projectDetails: ProjectDetailsViewModel;
@@ -136,20 +147,11 @@ export class WoonbehoefteDetailHandler {
       ]);
       projectDetails = buildProjectDetailsViewModel(
         caseReference, projectDetailsWorkVersion, projectDetailsAttempt, canManage, csrf?.value, backQuery, queryStringParameters?.locationError,
+        ranking.position,
       );
     } catch (error) {
       logger.error('Projectdetails: werkversie/pogingstatus konden niet worden gelezen', { caseReference, reason: errorReason(error) });
       projectDetails = buildUnavailableProjectDetailsViewModel(caseReference, canManage, csrf?.value, backQuery);
-    }
-
-    // A ranking read-error is limited to this section: the rest of the detail page stays fully usable.
-    let ranking;
-    try {
-      const rankingList = await this.rankingStore.getCurrentList();
-      ranking = buildRankingDetailViewModel(caseReference, rankingList, caseItems.woonbehoefteCase.status, canManage, backQuery, csrf?.value);
-    } catch (error) {
-      logger.error('Ranking kon niet worden gelezen', { caseReference, reason: errorReason(error) });
-      ranking = buildUnavailableRankingDetailViewModel(caseReference, canManage, backQuery, csrf?.value);
     }
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
