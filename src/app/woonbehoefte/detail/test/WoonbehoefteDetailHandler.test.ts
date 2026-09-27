@@ -6,6 +6,7 @@ import { WoonbehoefteCaseItems, WoonbehoefteCaseRepository } from '../../cases/W
 import { WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceFailure } from '../../domain/WoonbehoefteSource';
 import { ProjectDetailsStore } from '../../project-details/persistence/ProjectDetailsStore';
+import { RankingStore } from '../../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteDetailHandler } from '../WoonbehoefteDetailHandler';
 
@@ -17,6 +18,10 @@ function noProjectDetails(): ProjectDetailsStore {
   return {
     getWorkVersion: jest.fn().mockResolvedValue(undefined), getAttempt: jest.fn().mockResolvedValue(undefined),
   } as unknown as ProjectDetailsStore;
+}
+
+function noRanking(): RankingStore {
+  return { getCurrentList: jest.fn().mockResolvedValue(undefined) } as unknown as RankingStore;
 }
 
 function makeCase(overrides: Partial<WoonbehoefteCase> = {}): WoonbehoefteCase {
@@ -52,7 +57,7 @@ describe('WoonbehoefteDetailHandler', () => {
     const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = {} as unknown as OpenZaakClient;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(),
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(), noRanking(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
@@ -73,7 +78,8 @@ describe('WoonbehoefteDetailHandler', () => {
       getAttempt: jest.fn().mockResolvedValue(undefined),
     } as unknown as ProjectDetailsStore;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), brokenProjectDetailsStore,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(),
+      brokenProjectDetailsStore, noRanking(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
@@ -81,6 +87,26 @@ describe('WoonbehoefteDetailHandler', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('Claim vrijgeven');
     expect(response.body).toContain('Projectdetails kon niet worden geladen');
+  });
+
+  it('keeps rendering the rest of the detailpagina when the ranking read itself fails', async () => {
+    const caseItems: WoonbehoefteCaseItems = {
+      woonbehoefteCase: makeCase({ claimedBy: 'employee-1' }), sourceLinks: [], notes: [], activities: [],
+    };
+    const caseRepository = { getCaseItems: jest.fn().mockResolvedValue(caseItems) } as unknown as WoonbehoefteCaseRepository;
+    const sourceCacheStore = { getItems: jest.fn() } as unknown as WoonbehoefteSourceCacheStore;
+    const openZaakClient = {} as unknown as OpenZaakClient;
+    const brokenRankingStore = { getCurrentList: jest.fn().mockRejectedValue(new Error('DynamoDB unavailable')) } as unknown as RankingStore;
+    const handler = new WoonbehoefteDetailHandler(
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(),
+      brokenRankingStore,
+    );
+
+    const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('Claim vrijgeven');
+    expect(response.body).toContain('Ranking kon niet worden geladen');
   });
 
   it('shows a precieze locationError message on the projectlocatie-kaart, translated from the query-param reden-code', async () => {
@@ -108,7 +134,8 @@ describe('WoonbehoefteDetailHandler', () => {
       getAttempt: jest.fn().mockResolvedValue(undefined),
     } as unknown as ProjectDetailsStore;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), readyProjectDetailsStore,
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(),
+      readyProjectDetailsStore, noRanking(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', { locationError: 'SELF_INTERSECTING' });
@@ -136,7 +163,7 @@ describe('WoonbehoefteDetailHandler', () => {
     const sourceCacheStore = { getItems: jest.fn().mockResolvedValue(new Map([['uuid-1', failedSource]])) } as unknown as WoonbehoefteSourceCacheStore;
     const openZaakClient = { getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijsstuk.jpeg' }) } as unknown as OpenZaakClient;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(),
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, noAdditionalSourceCacheStore(), noProjectDetails(), noRanking(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);
@@ -183,7 +210,7 @@ describe('WoonbehoefteDetailHandler', () => {
     } as unknown as AdditionalEvidenceSourceCacheStore;
     const openZaakClient = { getDocumentMetadata: jest.fn().mockResolvedValue({ bestandsnaam: 'bewijs.pdf' }) } as unknown as OpenZaakClient;
     const handler = new WoonbehoefteDetailHandler(
-      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, noProjectDetails(),
+      makeAuthorizationService(), caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, noProjectDetails(), noRanking(),
     );
 
     const response = await handler.handleRequest({ principalId: 'employee-1' }, 'OF-1', undefined);

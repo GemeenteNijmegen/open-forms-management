@@ -59,8 +59,8 @@
     </div>
   </div>
   {{/projectDetailsBatchStale}}
-  {{#projectDetailsBatchDone}}
-  <div class="utrecht-alert {{#projectDetailsBatchHasErrors}}utrecht-alert--warning{{/projectDetailsBatchHasErrors}}{{^projectDetailsBatchHasErrors}}utrecht-alert--success{{/projectDetailsBatchHasErrors}}" role="status">
+  {{#projectDetailsBatchWarning}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
     <div class="utrecht-alert__content">
       <p class="utrecht-alert__message">
         Laatste projectdetails-batch: {{projectDetailsBatchCreated}} aangemaakt, {{projectDetailsBatchSkipped}} overgeslagen, {{projectDetailsBatchFailed}} mislukt.
@@ -68,7 +68,7 @@
       </p>
     </div>
   </div>
-  {{/projectDetailsBatchDone}}
+  {{/projectDetailsBatchWarning}}
 
   <div class="woonbehoefte-refresh-bar">
     <form method="post" action="/woonbehoefte/refresh">
@@ -82,6 +82,16 @@
       <button type="submit" class="utrecht-button utrecht-button--secondary-action">Projectdetails voorinvullen</button>
     </form>
   </div>
+
+  {{#projectDetailsBatchSummary}}
+  <details class="woonbehoefte-details">
+    <summary>Laatste projectdetails-batch</summary>
+    <p class="utrecht-paragraph">
+      {{#projectDetailsBatchCompletedAtLabel}}Afgerond op {{projectDetailsBatchCompletedAtLabel}}.{{/projectDetailsBatchCompletedAtLabel}}
+      {{projectDetailsBatchCreated}} aangemaakt, {{projectDetailsBatchSkipped}} overgeslagen, {{projectDetailsBatchFailed}} mislukt.
+    </p>
+  </details>
+  {{/projectDetailsBatchSummary}}
 
   <details class="woonbehoefte-filter">
     <summary class="utrecht-form-label">Zoeken en filteren</summary>
@@ -141,6 +151,14 @@
         <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="check-requested">Alleen check gevraagd</label>
       </div>
 
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="sort">Sorteren op</label>
+        <select class="utrecht-select utrecht-select--html-select" id="sort" name="sort">
+          <option value="received" {{#sortReceived}}selected{{/sortReceived}}>Ontvangstdatum</option>
+          <option value="ranking" {{#sortRanking}}selected{{/sortRanking}}>Rangschikking</option>
+        </select>
+      </div>
+
       <button type="submit" class="utrecht-button utrecht-button--primary-action woonbehoefte-filter__submit">Filteren</button>
     </form>
   </details>
@@ -150,7 +168,7 @@
   {{#hasRows}}
   <div>
     {{#rows}}
-    <article class="nijmegen-search-results woonbehoefte-record">
+    <article id="{{anchorId}}" class="nijmegen-search-results woonbehoefte-record">
       <div class="nijmegen-search-results__content">
         <h2 class="nijmegen-search-results__heading utrecht-heading-4">
           <a class="utrecht-link" href="{{detailHref}}">{{caseReference}}</a>
@@ -160,6 +178,7 @@
           <div class="woonbehoefte-record__field">
             <span class="woonbehoefte-record__field-label">Project</span>
             <span{{#hasSourceConflict}} class="woonbehoefte-badge woonbehoefte-badge--inadmissible"{{/hasSourceConflict}}>{{projectName}}</span>
+            <span class="woonbehoefte-record__rank">{{rankLabel}}</span>
           </div>
           <div class="woonbehoefte-record__field">
             <span class="woonbehoefte-record__field-label">Behandelaar</span>

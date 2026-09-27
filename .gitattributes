@@ -34,6 +34,7 @@
 /src/app/woonbehoefte/additional-evidence/additionalEvidence-function.ts linguist-generated
 /src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker-function.ts linguist-generated
 /src/app/woonbehoefte/project-details/initialization/projectDetailsWorker-function.ts linguist-generated
+/src/app/woonbehoefte/ranking/import/rankingImport-function.ts linguist-generated
 /src/app/woonbehoefte/reports/woonbehoefteExcelWorker-function.ts linguist-generated
 /src/app/woonbehoefte/reports/woonbehoefteReports-function.ts linguist-generated
 /src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts linguist-generated

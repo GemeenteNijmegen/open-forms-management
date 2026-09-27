@@ -119,6 +119,9 @@
         },
         {
           "spawn": "bundle:app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda"
+        },
+        {
+          "spawn": "bundle:app/woonbehoefte/ranking/import/rankingImport.lambda"
         }
       ]
     },
@@ -317,6 +320,24 @@
       "steps": [
         {
           "exec": "esbuild --bundle src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/ranking/import/rankingImport.lambda": {
+      "name": "bundle:app/woonbehoefte/ranking/import/rankingImport.lambda",
+      "description": "Create a JavaScript bundle from src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/ranking/import/rankingImport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+        }
+      ]
+    },
+    "bundle:app/woonbehoefte/ranking/import/rankingImport.lambda:watch": {
+      "name": "bundle:app/woonbehoefte/ranking/import/rankingImport.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
+      "steps": [
+        {
+          "exec": "esbuild --bundle src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/ranking/import/rankingImport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
         }
       ]
     },

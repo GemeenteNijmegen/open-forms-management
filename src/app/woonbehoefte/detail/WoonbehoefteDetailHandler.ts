@@ -19,6 +19,8 @@ import { isFailedSource, isReadySource, WoonbehoefteSourceRecord } from '../doma
 import { sanitizeWoonbehoefteFilterQuery } from '../overview/WoonbehoefteOverviewFilter';
 import { ProjectDetailsStore } from '../project-details/persistence/ProjectDetailsStore';
 import { buildProjectDetailsViewModel, buildUnavailableProjectDetailsViewModel, ProjectDetailsViewModel } from '../project-details/ui/ProjectDetailsViewModel';
+import { buildRankingDetailViewModel, buildUnavailableRankingDetailViewModel } from '../ranking/detail/RankingDetailViewModel';
+import { RankingStore } from '../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 import detailTemplate from '../templates/woonbehoefte-detail.mustache';
 
@@ -38,6 +40,13 @@ const SAVED_MESSAGES: Record<string, string> = {
   'project-details': 'Wijziging opgeslagen.',
 };
 
+// Separate namespace from SAVED_MESSAGES/status above: ranking has its own optimistic-lock (revision), not case.version.
+const RANKING_SAVED_MESSAGES: Record<string, string> = {
+  insert: 'Toegevoegd aan de rangschikking.',
+  move: 'Positie gewijzigd.',
+  remove: 'Uit de rangschikking verwijderd.',
+};
+
 /**
  * Handles `GET /woonbehoefte/cases/{caseReference}`. A normal read, so no ACCESS_GRANTED audit. Primary
  * aanvraaggegevens/documenten come exclusively from the PRIMARY source, unchanged; any gekoppelde extra
@@ -52,6 +61,7 @@ export class WoonbehoefteDetailHandler {
     private readonly openZaakClient: OpenZaakClient,
     private readonly additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore,
     private readonly projectDetailsStore: ProjectDetailsStore,
+    private readonly rankingStore: RankingStore,
   ) { }
 
   async handleRequest(
@@ -132,6 +142,16 @@ export class WoonbehoefteDetailHandler {
       projectDetails = buildUnavailableProjectDetailsViewModel(caseReference, canManage, csrf?.value, backQuery);
     }
 
+    // A ranking read-error is limited to this section: the rest of the detail page stays fully usable.
+    let ranking;
+    try {
+      const rankingList = await this.rankingStore.getCurrentList();
+      ranking = buildRankingDetailViewModel(caseReference, rankingList, caseItems.woonbehoefteCase.status, canManage, backQuery, csrf?.value);
+    } catch (error) {
+      logger.error('Ranking kon niet worden gelezen', { caseReference, reason: errorReason(error) });
+      ranking = buildUnavailableRankingDetailViewModel(caseReference, canManage, backQuery, csrf?.value);
+    }
+
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
       detailTemplate,
@@ -139,9 +159,14 @@ export class WoonbehoefteDetailHandler {
       {
         ...viewModel,
         projectDetails,
+        ranking,
         showStaleWarning: queryStringParameters?.status === 'stale',
         ...(queryStringParameters?.saved && SAVED_MESSAGES[queryStringParameters.saved]
           ? { savedMessage: SAVED_MESSAGES[queryStringParameters.saved] }
+          : {}),
+        rankingStaleWarning: queryStringParameters?.rankingStatus === 'stale',
+        ...(queryStringParameters?.rankingSaved && RANKING_SAVED_MESSAGES[queryStringParameters.rankingSaved]
+          ? { rankingSavedMessage: RANKING_SAVED_MESSAGES[queryStringParameters.rankingSaved] }
           : {}),
       },
     );

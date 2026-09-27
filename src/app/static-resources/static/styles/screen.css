@@ -376,6 +376,29 @@ footer {
   margin-block-end: var(--nijmegen-space-100);
 }
 
+.woonbehoefte-ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--utrecht-paragraph-small-font-size);
+}
+
+.woonbehoefte-ranking-table th,
+.woonbehoefte-ranking-table td {
+  text-align: left;
+  vertical-align: middle;
+  padding: var(--nijmegen-space-50) var(--nijmegen-space-100);
+}
+
+.woonbehoefte-ranking-table th {
+  color: var(--nijmegen-color-foreground-subdued);
+  border-block-end: 1px solid var(--nijmegen-color-border-default);
+}
+
+/* Same zebra-stripe color as .woonbehoefte-record:nth-child(even) on Aanvragen, for a consistent look. */
+.woonbehoefte-ranking-table tbody tr:nth-child(even) {
+  background-color: var(--nijmegen-color-background-hover);
+}
+
 /* nijmegen-search-results itself has no inline padding, so a stripe would otherwise run edge-to-edge. */
 .woonbehoefte-record {
   padding-inline: var(--nijmegen-space-100);
@@ -394,6 +417,11 @@ footer {
   display: flex;
   flex-direction: column;
   gap: var(--nijmegen-space-12);
+}
+
+.woonbehoefte-record__rank {
+  color: var(--nijmegen-color-foreground-subdued);
+  font-size: var(--utrecht-paragraph-small-font-size);
 }
 
 /*
@@ -656,7 +684,8 @@ footer {
 .woonbehoefte-planning-form,
 .woonbehoefte-note-form,
 .woonbehoefte-check-form,
-.woonbehoefte-inadmissible-form {
+.woonbehoefte-inadmissible-form,
+.woonbehoefte-ranking-form {
   margin-block-start: var(--nijmegen-space-150);
   display: flex;
   flex-direction: column;

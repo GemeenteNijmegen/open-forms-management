@@ -120,6 +120,27 @@ describe('WoonbehoefteOverviewViewModel', () => {
     expect(viewModel.rows.map((r) => r.caseReference)).toEqual(['OF-new', 'OF-old']);
   });
 
+  it('sorts by ranking position when requested, unranked cases last by receivedAt desc, applied after filtering', () => {
+    const entries = joinCasesWithSources([
+      makeCase({ caseReference: 'OF-rank-2', status: 'IN_PROGRESS' }),
+      makeCase({ caseReference: 'OF-rank-1', status: 'IN_PROGRESS' }),
+      makeCase({ caseReference: 'OF-unranked-new', status: 'IN_PROGRESS' }),
+      makeCase({ caseReference: 'OF-unranked-old', status: 'IN_PROGRESS' }),
+      makeCase({ caseReference: 'OF-other-status', status: 'NEW' }),
+    ], [
+      makeSource({ caseReference: 'OF-unranked-new', reference: 'OF-unranked-new', registrationAt: '2026-08-01T00:00:00.000Z' }),
+      makeSource({ caseReference: 'OF-unranked-old', reference: 'OF-unranked-old', registrationAt: '2026-01-01T00:00:00.000Z' }),
+    ]);
+    const rankByCaseReference = new Map([['OF-rank-2', 2], ['OF-rank-1', 1]]);
+
+    const filter = resolveWoonbehoefteOverviewFilter({ status: 'IN_PROGRESS', sort: 'ranking' });
+    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, undefined, rankByCaseReference);
+
+    expect(viewModel.rows.map((r) => r.caseReference)).toEqual(['OF-rank-1', 'OF-rank-2', 'OF-unranked-new', 'OF-unranked-old']);
+    expect(viewModel.rows[0].rankLabel).toBe('Rang: 1');
+    expect(viewModel.rows[2].rankLabel).toBe('Rang: –');
+  });
+
   it('filters on check gevraagd', () => {
     const entries = joinCasesWithSources([
       makeCase({ caseReference: 'OF-check', check: { requested: true } }),
@@ -163,9 +184,13 @@ describe('WoonbehoefteOverviewViewModel', () => {
     expect(firstPage.rows).toHaveLength(30);
     expect(firstPage.hasMore).toBe(true);
     expect(firstPage.nextVisibleCount).toBe(60);
+    // The 31st entry (index 30) is the first card "Meer tonen" reveals; its anchor id must match its own row id.
+    expect(firstPage.nextCardAnchorId).toBe('dossier-OF-30');
 
     const secondPage = buildWoonbehoefteOverviewViewModel(entries, resolveWoonbehoefteOverviewFilter({ visible: '60' }), undefined);
     expect(secondPage.rows).toHaveLength(35);
     expect(secondPage.hasMore).toBe(false);
+    expect(secondPage.nextCardAnchorId).toBeUndefined();
+    expect(secondPage.rows[30].anchorId).toBe('dossier-OF-30');
   });
 });

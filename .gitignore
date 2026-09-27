@@ -78,6 +78,7 @@ junit.xml
 !/src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function.ts
 !/src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker-function.ts
 !/src/app/woonbehoefte/project-details/initialization/projectDetailsWorker-function.ts
+!/src/app/woonbehoefte/ranking/import/rankingImport-function.ts
 !/.github/workflows/emergency.yml
 !/.github/workflows/auto-merge.yml
 !/.nvmrc

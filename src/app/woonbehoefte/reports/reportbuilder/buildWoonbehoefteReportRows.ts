@@ -25,7 +25,8 @@ function booleanLabel(value: boolean | undefined): string {
 /**
  * entries must already be filtered and sorted identically to the overview; this only maps them to export
  * rows. rawFormFieldsByCaseReference/attachmentFilenamesByCaseReference are empty unless their report
- * option was on.
+ * option was on. rankByCaseReference is the actual current ranking, read once by the caller; a case not
+ * in it is unranked.
  */
 export function buildWoonbehoefteReportRows(
   entries: WoonbehoefteCaseWithSource[],
@@ -33,6 +34,7 @@ export function buildWoonbehoefteReportRows(
   attachmentFilenamesByCaseReference: Map<string, AttachmentFilenamesOutcome> = new Map(),
   workVersionsByCaseReference: Map<string, ProjectDetailsWorkVersion> = new Map(),
   includeProjectDetails: boolean = false,
+  rankByCaseReference: Map<string, number> = new Map(),
 ): WoonbehoefteReportRow[] {
   return entries.map((entry) => buildRow(
     entry,
@@ -40,6 +42,7 @@ export function buildWoonbehoefteReportRows(
     attachmentFilenamesByCaseReference.get(entry.woonbehoefteCase.caseReference),
     workVersionsByCaseReference.get(entry.woonbehoefteCase.caseReference),
     includeProjectDetails,
+    rankByCaseReference.get(entry.woonbehoefteCase.caseReference),
   ));
 }
 
@@ -49,6 +52,7 @@ function buildRow(
   attachmentOutcome?: AttachmentFilenamesOutcome,
   workVersion?: ProjectDetailsWorkVersion,
   includeProjectDetails: boolean = false,
+  rank?: number,
 ): WoonbehoefteReportRow {
   const a = c.assessment;
   const readiness = a.assessedProjectReadiness;
@@ -86,7 +90,7 @@ function buildRow(
     lastCheckOutcomeLabel: c.check.lastOutcome ? CHECK_OUTCOME_LABELS[c.check.lastOutcome] : '',
 
     rankingPeriod: c.ranking?.period,
-    ranking: c.ranking?.rank,
+    ranking: rank,
     rankingAfterLottery: c.ranking?.rankAfterLottery,
     lotteryLabel: booleanLabel(c.ranking?.lottery),
 

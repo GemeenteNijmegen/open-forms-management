@@ -90,6 +90,18 @@
         <dd>{{collectiveHousingLabel}}{{#collectiveHousingCategory}} ({{collectiveHousingCategory}}){{/collectiveHousingCategory}}</dd>
       </div>
       {{/collectiveHousingLabel}}
+      {{#ranking}}
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Rangschikking</dt>
+        <dd>
+          {{#available}}
+          {{#isRanked}}Rang {{positionLabel}}{{/isRanked}}
+          {{^isRanked}}Niet gerangschikt{{/isRanked}}
+          {{/available}}
+          {{^available}}Niet beschikbaar{{/available}}
+        </dd>
+      </div>
+      {{/ranking}}
     </dl>
 
     {{#canManage}}
@@ -166,6 +178,7 @@
       <a class="utrecht-link" href="#projectdetails-wonen">Wonen Mijn Aansluiting</a>
       <a class="utrecht-link" href="#projectdetails-voorziening">Collectieve voorzieningen Mijn Aansluiting</a>
       <a class="utrecht-link" href="#projectdetails-kova">KOVA Mijn Aansluiting</a>
+      <a class="utrecht-link" href="#rangschikking">Rangschikking</a>
       <a class="utrecht-link" href="#check">Check</a>
       <a class="utrecht-link" href="#documenten">Documenten</a>
       <a class="utrecht-link" href="#beoordeling">Beoordeling</a>
@@ -606,6 +619,97 @@
     {{/isReady}}
   </section>
   {{/projectDetails}}
+
+  <details id="rangschikking" class="woonbehoefte-details woonbehoefte-details--section">
+    <summary class="utrecht-heading-4">Rangschikking</summary>
+
+    {{#rankingStaleWarning}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">De rangschikking is ondertussen gewijzigd. Ververs de pagina en probeer het opnieuw.</p>
+      </div>
+    </div>
+    {{/rankingStaleWarning}}
+
+    {{#rankingSavedMessage}}
+    <div class="utrecht-alert utrecht-alert--success" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">{{rankingSavedMessage}}</p>
+      </div>
+    </div>
+    {{/rankingSavedMessage}}
+
+    {{#ranking}}
+    {{#available}}
+    {{#initialized}}
+    {{#isRanked}}
+    <p class="utrecht-paragraph">Huidige positie: {{positionLabel}}</p>
+    {{#showWithdrawnWarning}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Dit dossier is ingetrokken en heeft nog rang {{position}}. Verwijder het uit de rangschikking als het niet meer meedoet.</p>
+      </div>
+    </div>
+    {{/showWithdrawnWarning}}
+
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/ranking/move" class="woonbehoefte-ranking-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedRevision" value="{{revision}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-move-position">Nieuwe positie</label>
+        <input class="utrecht-textbox" type="number" id="ranking-move-position" name="position" min="1" max="{{total}}" required>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-move-note">Toelichting (optioneel)</label>
+        <textarea class="utrecht-textarea" id="ranking-move-note" name="note" rows="2"></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Positie wijzigen</button>
+    </form>
+
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/ranking/remove" class="woonbehoefte-ranking-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedRevision" value="{{revision}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Uit rangschikking verwijderen</button>
+    </form>
+    {{/canManage}}
+    {{/isRanked}}
+
+    {{^isRanked}}
+    <p class="utrecht-paragraph">Niet gerangschikt.</p>
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/ranking/insert" class="woonbehoefte-ranking-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedRevision" value="{{revision}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-insert-position">Positie toevoegen</label>
+        <input class="utrecht-textbox" type="number" id="ranking-insert-position" name="position" min="1" max="{{insertMaxPosition}}" required>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-insert-note">Toelichting (optioneel)</label>
+        <textarea class="utrecht-textarea" id="ranking-insert-note" name="note" rows="2"></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Toevoegen aan rangschikking</button>
+    </form>
+    {{/canManage}}
+    {{/isRanked}}
+    {{/initialized}}
+    {{^initialized}}
+    <p class="utrecht-paragraph">Ranking nog niet ingeladen.</p>
+    {{/initialized}}
+    {{/available}}
+    {{^available}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Ranking kon niet worden geladen. Ververs de pagina of probeer het later opnieuw.</p>
+      </div>
+    </div>
+    {{/available}}
+    {{/ranking}}
+  </details>
 
   <details id="check" class="woonbehoefte-details woonbehoefte-details--section{{#checkRequested}} woonbehoefte-section--check-open{{/checkRequested}}">
     <summary class="utrecht-heading-4">Check</summary>

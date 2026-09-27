@@ -1,0 +1,56 @@
+{{>header}}
+<main id="main-content" class="woonbehoefte-overview">
+  <h1 class="utrecht-heading-2">Woonbehoefte - Ranking</h1>
+
+  <nav class="woonbehoefte-tabs" aria-label="Woonbehoeftenavigatie">
+    {{#tabs}}
+    <a class="woonbehoefte-tabs__link{{#active}} woonbehoefte-tabs__link--active{{/active}}" href="{{href}}"{{#active}} aria-current="page"{{/active}}>{{label}}</a>
+    {{/tabs}}
+  </nav>
+
+  {{#rankingUnavailable}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Ranking kon niet worden geladen. Ververs de pagina of probeer het later opnieuw.</p>
+    </div>
+  </div>
+  {{/rankingUnavailable}}
+
+  {{^rankingUnavailable}}
+  <form method="get" action="/woonbehoefte/ranking" class="woonbehoefte-filter">
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="rank-from">Ranking vanaf</label>
+      <input class="utrecht-textbox" type="number" id="rank-from" name="rankFrom" min="1" value="{{rankFrom}}">
+    </div>
+    <button type="submit" class="utrecht-button utrecht-button--primary-action">Filteren</button>
+  </form>
+
+  <p class="woonbehoefte-count">{{totalCountLabel}}</p>
+
+  <table class="woonbehoefte-ranking-table">
+    <thead>
+      <tr>
+        <th scope="col">Rang</th>
+        <th scope="col">Status</th>
+        <th scope="col">OF-kenmerk</th>
+        <th scope="col">Naam</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#rows}}
+      <tr>
+        <td>{{rankLabel}}</td>
+        <td><span class="woonbehoefte-badge woonbehoefte-badge--{{statusToken}}">{{statusLabel}}</span></td>
+        <td>{{caseReference}}</td>
+        <td><a class="utrecht-link" href="{{detailHref}}">{{projectName}}</a></td>
+      </tr>
+      {{/rows}}
+    </tbody>
+  </table>
+
+  {{^hasRows}}
+  <p class="utrecht-paragraph">Geen dossiers gevonden.</p>
+  {{/hasRows}}
+  {{/rankingUnavailable}}
+</main>
+{{>footer}}

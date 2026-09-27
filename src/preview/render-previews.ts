@@ -24,10 +24,12 @@ import {
   woonbehoefteDetailProjectDetailsNew, woonbehoefteDetailProjectDetailsPending,
   woonbehoefteDetailProjectDetailsReadOnly, woonbehoefteDetailProjectDetailsReadyEmptyCategory, woonbehoefteDetailProjectDetailsReadyManyLines,
   woonbehoefteDetailProjectDetailsReadyOnePerCategory,
-  woonbehoefteDetailProposedInadmissible, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailViewOnly,
-  woonbehoefteDetailWithAdditionalEvidence,
+  woonbehoefteDetailProposedInadmissible, woonbehoefteDetailRanked, woonbehoefteDetailRankedViewOnly,
+  woonbehoefteDetailRankingNotInitialized, woonbehoefteDetailSaved, woonbehoefteDetailSourceError, woonbehoefteDetailUnranked,
+  woonbehoefteDetailViewOnly, woonbehoefteDetailWithAdditionalEvidence, woonbehoefteDetailWithdrawnRanked,
   woonbehoefteOverviewEmpty, woonbehoefteOverviewNewStatuses, woonbehoefteOverviewNewStatusesFilterSelected,
-  woonbehoefteOverviewViewOnly, woonbehoefteOverviewWithMix,
+  woonbehoefteOverviewBatchReady, woonbehoefteOverviewBatchWarning, woonbehoefteOverviewSortedByRanking, woonbehoefteOverviewViewOnly,
+  woonbehoefteOverviewWithMix, woonbehoefteRankingOverview,
   woonbehoefteReportsOverview, woonbehoefteReportsOverviewEmpty,
 } from './fixtures/woonbehoefte';
 import homeTemplate from '../app/home/templates/home.mustache';
@@ -46,6 +48,7 @@ import additionalEvidenceOverviewTemplate from '../app/woonbehoefte/additional-e
 import woonbehoefteReportsOverviewTemplate from '../app/woonbehoefte/reports/templates/woonbehoefte-reports-overview.mustache';
 import woonbehoefteDetailTemplate from '../app/woonbehoefte/templates/woonbehoefte-detail.mustache';
 import woonbehoefteOverviewTemplate from '../app/woonbehoefte/templates/woonbehoefte-overview.mustache';
+import woonbehoefteRankingOverviewTemplate from '../app/woonbehoefte/templates/woonbehoefte-ranking-overview.mustache';
 import { render, renderFragment, PageViewModel } from '../shared/rendering/Renderer';
 import forbiddenTemplate from '../shared/rendering/templates/forbidden.mustache';
 
@@ -157,6 +160,12 @@ export async function renderAll(): Promise<void> {
     'permissions-user-multi-resource': render(permissionEditTemplate, permissionsUserMultiResource.page, permissionsUserMultiResource.data),
     'permissions-remove-confirm': render(permissionRemoveConfirmTemplate, permissionsRemoveConfirm.page, permissionsRemoveConfirm.data),
     'woonbehoefte-overview-mix': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewWithMix.page, woonbehoefteOverviewWithMix.data),
+    'woonbehoefte-overview-batch-ready': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewBatchReady.page, woonbehoefteOverviewBatchReady.data),
+    'woonbehoefte-overview-batch-warning': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewBatchWarning.page, woonbehoefteOverviewBatchWarning.data),
+    'woonbehoefte-ranking-overview': render(woonbehoefteRankingOverviewTemplate, woonbehoefteRankingOverview.page, woonbehoefteRankingOverview.data),
+    'woonbehoefte-overview-sorted-by-ranking': render(
+      woonbehoefteOverviewTemplate, woonbehoefteOverviewSortedByRanking.page, woonbehoefteOverviewSortedByRanking.data,
+    ),
     'woonbehoefte-overview-empty': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewEmpty.page, woonbehoefteOverviewEmpty.data),
     'woonbehoefte-overview-view-only': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewViewOnly.page, woonbehoefteOverviewViewOnly.data),
     'woonbehoefte-overview-new-statuses': render(woonbehoefteOverviewTemplate, woonbehoefteOverviewNewStatuses.page, woonbehoefteOverviewNewStatuses.data),
@@ -201,6 +210,15 @@ export async function renderAll(): Promise<void> {
       woonbehoefteDetailTemplate, woonbehoefteDetailWithAdditionalEvidence.page, woonbehoefteDetailWithAdditionalEvidence.data,
     ),
     'woonbehoefte-detail-saved': render(woonbehoefteDetailTemplate, woonbehoefteDetailSaved.page, woonbehoefteDetailSaved.data),
+    'woonbehoefte-detail-ranking-ranked': render(woonbehoefteDetailTemplate, woonbehoefteDetailRanked.page, woonbehoefteDetailRanked.data),
+    'woonbehoefte-detail-ranking-ranked-view-only': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailRankedViewOnly.page, woonbehoefteDetailRankedViewOnly.data,
+    ),
+    'woonbehoefte-detail-ranking-unranked': render(woonbehoefteDetailTemplate, woonbehoefteDetailUnranked.page, woonbehoefteDetailUnranked.data),
+    'woonbehoefte-detail-ranking-withdrawn': render(woonbehoefteDetailTemplate, woonbehoefteDetailWithdrawnRanked.page, woonbehoefteDetailWithdrawnRanked.data),
+    'woonbehoefte-detail-ranking-not-initialized': render(
+      woonbehoefteDetailTemplate, woonbehoefteDetailRankingNotInitialized.page, woonbehoefteDetailRankingNotInitialized.data,
+    ),
     'woonbehoefte-detail-project-details-new': render(
       woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsNew.page, woonbehoefteDetailProjectDetailsNew.data,
     ),

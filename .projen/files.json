@@ -29,6 +29,7 @@
     "src/app/woonbehoefte/additional-evidence/additionalEvidence-function.ts",
     "src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker-function.ts",
     "src/app/woonbehoefte/project-details/initialization/projectDetailsWorker-function.ts",
+    "src/app/woonbehoefte/ranking/import/rankingImport-function.ts",
     "src/app/woonbehoefte/reports/woonbehoefteExcelWorker-function.ts",
     "src/app/woonbehoefte/reports/woonbehoefteReports-function.ts",
     "src/app/woonbehoefte/source/woonbehoefteSyncWorker-function.ts",

@@ -16,6 +16,8 @@ import { buildWoonbehoefteOverviewViewModel, joinCasesWithSources } from '../../
 import { FacilityLine, HousingLine, KovaLine, ProjectDetailsWorkVersion } from '../../app/woonbehoefte/project-details/domain/ProjectDetails';
 import { ProjectPolygon } from '../../app/woonbehoefte/project-details/location/ProjectLocation';
 import { buildProjectDetailsViewModel } from '../../app/woonbehoefte/project-details/ui/ProjectDetailsViewModel';
+import { buildRankingDetailViewModel } from '../../app/woonbehoefte/ranking/detail/RankingDetailViewModel';
+import { buildRankingOverviewViewModel } from '../../app/woonbehoefte/ranking/overview/RankingOverviewViewModel';
 import { WoonbehoefteReport } from '../../app/woonbehoefte/reports/domain/WoonbehoefteReport';
 import {
   buildWoonbehoefteReportRequestFormViewModel, buildWoonbehoefteReportsListViewModel,
@@ -149,6 +151,60 @@ export const woonbehoefteOverviewWithMix = {
   page: woonbehoeftePage('medewerker@example.invalid'),
   data: {
     ...buildWoonbehoefteOverviewViewModel(joinCasesWithSources(cases, sources), resolveWoonbehoefteOverviewFilter(undefined), 'medewerker@example.invalid'),
+    canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+  },
+};
+
+// Geslaagde batch zonder fouten: geen permanent alert, alleen de gesloten samenvatting bij de batchknop.
+export const woonbehoefteOverviewBatchReady = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...woonbehoefteOverviewWithMix.data,
+    projectDetailsBatchSummary: true,
+    projectDetailsBatchCompletedAtLabel: '25 september 2026 10:13',
+    projectDetailsBatchCreated: 23,
+    projectDetailsBatchSkipped: 2,
+    projectDetailsBatchFailed: 0,
+  },
+};
+
+// CUTOFF-batch: blijft een zichtbare waarschuwing, geen dubbele samenvatting.
+export const woonbehoefteOverviewBatchWarning = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...woonbehoefteOverviewWithMix.data,
+    projectDetailsBatchWarning: true,
+    projectDetailsBatchCutoff: true,
+    projectDetailsBatchCreated: 3,
+    projectDetailsBatchSkipped: 1,
+    projectDetailsBatchFailed: 0,
+  },
+};
+
+// Ranking-tabblad: compacte alleen-lezen tabel, alle dossiers, gerangschikt eerst op positie.
+export const woonbehoefteRankingOverview = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildRankingOverviewViewModel(
+      joinCasesWithSources(cases, sources), new Map([['OF-2026-00061', 2], ['OF-2026-00033', 7]]), new Map(), {},
+    ),
+    tabs: buildWoonbehoefteTabs('ranking', true, true),
+  },
+};
+
+// Sorteerkeuze Rangschikking actief: gerangschikt eerst op positie, ongerangschikt onderaan op ontvangstdatum.
+export const woonbehoefteOverviewSortedByRanking = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildWoonbehoefteOverviewViewModel(
+      joinCasesWithSources(cases, sources), resolveWoonbehoefteOverviewFilter({ sort: 'ranking' }), 'medewerker@example.invalid',
+      new Map([['OF-2026-00061', 2], ['OF-2026-00033', 7]]),
+    ),
     canManage: true,
     tabs: buildWoonbehoefteTabs('aanvragen', true, true),
     csrfToken: 'preview-csrf-token',
@@ -653,6 +709,61 @@ export const woonbehoefteDetailSaved = {
       [detailNote], [detailActivity], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
     ),
     savedMessage: 'Beoordeling opgeslagen. Controleer of de status van de aanvraag nog klopt.',
+  },
+};
+
+const rankedPreviewOrder = Array.from({ length: 145 }, (_, index) => `OF-preview-${index}`);
+rankedPreviewOrder[11] = 'OF-2026-00142';
+
+export const woonbehoefteDetailRanked = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      detailCase, detailSource, 'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00142', { orderedCaseReferences: rankedPreviewOrder, revision: 3 }, 'IN_PROGRESS', true, '', 'preview-csrf-token'),
+  },
+};
+
+export const woonbehoefteDetailRankedViewOnly = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(detailCase, detailSource, 'READY', [], [], [], false, 'kijker@example.invalid', ''),
+    ranking: buildRankingDetailViewModel('OF-2026-00142', { orderedCaseReferences: rankedPreviewOrder, revision: 3 }, 'IN_PROGRESS', false, ''),
+  },
+};
+
+export const woonbehoefteDetailUnranked = {
+  page: detailPage('OF-2026-00075'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00075', status: 'NEW' }), undefined, 'FAILED', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00075', { orderedCaseReferences: ['OF-preview-1', 'OF-preview-2'], revision: 1 }, 'NEW', true, '', 'preview-csrf-token'),
+  },
+};
+
+export const woonbehoefteDetailWithdrawnRanked = {
+  page: detailPage('OF-2026-00033'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00033', status: 'WITHDRAWN', claimedBy: 'medewerker@example.invalid' }),
+      source({ caseReference: 'OF-2026-00033', projectName: 'Ingetrokken aanvraag met nog een rang', applicantType: 'PROJECT_APPLICANT' }),
+      'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00033', { orderedCaseReferences: ['OF-2026-00033'], revision: 1 }, 'WITHDRAWN', true, '', 'preview-csrf-token'),
+  },
+};
+
+export const woonbehoefteDetailRankingNotInitialized = {
+  page: detailPage('OF-2026-00061'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00061', status: 'IN_PROGRESS', claimedBy: 'medewerker@example.invalid' }),
+      source({ caseReference: 'OF-2026-00061', projectName: 'Uitbreiding wijkcentrum Lindenholt', applicantType: 'MUNICIPALITY_NIJMEGEN' }),
+      'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00061', undefined, 'IN_PROGRESS', true, '', 'preview-csrf-token'),
   },
 };
 

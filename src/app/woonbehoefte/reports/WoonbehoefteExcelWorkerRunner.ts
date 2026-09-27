@@ -20,6 +20,7 @@ import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository'
 import { compareByRegistrationAtDesc, joinCasesWithSources } from '../overview/WoonbehoefteOverviewViewModel';
 import { ProjectDetailsWorkVersion } from '../project-details/domain/ProjectDetails';
 import { ProjectDetailsStore } from '../project-details/persistence/ProjectDetailsStore';
+import { RankingStore } from '../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 
 export interface WoonbehoefteExcelWorkerDependencies {
@@ -28,6 +29,7 @@ export interface WoonbehoefteExcelWorkerDependencies {
   additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore;
   openZaakClient: OpenZaakClient;
   projectDetailsStore: ProjectDetailsStore;
+  rankingStore: RankingStore;
   s3Client: S3Client;
   reportStore: WoonbehoefteReportStore;
   auditTrail: AuditTrail;
@@ -37,7 +39,7 @@ export interface WoonbehoefteExcelWorkerDependencies {
 // The worker calls Open Zaak on its own behalf, well after the medewerker's original request/session ended.
 const WORKER_ACTOR: EmployeeIdentity = { principalId: 'woonbehoefte-excel-worker' };
 
-type FailurePhase = 'CASE_DATA_ERROR' | 'SOURCE_DATA_ERROR' | 'PROJECT_DETAILS_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
+type FailurePhase = 'CASE_DATA_ERROR' | 'SOURCE_DATA_ERROR' | 'PROJECT_DETAILS_ERROR' | 'RANKING_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
 
 function storageKeyFor(reportId: string): string {
   return `reports/${reportId}.xlsx`;
@@ -50,6 +52,8 @@ function storageKeyFor(reportId: string): string {
  * is on, and only for what each option needs, never for document content otherwise. When includeProjectDetails
  * is on, the current WORKVERSION per matched dossier is read from the Projectdetails-tabel (GetItem only); a
  * read failure there is never turned into a warning, it fails the whole report like the other data phases.
+ * The actual ranking (RANKING/CURRENT item, same Cases table) is read once and always applied, independent
+ * of any report option; a read failure there also fails the whole report, never a silent empty-rank export.
  */
 export async function runWoonbehoefteExcelReport(
   reportId: string, deps: WoonbehoefteExcelWorkerDependencies, isPastCutoff: () => boolean, correlationId: string,
@@ -131,9 +135,18 @@ export async function runWoonbehoefteExcelReport(
       }
     }
 
+    phase = 'RANKING_ERROR';
+    const rankingList = await deps.rankingStore.getCurrentList();
+    const rankByCaseReference = new Map(rankingList?.orderedCaseReferences.map((caseReference, index) => [caseReference, index + 1]) ?? []);
+    if (isPastCutoff()) {
+      await cutoff(report, deps, correlationId);
+      return;
+    }
+
     phase = 'EXCEL_ERROR';
     const rows = buildWoonbehoefteReportRows(
       entries, rawFormFieldsByCaseReference, attachmentFilenamesByCaseReference, workVersionsByCaseReference, includeProjectDetails,
+      rankByCaseReference,
     );
     const warningCount = rows.filter((row) => row.sourceWarning).length;
     const excelBuffer = await writeWoonbehoefteReportExcel(rows, includeProjectDetails);

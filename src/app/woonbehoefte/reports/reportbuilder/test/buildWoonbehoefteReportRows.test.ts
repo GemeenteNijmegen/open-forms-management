@@ -52,7 +52,8 @@ describe('buildWoonbehoefteReportRows', () => {
           applicationComplete: 'YES',
         },
         check: { requested: true, requestedAt: '2026-08-06T09:00:00.000Z', requestedBy: 'medewerker@nijmegen.nl' },
-        ranking: { period: 202803, rank: 4, lottery: false },
+        // rank: 999 is the dead, storage-only CASE field: proven unused, must never reach the export.
+        ranking: { period: 202803, rank: 999, lottery: false },
       }),
       source: source({
         caseReference: 'OF-1',
@@ -64,7 +65,7 @@ describe('buildWoonbehoefteReportRows', () => {
       }),
     };
 
-    const [row] = buildWoonbehoefteReportRows([entry]);
+    const [row] = buildWoonbehoefteReportRows([entry], undefined, undefined, undefined, false, new Map([['OF-1', 4]]));
 
     expect(row.caseReference).toBe('OF-1');
     expect(row.projectName).toBe('Project Een');

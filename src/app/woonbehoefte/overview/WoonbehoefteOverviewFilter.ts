@@ -2,6 +2,7 @@ import { CaseStatus, isCaseStatus } from '../domain/CaseStatus';
 import { ApplicantType, isApplicantType } from '../domain/WoonbehoefteSource';
 
 export type WoonbehoefteAssignmentFilter = 'ALL' | 'MINE' | 'UNCLAIMED';
+export type WoonbehoefteOverviewSort = 'RECEIVED' | 'RANKING';
 
 export interface WoonbehoefteOverviewFilter {
   statuses: CaseStatus[];
@@ -11,6 +12,7 @@ export interface WoonbehoefteOverviewFilter {
   assignment: WoonbehoefteAssignmentFilter;
   checkRequestedOnly: boolean;
   search?: string;
+  sort: WoonbehoefteOverviewSort;
   visibleCount: number;
 }
 
@@ -46,6 +48,7 @@ export function resolveWoonbehoefteOverviewFilter(queryStringParameters: Record<
     assignment: qsp.assignment === 'mine' ? 'MINE' : qsp.assignment === 'unclaimed' ? 'UNCLAIMED' : 'ALL',
     checkRequestedOnly: qsp.check === 'requested',
     ...(qsp.search?.trim() ? { search: qsp.search.trim() } : {}),
+    sort: qsp.sort === 'ranking' ? 'RANKING' : 'RECEIVED',
     visibleCount: resolveVisibleCount(qsp.visible),
   };
 }
@@ -77,6 +80,9 @@ export function serializeWoonbehoefteOverviewFilter(filter: WoonbehoefteOverview
   }
   if (filter.search) {
     params.set('search', filter.search);
+  }
+  if (filter.sort === 'RANKING') {
+    params.set('sort', 'ranking');
   }
   if (filter.visibleCount > OVERVIEW_PAGE_SIZE) {
     params.set('visible', String(filter.visibleCount));

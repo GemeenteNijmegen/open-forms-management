@@ -5,8 +5,21 @@ describe('resolveWoonbehoefteOverviewFilter', () => {
     const filter = resolveWoonbehoefteOverviewFilter(undefined);
 
     expect(filter).toEqual({
-      statuses: [], startYears: [], startYearNotSet: false, applicantTypes: [], assignment: 'ALL', checkRequestedOnly: false, visibleCount: 30,
+      statuses: [],
+      startYears: [],
+      startYearNotSet: false,
+      applicantTypes: [],
+      assignment: 'ALL',
+      checkRequestedOnly: false,
+      sort: 'RECEIVED',
+      visibleCount: 30,
     });
+  });
+
+  it('maps ?sort=ranking to RANKING, anything else (including absent) to RECEIVED', () => {
+    expect(resolveWoonbehoefteOverviewFilter({ sort: 'ranking' }).sort).toBe('RANKING');
+    expect(resolveWoonbehoefteOverviewFilter({ sort: 'received' }).sort).toBe('RECEIVED');
+    expect(resolveWoonbehoefteOverviewFilter(undefined).sort).toBe('RECEIVED');
   });
 
   it('accepts a valid ?visible= as a whole number of pages', () => {
@@ -62,7 +75,13 @@ describe('resolveWoonbehoefteOverviewFilter', () => {
 describe('serializeWoonbehoefteOverviewFilter / sanitizeWoonbehoefteFilterQuery', () => {
   it('round-trips a filter through serialize and resolve unchanged', () => {
     const filter = resolveWoonbehoefteOverviewFilter({
-      status: 'NEW,IN_PROGRESS', startYear: '2028,nog-niet-vastgesteld', applicantType: 'INDIVIDUAL', assignment: 'mine', check: 'requested', search: 'dukenburg',
+      status: 'NEW,IN_PROGRESS',
+      startYear: '2028,nog-niet-vastgesteld',
+      applicantType: 'INDIVIDUAL',
+      assignment: 'mine',
+      check: 'requested',
+      search: 'dukenburg',
+      sort: 'ranking',
     });
 
     const roundTripped = resolveWoonbehoefteOverviewFilter(Object.fromEntries(new URLSearchParams(serializeWoonbehoefteOverviewFilter(filter))));

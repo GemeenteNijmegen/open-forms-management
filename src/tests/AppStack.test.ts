@@ -74,7 +74,7 @@ describe('AppStack authentication and routing wiring', () => {
     const logGroups = template.findResources('AWS::Logs::LogGroup', Match.objectLike({
       Properties: { RetentionInDays: 30 },
     }));
-    expect(Object.keys(logGroups)).toHaveLength(16);
+    expect(Object.keys(logGroups)).toHaveLength(17);
   });
 
   it('creates exactly 6 alarms: 3 per-Lambda error rates plus audit-write-failure, login-failure-rate and API 5xx', () => {

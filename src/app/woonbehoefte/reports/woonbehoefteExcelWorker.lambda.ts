@@ -13,6 +13,7 @@ import { getOpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakCli
 import { createAdditionalEvidenceSourceCacheStore } from '../additional-evidence/source/createAdditionalEvidenceSourceCacheStore';
 import { createWoonbehoefteCaseRepository } from '../cases/createWoonbehoefteCaseRepository';
 import { createProjectDetailsStore } from '../project-details/persistence/createProjectDetailsStore';
+import { createRankingStore } from '../ranking/createRankingStore';
 import { createWoonbehoefteSourceCacheStore } from '../source/createWoonbehoefteSourceCacheStore';
 
 export interface WoonbehoefteExcelWorkerEvent {
@@ -28,6 +29,7 @@ const caseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const sourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
 const additionalSourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
 const projectDetailsStore = createProjectDetailsStore(dynamoDBClient);
+const rankingStore = createRankingStore(dynamoDBClient);
 const reportStore = createWoonbehoefteReportStore(dynamoDBClient);
 const auditTrail = createAuditTrail(dynamoDBClient);
 
@@ -45,6 +47,7 @@ export async function handler(event: WoonbehoefteExcelWorkerEvent, context: Cont
         additionalSourceCacheStore,
         openZaakClient,
         projectDetailsStore,
+        rankingStore,
         s3Client,
         reportStore,
         auditTrail,

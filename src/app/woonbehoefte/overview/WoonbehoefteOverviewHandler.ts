@@ -11,8 +11,10 @@ import { render } from '../../../shared/rendering/Renderer';
 import { issueCsrfToken } from '../../../shared/security/csrf/CsrfProtection';
 import { visiblePermissionsFeature } from '../../permissions/PermissionsNavigationFeature';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
+import { formatDutchDateTime } from '../domain/WoonbehoefteFormatting';
 import { deriveProjectDetailsBatchDisplayStatus, ProjectDetailsBatchState } from '../project-details/domain/ProjectDetails';
 import { ProjectDetailsStore } from '../project-details/persistence/ProjectDetailsStore';
+import { RankingStore } from '../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 import overviewTemplate from '../templates/woonbehoefte-overview.mustache';
 import { buildWoonbehoefteTabs } from '../WoonbehoefteTabs';
@@ -28,6 +30,7 @@ export class WoonbehoefteOverviewHandler {
     private readonly caseRepository: WoonbehoefteCaseRepository,
     private readonly sourceCacheStore: WoonbehoefteSourceCacheStore,
     private readonly projectDetailsStore: ProjectDetailsStore,
+    private readonly rankingStore: RankingStore,
   ) { }
 
   async handleRequest(
@@ -50,20 +53,27 @@ export class WoonbehoefteOverviewHandler {
       logger.error('Projectdetails: batchstatus kon niet worden gelezen', { reason: errorReason(error) });
       return undefined;
     });
+    // Zelfde redenering: een leesfout op de ranking mag het overzicht niet breken, dossiers tonen dan gewoon als ongerangschikt.
+    const rankingListPromise = this.rankingStore.getCurrentList().catch((error) => {
+      logger.error('Ranking kon niet worden gelezen voor het overzicht', { reason: errorReason(error) });
+      return undefined;
+    });
 
-    const [cases, { submissions }, refreshState, projectDetailsBatchState] = await Promise.all([
+    const [cases, { submissions }, refreshState, projectDetailsBatchState, rankingList] = await Promise.all([
       this.caseRepository.listCases(),
       this.sourceCacheStore.readReadySubmissions(),
       this.sourceCacheStore.getState(),
       projectDetailsBatchStatePromise,
+      rankingListPromise,
     ]);
 
     const batchDisplayStatus = deriveProjectDetailsBatchDisplayStatus(projectDetailsBatchState);
+    const rankByCaseReference = new Map(rankingList?.orderedCaseReferences.map((caseReference, index) => [caseReference, index + 1]) ?? []);
 
     const entries = joinCasesWithSources(cases, submissions);
     // Same actor-id fallback as every mutation handler uses for claimedBy, so "Door mij" also works for an identity without an email.
     const actorId = identity.email ?? identity.principalId;
-    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, actorId);
+    const viewModel = buildWoonbehoefteOverviewViewModel(entries, filter, actorId, rankByCaseReference);
 
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
@@ -82,18 +92,27 @@ export class WoonbehoefteOverviewHandler {
         projectDetailsFailed: queryStringParameters?.projectDetails === 'failed',
         projectDetailsBatchRunning: batchDisplayStatus === 'RUNNING',
         projectDetailsBatchStale: batchDisplayStatus === 'STALE_RUNNING',
-        projectDetailsBatchCutoff: batchDisplayStatus === 'CUTOFF',
-        ...(batchDisplayStatus && batchDisplayStatus !== 'RUNNING' && batchDisplayStatus !== 'STALE_RUNNING'
+        // CUTOFF/READY_WITH_ERRORS stay a visible alert; a plain READY only gets the closed samenvatting below,
+        // never both, so the same counts are never shown twice.
+        projectDetailsBatchWarning: batchDisplayStatus === 'CUTOFF' || batchDisplayStatus === 'READY_WITH_ERRORS',
+        projectDetailsBatchSummary: batchDisplayStatus === 'READY',
+        ...(batchDisplayStatus === 'CUTOFF' ? { projectDetailsBatchCutoff: true } : {}),
+        ...((batchDisplayStatus === 'CUTOFF' || batchDisplayStatus === 'READY_WITH_ERRORS' || batchDisplayStatus === 'READY')
           ? {
-            projectDetailsBatchDone: true,
-            projectDetailsBatchHasErrors: batchDisplayStatus === 'READY_WITH_ERRORS' || batchDisplayStatus === 'CUTOFF',
             projectDetailsBatchCreated: projectDetailsBatchState?.created ?? 0,
             projectDetailsBatchSkipped: projectDetailsBatchState?.skipped ?? 0,
             projectDetailsBatchFailed: projectDetailsBatchState?.failed ?? 0,
+            ...(batchDisplayStatus === 'READY' && projectDetailsBatchState?.completedAt
+              ? { projectDetailsBatchCompletedAtLabel: formatDutchDateTime(projectDetailsBatchState.completedAt) }
+              : {}),
           }
           : {}),
         ...(viewModel.hasMore
-          ? { nextHref: `/woonbehoefte?${serializeWoonbehoefteOverviewFilter({ ...filter, visibleCount: viewModel.nextVisibleCount! })}` }
+          ? {
+            nextHref:
+              `/woonbehoefte?${serializeWoonbehoefteOverviewFilter({ ...filter, visibleCount: viewModel.nextVisibleCount! })}`
+              + `#${viewModel.nextCardAnchorId}`,
+          }
           : {}),
       },
     );

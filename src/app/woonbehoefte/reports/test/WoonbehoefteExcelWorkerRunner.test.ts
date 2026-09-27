@@ -6,6 +6,7 @@ import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseReposito
 import { CaseSourceLink, WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
 import { ProjectDetailsStore } from '../../project-details/persistence/ProjectDetailsStore';
+import { RankingStore } from '../../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteReport } from '../domain/WoonbehoefteReport';
 import { WoonbehoefteReportStore } from '../store/WoonbehoefteReportStore';
@@ -112,12 +113,17 @@ function makeDeps(report: WoonbehoefteReport) {
   const getWorkVersion = jest.fn().mockResolvedValue(undefined);
   const projectDetailsStore = { getWorkVersion } as unknown as ProjectDetailsStore;
 
+  // Ranking read is unconditional and applies to every report; OF-1 ranked, OF-2 unranked, unless a test overrides it.
+  const getCurrentList = jest.fn().mockResolvedValue({ orderedCaseReferences: ['OF-1'], revision: 1 });
+  const rankingStore = { getCurrentList } as unknown as RankingStore;
+
   const deps: WoonbehoefteExcelWorkerDependencies = {
     caseRepository,
     sourceCacheStore,
     additionalSourceCacheStore,
     openZaakClient,
     projectDetailsStore,
+    rankingStore,
     s3Client,
     auditTrail,
     bucketName: 'test-bucket',
@@ -135,6 +141,7 @@ function makeDeps(report: WoonbehoefteReport) {
     getDocumentText,
     getDocumentMetadata,
     getWorkVersion,
+    getCurrentList,
   };
 }
 
@@ -221,6 +228,16 @@ describe('runWoonbehoefteExcelReport', () => {
 
     expect(s3Send).not.toHaveBeenCalled();
     expect(store.markFailed).toHaveBeenCalledWith('report-1', 'SOURCE_DATA_ERROR');
+  });
+
+  it('marks FAILED with RANKING_ERROR and uploads nothing when the ranking read fails: never a silent empty-rank export', async () => {
+    const { deps, store, s3Send, getCurrentList } = makeDeps(makeReport());
+    getCurrentList.mockRejectedValue(new Error('DynamoDB unavailable'));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'RANKING_ERROR');
   });
 
   it('never marks READY when the S3 upload itself fails', async () => {

@@ -19,6 +19,9 @@ import { createProjectDetailsStore } from './project-details/persistence/createP
 import { ProjectDetailsActionHandler } from './project-details/ui/ProjectDetailsActionHandler';
 import { ProjectDetailsLocationDownloadHandler } from './project-details/ui/ProjectDetailsLocationDownloadHandler';
 import { ProjectDetailsTriggerHandler } from './project-details/ui/ProjectDetailsTriggerHandler';
+import { createRankingStore } from './ranking/createRankingStore';
+import { RankingOverviewHandler } from './ranking/overview/RankingOverviewHandler';
+import { RankingActionHandler } from './ranking/RankingActionHandler';
 import { createWoonbehoefteSourceCacheStore } from './source/createWoonbehoefteSourceCacheStore';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
@@ -40,15 +43,18 @@ const authorizationService = new AuthorizationService(createPermissionRepository
 const caseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const sourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
 const projectDetailsStore = createProjectDetailsStore(dynamoDBClient);
+const rankingStore = createRankingStore(dynamoDBClient);
 // Read-only reuse of the extra-bewijzen source cache, same table: shows gekoppelde documenten on the hoofdzaak, never written to from here.
 const additionalSourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
 
-const overviewHandler = new WoonbehoefteOverviewHandler(authorizationService, caseRepository, sourceCacheStore, projectDetailsStore);
+const overviewHandler = new WoonbehoefteOverviewHandler(authorizationService, caseRepository, sourceCacheStore, projectDetailsStore, rankingStore);
 const claimHandler = new WoonbehoefteClaimHandler(authorizationService, caseRepository, auditTrail);
 const statusHandler = new WoonbehoefteStatusHandler(authorizationService, caseRepository, auditTrail);
 const assessmentHandler = new WoonbehoefteAssessmentHandler(authorizationService, caseRepository, auditTrail);
 const noteHandler = new WoonbehoefteNoteHandler(authorizationService, caseRepository, auditTrail);
 const checkHandler = new WoonbehoefteCheckHandler(authorizationService, caseRepository, auditTrail);
+const rankingActionHandler = new RankingActionHandler(authorizationService, rankingStore, auditTrail);
+const rankingOverviewHandler = new RankingOverviewHandler(authorizationService, caseRepository, sourceCacheStore, rankingStore, projectDetailsStore);
 const projectDetailsActionHandler = new ProjectDetailsActionHandler(authorizationService, projectDetailsStore, auditTrail);
 const projectDetailsLocationDownloadHandler = new ProjectDetailsLocationDownloadHandler(authorizationService, caseRepository, projectDetailsStore);
 
@@ -81,6 +87,9 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     if (event.routeKey === 'GET /woonbehoefte') {
       return await overviewHandler.handleRequest(identity, event.queryStringParameters);
     }
+    if (event.routeKey === 'GET /woonbehoefte/ranking') {
+      return await rankingOverviewHandler.handleRequest(identity, event.queryStringParameters);
+    }
     if (event.routeKey === 'POST /woonbehoefte/refresh') {
       const env = environmentVariables(['WOONBEHOEFTE_SYNC_WORKER_FUNCTION_NAME'] as const);
       const refreshHandler = new WoonbehoefteRefreshHandler(
@@ -98,7 +107,7 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}') {
       const openZaakClient = await getOpenZaakClient();
       const detailHandler = new WoonbehoefteDetailHandler(
-        authorizationService, caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, projectDetailsStore,
+        authorizationService, caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, projectDetailsStore, rankingStore,
       );
       return await detailHandler.handleRequest(identity, caseReference, event.queryStringParameters);
     }
@@ -131,6 +140,15 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     }
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/inadmissible/confirm') {
       return await statusHandler.handleConfirmInadmissible(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/ranking/insert') {
+      return await rankingActionHandler.handleInsert(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/ranking/move') {
+      return await rankingActionHandler.handleMove(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/ranking/remove') {
+      return await rankingActionHandler.handleRemove(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
     }
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/notes') {
       return await noteHandler.handleRequest(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
