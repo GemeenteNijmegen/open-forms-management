@@ -88,12 +88,16 @@ describe('buildWoonbehoefteDetailViewModel', () => {
     expect(viewOnly.canClaim).toBe(false);
   });
 
-  it('excludes both PROPOSED_INADMISSIBLE and INADMISSIBLE from the regular status options: each needs its own dedicated action', () => {
+  it('lists the nine regular status options in the fixed order, Ingetrokken last, excluding PROPOSED_INADMISSIBLE and INADMISSIBLE', () => {
     const values = build(makeCase(), makeSource(), 'READY').statusOptions.map((o) => o.value);
 
     expect(values).not.toContain('PROPOSED_INADMISSIBLE');
     expect(values).not.toContain('INADMISSIBLE');
-    expect(values).toEqual(['NEW', 'IN_PROGRESS', 'WAITING_FOR_ADDITIONAL_INFORMATION', 'READY_FOR_RANKING']);
+    expect(values).toEqual([
+      'NEW', 'IN_PROGRESS', 'WAITING_FOR_ADDITIONAL_INFORMATION', 'READY_FOR_RANKING',
+      'CORRECTION_NEEDED', 'CORRECTION_WAITING_FOR_RESPONSE', 'READY_MIJN_AANSLUITING', 'CAPACITY_MA_SUBMITTED',
+      'WITHDRAWN',
+    ]);
   });
 
   it('never lets the generic status select default to the wrong status when the current one is not in its option list', () => {

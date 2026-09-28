@@ -173,6 +173,8 @@
           "src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
           "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
           "src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
+          "src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
+          "src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
           ".projenrc.ts",
           "projenrc/**/*.ts"
         ],

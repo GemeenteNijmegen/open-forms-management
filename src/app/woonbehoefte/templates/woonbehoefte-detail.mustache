@@ -90,6 +90,18 @@
         <dd>{{collectiveHousingLabel}}{{#collectiveHousingCategory}} ({{collectiveHousingCategory}}){{/collectiveHousingCategory}}</dd>
       </div>
       {{/collectiveHousingLabel}}
+      {{#ranking}}
+      <div class="woonbehoefte-basics-grid__item">
+        <dt>Rangschikking</dt>
+        <dd>
+          {{#available}}
+          {{#isRanked}}Rang {{positionLabel}}{{/isRanked}}
+          {{^isRanked}}Niet gerangschikt{{/isRanked}}
+          {{/available}}
+          {{^available}}Niet beschikbaar{{/available}}
+        </dd>
+      </div>
+      {{/ranking}}
     </dl>
 
     {{#canManage}}
@@ -161,8 +173,13 @@
     <summary class="utrecht-heading-4">Op deze pagina</summary>
     <nav class="nijmegen-table-of-contents" aria-label="Op deze pagina">
       <a class="utrecht-link" href="#basisgegevens">Basisgegevens</a>
-      <a class="utrecht-link" href="#check">Check</a>
       <a class="utrecht-link" href="#aanvraag">Aanvraaggegevens</a>
+      <a class="utrecht-link" href="#projectdetails">Projectdetails voor Mijn Aansluiting</a>
+      <a class="utrecht-link" href="#projectdetails-wonen">Wonen Mijn Aansluiting</a>
+      <a class="utrecht-link" href="#projectdetails-voorziening">Collectieve voorzieningen Mijn Aansluiting</a>
+      <a class="utrecht-link" href="#projectdetails-kova">KOVA Mijn Aansluiting</a>
+      <a class="utrecht-link" href="#rangschikking">Rangschikking</a>
+      <a class="utrecht-link" href="#check">Check</a>
       <a class="utrecht-link" href="#documenten">Documenten</a>
       <a class="utrecht-link" href="#beoordeling">Beoordeling</a>
       <a class="utrecht-link" href="#planning">Planning</a>
@@ -171,8 +188,531 @@
     </nav>
   </details>
 
-  <section id="check" class="woonbehoefte-section{{#checkRequested}} woonbehoefte-section--check-open{{/checkRequested}}">
-    <h2 class="utrecht-heading-4">Check</h2>
+  <details id="aanvraag" class="woonbehoefte-details woonbehoefte-details--section" open>
+    <summary class="utrecht-heading-4">Aanvraaggegevens</summary>
+    <dl class="woonbehoefte-detail-summary">
+      {{#projectDescription}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Beschrijving</dt>
+        <dd>{{projectDescription}}</dd>
+      </div>
+      {{/projectDescription}}
+      {{#contactName}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Contactpersoon</dt>
+        <dd>{{contactName}}{{#contactPhone}} · {{contactPhone}}{{/contactPhone}}{{#contactEmail}} · {{contactEmail}}{{/contactEmail}}</dd>
+      </div>
+      {{/contactName}}
+      {{#totalHomesLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Aantal woningen</dt>
+        <dd>{{totalHomesLabel}}</dd>
+      </div>
+      {{/totalHomesLabel}}
+      {{#hasExistingLianderRequestLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Lopende aanvraag Liander</dt>
+        <dd>{{hasExistingLianderRequestLabel}}{{#eanOrApplicationNumber}} ({{eanOrApplicationNumber}}){{/eanOrApplicationNumber}}</dd>
+      </div>
+      {{/hasExistingLianderRequestLabel}}
+      {{#hasCollectiveFacilitiesLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>Collectieve voorzieningen</dt>
+        <dd>{{hasCollectiveFacilitiesLabel}}</dd>
+      </div>
+      {{/hasCollectiveFacilitiesLabel}}
+      {{#hasKovaLabel}}
+      <div class="woonbehoefte-detail-summary__row">
+        <dt>KOVA</dt>
+        <dd>{{hasKovaLabel}}</dd>
+      </div>
+      {{/hasKovaLabel}}
+    </dl>
+  </details>
+
+  {{#projectDetails}}
+  <section id="projectdetails" class="woonbehoefte-section woonbehoefte-project-details">
+    <h2 class="utrecht-heading-4">Projectdetails voor Mijn Aansluiting</h2>
+    <p class="utrecht-paragraph">Werkversie voor handmatige invoer bij MijnAansluiting.nl. Wijzigt nooit de oorspronkelijke aanvraag.</p>
+    {{#isReady}}
+    <p class="utrecht-paragraph">Elk onderdeel hieronder heeft een eigen Opslaan-knop. Een paginaverversing zonder op te slaan verliest wijzigingen in andere onderdelen.</p>
+    {{/isReady}}
+
+    {{#isUnavailable}}
+    <div class="utrecht-alert utrecht-alert--error" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Projectdetails kon niet worden geladen. Ververs de pagina; de rest van de aanvraag blijft beschikbaar.</p>
+      </div>
+    </div>
+    {{/isUnavailable}}
+
+    {{#isNew}}
+    <p class="utrecht-paragraph">Nog geen werkversie voor dit dossier.</p>
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/start" class="woonbehoefte-inline-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Projectdetails voorinvullen</button>
+    </form>
+    <p class="utrecht-paragraph woonbehoefte-project-details__note">Werkt de bron blijvend niet? Begin dan handmatig met een lege werkversie.</p>
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/start-empty" class="woonbehoefte-inline-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Handmatig leeg beginnen</button>
+    </form>
+    {{/canManage}}
+    {{/isNew}}
+
+    {{#isPending}}
+    <p class="utrecht-paragraph">Voorinvulling loopt. Ververs de pagina zo nodig.</p>
+    {{/isPending}}
+
+    {{#isFailed}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Voorinvulling is mislukt. Probeer het opnieuw of vul de werkversie handmatig in vanaf de aanvraag-PDF.</p>
+      </div>
+    </div>
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/start" class="woonbehoefte-inline-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Opnieuw proberen</button>
+    </form>
+    <p class="utrecht-paragraph woonbehoefte-project-details__note">Blijft dit mislukken? Begin dan handmatig met een lege werkversie.</p>
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/start-empty" class="woonbehoefte-inline-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Handmatig leeg beginnen</button>
+    </form>
+    {{/canManage}}
+    {{/isFailed}}
+
+    {{#isReady}}
+    <details id="pd-additional-information-card" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Aanvullende informatie voor Mijn Aansluiting</summary>
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/additional-information" class="woonbehoefte-project-details__form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-additional-information">Aanvullende informatie voor Mijn Aansluiting</label>
+          <textarea class="utrecht-textarea" id="pd-additional-information" name="additionalInformation" rows="2" {{^canManage}}readonly{{/canManage}}>{{additionalInformation}}</textarea>
+        </div>
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-mijn-aansluiting-kenmerk">Kenmerk Mijn Aansluiting</label>
+          <input class="utrecht-textbox" type="text" id="pd-mijn-aansluiting-kenmerk" name="mijnAansluitingKenmerk" value="{{mijnAansluitingKenmerk}}" {{^canManage}}readonly{{/canManage}}>
+        </div>
+        {{#canManage}}
+        <button type="submit" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
+        {{/canManage}}
+      </form>
+    </details>
+
+    <details id="pd-project-card" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Project</summary>
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/project" class="woonbehoefte-project-details__form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-readable-name">Leesbare projectnaam</label>
+          <input class="utrecht-textbox" type="text" id="pd-readable-name" name="readableProjectName" value="{{readableProjectName}}" {{^canManage}}readonly{{/canManage}}>
+        </div>
+        <div class="utrecht-form-field">
+          <span class="utrecht-form-label">Volledige projectnaam</span>
+          <p class="utrecht-paragraph woonbehoefte-project-details__full-name">{{fullProjectName}}</p>
+        </div>
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-description">Projecttoelichting</label>
+          <textarea class="utrecht-textarea" id="pd-description" name="projectDescription" rows="3" {{^canManage}}readonly{{/canManage}}>{{projectDescription}}</textarea>
+        </div>
+        {{#canManage}}
+        <button type="submit" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
+        {{/canManage}}
+      </form>
+    </details>
+
+    <details id="projectdetails-wonen" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Wonen</summary>
+      <div class="woonbehoefte-project-details__category-header">
+        {{#canManage}}
+        <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/wonen" class="woonbehoefte-inline-form">
+          <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+          <input type="hidden" name="back" value="{{backQuery}}">
+          <input type="hidden" name="type" value="WOONHUIS">
+          <input type="hidden" name="connectionCount" value="0">
+          <input type="hidden" name="connectionType" value="">
+          <input type="hidden" name="otherDetails" value="">
+          <button type="submit" class="utrecht-button utrecht-button--secondary-action">Toevoegen wonen</button>
+        </form>
+        {{/canManage}}
+      </div>
+      {{^hasHousingLines}}
+      <p class="utrecht-paragraph">Nog geen woonregels.</p>
+      {{/hasHousingLines}}
+      {{#housingLines}}
+      <details id="pd-wonen-line-{{lineId}}" class="woonbehoefte-details woonbehoefte-project-details__line" open>
+        <summary class="woonbehoefte-project-details__line-heading">Wonen regel {{number}}</summary>
+        <form id="pd-wonen-edit-{{lineId}}" method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/wonen/{{lineId}}" class="woonbehoefte-project-details__form">
+          <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+          <input type="hidden" name="back" value="{{backQuery}}">
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-wonen-type-{{lineId}}">Type</label>
+            <select class="utrecht-select utrecht-select--html-select" id="pd-wonen-type-{{lineId}}" name="type" {{^canManage}}disabled{{/canManage}}>
+              {{#typeOptions}}
+              <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+              {{/typeOptions}}
+            </select>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-wonen-count-{{lineId}}">Aantal aansluitingen</label>
+            <input class="utrecht-textbox" type="number" min="0" id="pd-wonen-count-{{lineId}}" name="connectionCount" value="{{connectionCount}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-wonen-connection-{{lineId}}">Type aansluiting</label>
+            <input class="utrecht-textbox" type="text" id="pd-wonen-connection-{{lineId}}" name="connectionType" value="{{connectionType}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-wonen-details-{{lineId}}">Overige gegevens</label>
+            <textarea class="utrecht-textarea" id="pd-wonen-details-{{lineId}}" name="otherDetails" rows="4" {{^canManage}}readonly{{/canManage}}>{{otherDetails}}</textarea>
+          </div>
+          {{#homesAccordingToFormLabel}}
+          <p class="woonbehoefte-project-details__note">Aantal woningen volgens formulier: {{homesAccordingToFormLabel}}</p>
+          {{/homesAccordingToFormLabel}}
+        </form>
+        {{#canManage}}
+        <div class="woonbehoefte-project-details__line-actions">
+          <button type="submit" form="pd-wonen-edit-{{lineId}}" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
+          <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/wonen/{{lineId}}/delete" class="woonbehoefte-inline-form" onsubmit="return confirm('Deze woonregel verwijderen?')">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <input type="hidden" name="back" value="{{backQuery}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen</button>
+          </form>
+        </div>
+        {{/canManage}}
+      </details>
+      {{/housingLines}}
+    </details>
+
+    <details id="projectdetails-voorziening" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Collectieve voorzieningen</summary>
+      <div class="woonbehoefte-project-details__category-header">
+        {{#canManage}}
+        <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/voorziening" class="woonbehoefte-inline-form">
+          <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+          <input type="hidden" name="back" value="{{backQuery}}">
+          <input type="hidden" name="facilityType" value="Nieuwe voorziening">
+          <input type="hidden" name="connectionCount" value="1">
+          <input type="hidden" name="connectionType" value="">
+          <input type="hidden" name="otherDetails" value="">
+          <button type="submit" class="utrecht-button utrecht-button--secondary-action">Toevoegen voorziening</button>
+        </form>
+        {{/canManage}}
+      </div>
+      {{^hasFacilityLines}}
+      <p class="utrecht-paragraph">Nog geen collectieve voorzieningen.</p>
+      {{/hasFacilityLines}}
+      {{#facilityLines}}
+      <details id="pd-voorziening-line-{{lineId}}" class="woonbehoefte-details woonbehoefte-project-details__line" open>
+        <summary class="woonbehoefte-project-details__line-heading">Voorziening regel {{number}}</summary>
+        <form id="pd-voorziening-edit-{{lineId}}" method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/voorziening/{{lineId}}" class="woonbehoefte-project-details__form">
+          <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+          <input type="hidden" name="back" value="{{backQuery}}">
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-voorziening-type-{{lineId}}">Type</label>
+            <input class="utrecht-textbox" type="text" id="pd-voorziening-type-{{lineId}}" name="facilityType" value="{{facilityType}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-voorziening-count-{{lineId}}">Aantal aansluitingen</label>
+            <input class="utrecht-textbox" type="number" min="0" id="pd-voorziening-count-{{lineId}}" name="connectionCount" value="{{connectionCount}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-voorziening-connection-{{lineId}}">Type aansluiting</label>
+            <input class="utrecht-textbox" type="text" id="pd-voorziening-connection-{{lineId}}" name="connectionType" value="{{connectionType}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-voorziening-details-{{lineId}}">Overige gegevens</label>
+            <textarea class="utrecht-textarea" id="pd-voorziening-details-{{lineId}}" name="otherDetails" rows="4" {{^canManage}}readonly{{/canManage}}>{{otherDetails}}</textarea>
+          </div>
+        </form>
+        {{#canManage}}
+        <div class="woonbehoefte-project-details__line-actions">
+          <button type="submit" form="pd-voorziening-edit-{{lineId}}" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
+          <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/voorziening/{{lineId}}/delete" class="woonbehoefte-inline-form" onsubmit="return confirm('Deze voorziening verwijderen?')">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <input type="hidden" name="back" value="{{backQuery}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen</button>
+          </form>
+        </div>
+        {{/canManage}}
+      </details>
+      {{/facilityLines}}
+    </details>
+
+    <details id="projectdetails-kova" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">KOVA</summary>
+      <div class="woonbehoefte-project-details__category-header">
+        {{#canManage}}
+        <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/kova" class="woonbehoefte-inline-form">
+          <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+          <input type="hidden" name="back" value="{{backQuery}}">
+          <input type="hidden" name="function" value="Nieuwe functie">
+          <input type="hidden" name="connectionCount" value="1">
+          <input type="hidden" name="connectionType" value="">
+          <input type="hidden" name="otherDetails" value="">
+          <button type="submit" class="utrecht-button utrecht-button--secondary-action">Toevoegen KOVA</button>
+        </form>
+        {{/canManage}}
+      </div>
+      {{^hasKovaLines}}
+      <p class="utrecht-paragraph">Nog geen KOVA-regels.</p>
+      {{/hasKovaLines}}
+      {{#kovaLines}}
+      <details id="pd-kova-line-{{lineId}}" class="woonbehoefte-details woonbehoefte-project-details__line" open>
+        <summary class="woonbehoefte-project-details__line-heading">KOVA regel {{number}}</summary>
+        <form id="pd-kova-edit-{{lineId}}" method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/kova/{{lineId}}" class="woonbehoefte-project-details__form">
+          <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+          <input type="hidden" name="back" value="{{backQuery}}">
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-kova-function-{{lineId}}">Functie</label>
+            <input class="utrecht-textbox" type="text" id="pd-kova-function-{{lineId}}" name="function" value="{{kovaFunction}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-kova-count-{{lineId}}">Aantal aansluitingen</label>
+            <input class="utrecht-textbox" type="number" min="0" id="pd-kova-count-{{lineId}}" name="connectionCount" value="{{connectionCount}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-kova-connection-{{lineId}}">Type aansluiting</label>
+            <input class="utrecht-textbox" type="text" id="pd-kova-connection-{{lineId}}" name="connectionType" value="{{connectionType}}" {{^canManage}}readonly{{/canManage}}>
+          </div>
+          <div class="utrecht-form-field">
+            <label class="utrecht-form-label" for="pd-kova-details-{{lineId}}">Overige gegevens</label>
+            <textarea class="utrecht-textarea" id="pd-kova-details-{{lineId}}" name="otherDetails" rows="4" {{^canManage}}readonly{{/canManage}}>{{otherDetails}}</textarea>
+          </div>
+        </form>
+        {{#canManage}}
+        <div class="woonbehoefte-project-details__line-actions">
+          <button type="submit" form="pd-kova-edit-{{lineId}}" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
+          <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/lines/kova/{{lineId}}/delete" class="woonbehoefte-inline-form" onsubmit="return confirm('Deze KOVA-regel verwijderen?')">
+            <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+            <input type="hidden" name="back" value="{{backQuery}}">
+            <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verwijderen</button>
+          </form>
+        </div>
+        {{/canManage}}
+      </details>
+      {{/kovaLines}}
+    </details>
+
+    <details id="pd-project-wide-card" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Projectbrede gegevens</summary>
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/project-wide" class="woonbehoefte-project-details__form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-project-wide">Projectbrede gegevens</label>
+          <textarea class="utrecht-textarea" id="pd-project-wide" name="projectWideNotes" rows="6" {{^canManage}}readonly{{/canManage}}>{{projectWideNotes}}</textarea>
+        </div>
+        {{#canManage}}
+        <button type="submit" class="utrecht-button utrecht-button--primary-action">Opslaan</button>
+        {{/canManage}}
+      </form>
+    </details>
+
+    <details id="pd-project-location-card" class="woonbehoefte-details woonbehoefte-details--section" open>
+      <summary class="utrecht-heading-4">Projectlocatie</summary>
+
+      {{#locationErrorMessage}}
+      <div class="utrecht-alert utrecht-alert--error" role="status">
+        <div class="utrecht-alert__content">
+          <p class="utrecht-alert__message">{{locationErrorMessage}}</p>
+        </div>
+      </div>
+      {{/locationErrorMessage}}
+
+      {{#isLocationManual}}
+      <p class="utrecht-paragraph">Handmatig aangepast door {{locationManualSetByLabel}} op {{locationManualSetAtLabel}}.</p>
+      {{#isLocationBronUnusableContext}}
+      <p class="woonbehoefte-project-details__location-issue woonbehoefte-project-details__location-issue--context">
+        Oorspronkelijke formulierlocatie was niet bruikbaar: {{locationBronIssueMessage}}.
+      </p>
+      {{/isLocationBronUnusableContext}}
+      {{/isLocationManual}}
+      {{^isLocationManual}}
+      {{#isLocationBronValid}}
+      <p class="utrecht-paragraph">Bron: locatie uit formulier.</p>
+      {{/isLocationBronValid}}
+      {{#isLocationBronMissing}}
+      <p class="utrecht-paragraph">Geen getekende locatie in het formulier; gebruik het ingediende locatiebestand als referentie.</p>
+      {{/isLocationBronMissing}}
+      {{#isLocationBronUnusablePrimary}}
+      <p class="woonbehoefte-project-details__location-issue">De getekende locatie uit het formulier is niet bruikbaar: {{locationBronIssueMessage}}.</p>
+      {{/isLocationBronUnusablePrimary}}
+      {{/isLocationManual}}
+
+      {{#locationCanDownload}}
+      <p class="utrecht-paragraph">
+        <a class="utrecht-link" href="/woonbehoefte/cases/{{caseReference}}/project-details/location.geojson">Download GeoJSON</a>
+      </p>
+      {{/locationCanDownload}}
+
+      {{#canManage}}
+      {{#locationCanDownload}}
+      <p class="woonbehoefte-project-details__note">Een nieuwe locatie hieronder vervangt de huidige.</p>
+      {{/locationCanDownload}}
+      <form method="post" action="/woonbehoefte/cases/{{caseReference}}/project-details/location" class="woonbehoefte-project-details__form">
+        <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+        <input type="hidden" name="back" value="{{backQuery}}">
+        <div class="utrecht-form-field">
+          <label class="utrecht-form-label" for="pd-project-location">GeoJSON van de projectlocatie</label>
+          <textarea class="utrecht-textarea" id="pd-project-location" name="location" rows="6"></textarea>
+        </div>
+        <button type="submit" class="utrecht-button utrecht-button--primary-action">Locatie opslaan</button>
+      </form>
+      {{/canManage}}
+
+      <details class="woonbehoefte-details woonbehoefte-details--inline">
+        <summary>Hoe teken ik een projectlocatie?</summary>
+        <ol>
+          <li class="utrecht-paragraph">Open de ingediende locatie-PDF bij de dossierdocumenten en gebruik die als referentie. De applicatie leest de PDF niet automatisch.</li>
+          <li class="utrecht-paragraph">Teken één vlak op <a class="utrecht-link" href="https://geojson.io">geojson.io</a>. Verwijder losse zoekresultaten, punten, de eventuele rechthoek rond Nijmegen en andere getekende vlakken voordat je kopieert/exporteert: er mag maar één vlak overblijven.</li>
+          <li class="utrecht-paragraph">Plak de JSON in het tekstblok hierboven. Dat mag een losse Polygon zijn, één Feature, of een FeatureCollection met precies één Feature.</li>
+          <li class="utrecht-paragraph">Controleer de projectgrens op de kaart en klik Locatie opslaan.</li>
+        </ol>
+        <p class="utrecht-paragraph">Twee geldige voorbeelden (fictieve coördinaten rond Nijmegen):</p>
+        <div class="woonbehoefte-project-details__example-group">
+          <div>
+            <p class="utrecht-paragraph">Losse Polygon</p>
+            <pre class="woonbehoefte-project-details__example"><code>{
+  "type": "Polygon",
+  "coordinates": [[
+    [5.8600, 51.8450],
+    [5.8620, 51.8450],
+    [5.8620, 51.8465],
+    [5.8600, 51.8465],
+    [5.8600, 51.8450]
+  ]]
+}</code></pre>
+          </div>
+          <div>
+            <p class="utrecht-paragraph">FeatureCollection met één Feature</p>
+            <pre class="woonbehoefte-project-details__example"><code>{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "properties": {},
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [[
+        [5.8600, 51.8450],
+        [5.8620, 51.8450],
+        [5.8620, 51.8465],
+        [5.8600, 51.8465],
+        [5.8600, 51.8450]
+      ]]
+    }
+  }]
+}</code></pre>
+          </div>
+        </div>
+      </details>
+    </details>
+    {{/isReady}}
+  </section>
+  {{/projectDetails}}
+
+  <details id="rangschikking" class="woonbehoefte-details woonbehoefte-details--section">
+    <summary class="utrecht-heading-4">Rangschikking</summary>
+
+    {{#rankingStaleWarning}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">De rangschikking is ondertussen gewijzigd. Ververs de pagina en probeer het opnieuw.</p>
+      </div>
+    </div>
+    {{/rankingStaleWarning}}
+
+    {{#rankingSavedMessage}}
+    <div class="utrecht-alert utrecht-alert--success" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">{{rankingSavedMessage}}</p>
+      </div>
+    </div>
+    {{/rankingSavedMessage}}
+
+    {{#ranking}}
+    {{#available}}
+    {{#initialized}}
+    {{#isRanked}}
+    <p class="utrecht-paragraph">Huidige positie: {{positionLabel}}</p>
+    {{#showWithdrawnWarning}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Dit dossier is ingetrokken en heeft nog rang {{position}}. Verwijder het uit de rangschikking als het niet meer meedoet.</p>
+      </div>
+    </div>
+    {{/showWithdrawnWarning}}
+
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/ranking/move" class="woonbehoefte-ranking-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedRevision" value="{{revision}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-move-position">Nieuwe positie</label>
+        <input class="utrecht-textbox" type="number" id="ranking-move-position" name="position" min="1" max="{{total}}" required>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-move-note">Toelichting (optioneel)</label>
+        <textarea class="utrecht-textarea" id="ranking-move-note" name="note" rows="2"></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Positie wijzigen</button>
+    </form>
+
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/ranking/remove" class="woonbehoefte-ranking-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedRevision" value="{{revision}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Uit rangschikking verwijderen</button>
+    </form>
+    {{/canManage}}
+    {{/isRanked}}
+
+    {{^isRanked}}
+    <p class="utrecht-paragraph">Niet gerangschikt.</p>
+    {{#canManage}}
+    <form method="post" action="/woonbehoefte/cases/{{caseReference}}/ranking/insert" class="woonbehoefte-ranking-form">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="expectedRevision" value="{{revision}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-insert-position">Positie toevoegen</label>
+        <input class="utrecht-textbox" type="number" id="ranking-insert-position" name="position" min="1" max="{{insertMaxPosition}}" required>
+      </div>
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="ranking-insert-note">Toelichting (optioneel)</label>
+        <textarea class="utrecht-textarea" id="ranking-insert-note" name="note" rows="2"></textarea>
+      </div>
+      <button type="submit" class="utrecht-button utrecht-button--primary-action">Toevoegen aan rangschikking</button>
+    </form>
+    {{/canManage}}
+    {{/isRanked}}
+    {{/initialized}}
+    {{^initialized}}
+    <p class="utrecht-paragraph">Ranking nog niet ingeladen.</p>
+    {{/initialized}}
+    {{/available}}
+    {{^available}}
+    <div class="utrecht-alert utrecht-alert--warning" role="status">
+      <div class="utrecht-alert__content">
+        <p class="utrecht-alert__message">Ranking kon niet worden geladen. Ververs de pagina of probeer het later opnieuw.</p>
+      </div>
+    </div>
+    {{/available}}
+    {{/ranking}}
+  </details>
+
+  <details id="check" class="woonbehoefte-details woonbehoefte-details--section{{#checkRequested}} woonbehoefte-section--check-open{{/checkRequested}}">
+    <summary class="utrecht-heading-4">Check</summary>
     {{#checkRequested}}
     <p class="woonbehoefte-badge woonbehoefte-badge--check">{{checkRequestedInfo}}</p>
     {{#checkRequestNoteText}}
@@ -217,51 +757,9 @@
     </form>
     {{/checkRequested}}
     {{/canManage}}
-  </section>
-
-  <details id="aanvraag" class="woonbehoefte-details woonbehoefte-details--section" open>
-    <summary class="utrecht-heading-4">Aanvraaggegevens</summary>
-    <dl class="woonbehoefte-detail-summary">
-      {{#projectDescription}}
-      <div class="woonbehoefte-detail-summary__row">
-        <dt>Beschrijving</dt>
-        <dd>{{projectDescription}}</dd>
-      </div>
-      {{/projectDescription}}
-      {{#contactName}}
-      <div class="woonbehoefte-detail-summary__row">
-        <dt>Contactpersoon</dt>
-        <dd>{{contactName}}{{#contactPhone}} · {{contactPhone}}{{/contactPhone}}{{#contactEmail}} · {{contactEmail}}{{/contactEmail}}</dd>
-      </div>
-      {{/contactName}}
-      {{#totalHomesLabel}}
-      <div class="woonbehoefte-detail-summary__row">
-        <dt>Aantal woningen</dt>
-        <dd>{{totalHomesLabel}}</dd>
-      </div>
-      {{/totalHomesLabel}}
-      {{#hasExistingLianderRequestLabel}}
-      <div class="woonbehoefte-detail-summary__row">
-        <dt>Lopende aanvraag Liander</dt>
-        <dd>{{hasExistingLianderRequestLabel}}{{#eanOrApplicationNumber}} ({{eanOrApplicationNumber}}){{/eanOrApplicationNumber}}</dd>
-      </div>
-      {{/hasExistingLianderRequestLabel}}
-      {{#hasCollectiveFacilitiesLabel}}
-      <div class="woonbehoefte-detail-summary__row">
-        <dt>Collectieve voorzieningen</dt>
-        <dd>{{hasCollectiveFacilitiesLabel}}</dd>
-      </div>
-      {{/hasCollectiveFacilitiesLabel}}
-      {{#hasKovaLabel}}
-      <div class="woonbehoefte-detail-summary__row">
-        <dt>KOVA</dt>
-        <dd>{{hasKovaLabel}}</dd>
-      </div>
-      {{/hasKovaLabel}}
-    </dl>
   </details>
 
-  <details id="documenten" class="woonbehoefte-details woonbehoefte-details--section" open>
+  <details id="documenten" class="woonbehoefte-details woonbehoefte-details--section">
     <summary class="utrecht-heading-4">Documenten</summary>
 
     <h3 class="utrecht-heading-5">Aanvraagformulier</h3>
@@ -324,7 +822,7 @@
     {{/additionalDocumentGroups}}
   </details>
 
-  <details id="beoordeling" class="woonbehoefte-details woonbehoefte-details--section" open>
+  <details id="beoordeling" class="woonbehoefte-details woonbehoefte-details--section">
     <summary class="utrecht-heading-4">Beoordeling</summary>
 
     <p class="utrecht-paragraph"><a class="utrecht-link" href="#documenten">Bekijk documenten</a></p>

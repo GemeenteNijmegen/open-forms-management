@@ -24,8 +24,11 @@ function isConditionalCheckFailed(error: unknown): boolean {
   return error instanceof Error && error.name === 'ConditionalCheckFailedException';
 }
 
+// includeProjectDetails is optional (added later); an older stored report without it is treated as false, never as a mismatch by itself.
 function optionsEqual(a: WoonbehoefteReportOptions, b: WoonbehoefteReportOptions): boolean {
-  return a.includeAllFormFields === b.includeAllFormFields && a.includeAttachmentFilenames === b.includeAttachmentFilenames;
+  return a.includeAllFormFields === b.includeAllFormFields
+    && a.includeAttachmentFilenames === b.includeAttachmentFilenames
+    && (a.includeProjectDetails ?? false) === (b.includeProjectDetails ?? false);
 }
 
 export class WoonbehoefteReportStore {

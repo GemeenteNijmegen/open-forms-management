@@ -17,6 +17,11 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   PROPOSED_INADMISSIBLE: 'Voorgesteld niet-ontvankelijk',
   INADMISSIBLE: 'Niet-ontvankelijk',
   READY_FOR_RANKING: 'Gereed voor rangschikking',
+  CORRECTION_NEEDED: 'Correctie nodig',
+  CORRECTION_WAITING_FOR_RESPONSE: 'Correctie wacht op antwoord',
+  READY_MIJN_AANSLUITING: 'Gereed voor Mijn Aansluiting',
+  CAPACITY_MA_SUBMITTED: 'Capaciteit MA ingediend',
+  WITHDRAWN: 'Ingetrokken',
 };
 
 export const APPLICANT_TYPE_LABELS: Record<string, string> = {

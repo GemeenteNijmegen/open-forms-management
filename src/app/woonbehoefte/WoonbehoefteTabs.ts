@@ -4,16 +4,17 @@ export interface WoonbehoefteTab {
   active: boolean;
 }
 
-export type WoonbehoefteTabId = 'aanvragen' | 'additional-evidence' | 'exceloverzichten';
+export type WoonbehoefteTabId = 'aanvragen' | 'additional-evidence' | 'ranking' | 'exceloverzichten';
 
 const TAB_DEFINITIONS: { id: WoonbehoefteTabId; label: string; href: string }[] = [
   { id: 'aanvragen', label: 'Aanvragen', href: '/woonbehoefte' },
   { id: 'additional-evidence', label: 'Extra bewijzen', href: '/woonbehoefte/additional-evidence' },
+  { id: 'ranking', label: 'Ranking', href: '/woonbehoefte/ranking' },
   { id: 'exceloverzichten', label: 'Excel-overzichten', href: '/woonbehoefte/overzichten' },
 ];
 
 /**
- * Aanvragen en Extra bewijzen zijn zichtbaar bij woonbehoefte:view, Excel-overzichten bij
+ * Aanvragen, Extra bewijzen en Ranking zijn zichtbaar bij woonbehoefte:view, Excel-overzichten bij
  * woonbehoefte:exceloverzicht. Elke overview-handler bouwt deze array na zijn eigen
  * requireAuthorization-check en geeft 'm door als tabs, in plaats van een losse boolean per tab.
  */

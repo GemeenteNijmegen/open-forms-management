@@ -5,6 +5,8 @@ import { AdditionalEvidenceSourceCacheStore } from '../../additional-evidence/so
 import { WoonbehoefteCaseRepository } from '../../cases/WoonbehoefteCaseRepository';
 import { CaseSourceLink, WoonbehoefteCase } from '../../domain/WoonbehoefteCase';
 import { WoonbehoefteSourceRecord } from '../../domain/WoonbehoefteSource';
+import { ProjectDetailsStore } from '../../project-details/persistence/ProjectDetailsStore';
+import { RankingStore } from '../../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../../source/WoonbehoefteSourceCacheStore';
 import { WoonbehoefteReport } from '../domain/WoonbehoefteReport';
 import { WoonbehoefteReportStore } from '../store/WoonbehoefteReportStore';
@@ -108,18 +110,39 @@ function makeDeps(report: WoonbehoefteReport) {
     markFailed: jest.fn().mockResolvedValue(true),
   };
 
+  const getWorkVersion = jest.fn().mockResolvedValue(undefined);
+  const projectDetailsStore = { getWorkVersion } as unknown as ProjectDetailsStore;
+
+  // Ranking read is unconditional and applies to every report; OF-1 ranked, OF-2 unranked, unless a test overrides it.
+  const getCurrentList = jest.fn().mockResolvedValue({ orderedCaseReferences: ['OF-1'], revision: 1 });
+  const rankingStore = { getCurrentList } as unknown as RankingStore;
+
   const deps: WoonbehoefteExcelWorkerDependencies = {
     caseRepository,
     sourceCacheStore,
     additionalSourceCacheStore,
     openZaakClient,
+    projectDetailsStore,
+    rankingStore,
     s3Client,
     auditTrail,
     bucketName: 'test-bucket',
     reportStore: store as unknown as WoonbehoefteReportStore,
   };
 
-  return { deps, store, s3Send, auditRecord, caseRepository, sourceCacheStore, additionalSourceCacheStore, getDocumentText, getDocumentMetadata };
+  return {
+    deps,
+    store,
+    s3Send,
+    auditRecord,
+    caseRepository,
+    sourceCacheStore,
+    additionalSourceCacheStore,
+    getDocumentText,
+    getDocumentMetadata,
+    getWorkVersion,
+    getCurrentList,
+  };
 }
 
 describe('runWoonbehoefteExcelReport', () => {
@@ -205,6 +228,16 @@ describe('runWoonbehoefteExcelReport', () => {
 
     expect(s3Send).not.toHaveBeenCalled();
     expect(store.markFailed).toHaveBeenCalledWith('report-1', 'SOURCE_DATA_ERROR');
+  });
+
+  it('marks FAILED with RANKING_ERROR and uploads nothing when the ranking read fails: never a silent empty-rank export', async () => {
+    const { deps, store, s3Send, getCurrentList } = makeDeps(makeReport());
+    getCurrentList.mockRejectedValue(new Error('DynamoDB unavailable'));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'RANKING_ERROR');
   });
 
   it('never marks READY when the S3 upload itself fails', async () => {
@@ -362,6 +395,53 @@ describe('runWoonbehoefteExcelReport', () => {
     const isPastCutoff = () => {
       callCount += 1;
       // false for the two earlier checks (before fetch, after cases/source read), true once the attachment phase is done.
+      return callCount > 2;
+    };
+
+    await runWoonbehoefteExcelReport('report-1', deps, isPastCutoff, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markTooLarge).toHaveBeenCalledWith('report-1');
+  });
+
+  it('never reads the Projectdetails-tabel when includeProjectDetails is off', async () => {
+    const { deps, getWorkVersion } = makeDeps(makeReport());
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(getWorkVersion).not.toHaveBeenCalled();
+  });
+
+  it('reads the werkversie for every matched case when includeProjectDetails is on', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: false, includeProjectDetails: true } });
+    const { deps, getWorkVersion, store } = makeDeps(report);
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(getWorkVersion).toHaveBeenCalledTimes(2);
+    expect(getWorkVersion).toHaveBeenCalledWith('OF-1');
+    expect(getWorkVersion).toHaveBeenCalledWith('OF-2');
+    expect(store.markReady).toHaveBeenCalledWith('report-1', 'reports/report-1.xlsx', 2, expect.any(Number));
+  });
+
+  it('fails the whole report with PROJECT_DETAILS_ERROR instead of a warning when the werkversie-read itself fails', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: false, includeProjectDetails: true } });
+    const { deps, getWorkVersion, store, s3Send } = makeDeps(report);
+    getWorkVersion.mockRejectedValue(new Error('DynamoDB unavailable'));
+
+    await runWoonbehoefteExcelReport('report-1', deps, () => false, 'trace-1');
+
+    expect(s3Send).not.toHaveBeenCalled();
+    expect(store.markFailed).toHaveBeenCalledWith('report-1', 'PROJECT_DETAILS_ERROR');
+  });
+
+  it('checks the cutoff after the project details phase too, marking TOO_LARGE instead of uploading', async () => {
+    const report = makeReport({ options: { includeAllFormFields: false, includeAttachmentFilenames: false, includeProjectDetails: true } });
+    const { deps, s3Send, store } = makeDeps(report);
+    let callCount = 0;
+    const isPastCutoff = () => {
+      callCount += 1;
+      // false for the two earlier checks (before fetch, after cases/source read), true once the werkversie-fetch is done.
       return callCount > 2;
     };
 

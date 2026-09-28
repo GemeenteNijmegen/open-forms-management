@@ -5,12 +5,14 @@ import { StartingPosition, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { DynamoEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 import { WoonbehoefteAdditionalEvidenceFeature } from './additional-evidence/WoonbehoefteAdditionalEvidenceFeature';
+import { ProjectDetailsFeature } from './project-details/ProjectDetailsFeature';
 import { WoonbehoefteReportsFeature } from './reports/WoonbehoefteReportsFeature';
 import { WoonbehoefteCasesTable } from './WoonbehoefteCasesTable';
 import { WoonbehoefteCaseVersionsTable } from './WoonbehoefteCaseVersionsTable';
 import { applyWoonbehoefteDataSourceAccess } from './WoonbehoefteDataSourceAccess';
 import { WoonbehoefteSourceCacheTable } from './WoonbehoefteSourceCacheTable';
 import { WoonbehoefteTemporaryDownloadsBucket } from './WoonbehoefteTemporaryDownloadsBucket';
+import { RankingImportFunction } from '../../app/woonbehoefte/ranking/import/rankingImport-function';
 import { WoonbehoefteSyncWorkerFunction } from '../../app/woonbehoefte/source/woonbehoefteSyncWorker-function';
 import { WoonbehoefteCaseVersionWorkerFunction } from '../../app/woonbehoefte/versions/woonbehoefteCaseVersionWorker-function';
 import { WoonbehoefteFunction } from '../../app/woonbehoefte/woonbehoefte-function';
@@ -98,6 +100,16 @@ export class WoonbehoefteFeature extends Construct {
       temporaryDownloadsBucket,
     });
 
+    const projectDetailsFeature = new ProjectDetailsFeature(this, 'project-details-feature', {
+      configuration: props.configuration,
+      sourceCacheTable,
+      casesTable,
+    });
+    projectDetailsFeature.table.grantFrontendAccess(pageFunction);
+    projectDetailsFeature.workerFunction.grantInvoke(pageFunction);
+    pageFunction.addEnvironment('WOONBEHOEFTE_PROJECT_DETAILS_TABLE', projectDetailsFeature.table.table.tableName);
+    pageFunction.addEnvironment('WOONBEHOEFTE_PROJECT_DETAILS_WORKER_FUNCTION_NAME', projectDetailsFeature.workerFunction.functionName);
+
     new WoonbehoefteReportsFeature(this, 'reports-feature', {
       managementApi: props.managementApi,
       permissionsTable: props.permissionsTable,
@@ -106,6 +118,7 @@ export class WoonbehoefteFeature extends Construct {
       configuration: props.configuration,
       sourceCacheTable,
       casesTable,
+      projectDetailsTable: projectDetailsFeature.table,
     });
 
     const caseVersionWorkerFunction = new WoonbehoefteCaseVersionWorkerFunction(this, 'case-version-worker-function', {
@@ -130,8 +143,21 @@ export class WoonbehoefteFeature extends Construct {
       retryAttempts: -1,
     }));
 
+    // Maintenance-only: no route, no invoke grant from pageFunction. Invoke rights are IAM, outside this stack.
+    const rankingImportFunction = new RankingImportFunction(this, 'ranking-import-function', {
+      tracing: Tracing.ACTIVE,
+      logGroup: createLambdaLogGroup(this, 'woonbehoefte-ranking-import-function'),
+      timeout: Duration.minutes(2),
+    });
+    applyLambdaLoggingDefaults(rankingImportFunction, props.configuration);
+    casesTable.grantRankingImportAccess(rankingImportFunction);
+    props.auditTrailTable.grantPut(rankingImportFunction);
+    rankingImportFunction.addEnvironment('WOONBEHOEFTE_CASES_TABLE', casesTable.table.tableName);
+    rankingImportFunction.addEnvironment('AUDIT_TRAIL_TABLE', props.auditTrailTable.table.tableName);
+
     const integration = new HttpLambdaIntegration('integration-woonbehoefte-function', pageFunction);
     props.managementApi.api.addRoutes({ path: '/woonbehoefte', methods: [HttpMethod.GET], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/ranking', methods: [HttpMethod.GET], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/refresh', methods: [HttpMethod.POST], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}', methods: [HttpMethod.GET], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/documents/{documentId}', methods: [HttpMethod.GET], integration });
@@ -144,5 +170,35 @@ export class WoonbehoefteFeature extends Construct {
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/check/request', methods: [HttpMethod.POST], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/check/complete', methods: [HttpMethod.POST], integration });
     props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/inadmissible/confirm', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/ranking/insert', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/ranking/move', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/ranking/remove', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/project-details/refresh', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/project-details/start', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/start-empty', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({ path: '/woonbehoefte/cases/{caseReference}/project-details/project', methods: [HttpMethod.POST], integration });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/additional-information', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/project-wide', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/location', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/location.geojson', methods: [HttpMethod.GET], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}/{lineId}', methods: [HttpMethod.POST], integration,
+    });
+    props.managementApi.api.addRoutes({
+      path: '/woonbehoefte/cases/{caseReference}/project-details/lines/{category}/{lineId}/delete', methods: [HttpMethod.POST], integration,
+    });
   }
 }

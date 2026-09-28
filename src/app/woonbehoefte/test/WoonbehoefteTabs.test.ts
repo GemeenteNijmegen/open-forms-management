@@ -1,9 +1,9 @@
 import { buildWoonbehoefteTabs } from '../WoonbehoefteTabs';
 
 describe('buildWoonbehoefteTabs', () => {
-  it('shows Aanvragen and Extra bewijzen but not Excel-overzichten for a viewer without exceloverzicht', () => {
+  it('shows Aanvragen, Extra bewijzen and Ranking but not Excel-overzichten for a viewer without exceloverzicht', () => {
     const tabs = buildWoonbehoefteTabs('aanvragen', true, false);
-    expect(tabs.map((tab) => tab.label)).toEqual(['Aanvragen', 'Extra bewijzen']);
+    expect(tabs.map((tab) => tab.label)).toEqual(['Aanvragen', 'Extra bewijzen', 'Ranking']);
     expect(tabs.find((tab) => tab.label === 'Aanvragen')?.active).toBe(true);
   });
 
@@ -12,9 +12,9 @@ describe('buildWoonbehoefteTabs', () => {
     expect(tabs).toEqual([{ label: 'Excel-overzichten', href: '/woonbehoefte/overzichten', active: true }]);
   });
 
-  it('shows all three tabs for a medewerker with both rights', () => {
+  it('shows all four tabs for a medewerker with both rights', () => {
     const tabs = buildWoonbehoefteTabs('additional-evidence', true, true);
-    expect(tabs.map((tab) => tab.label)).toEqual(['Aanvragen', 'Extra bewijzen', 'Excel-overzichten']);
+    expect(tabs.map((tab) => tab.label)).toEqual(['Aanvragen', 'Extra bewijzen', 'Ranking', 'Excel-overzichten']);
     expect(tabs.filter((tab) => tab.active)).toEqual([{ label: 'Extra bewijzen', href: '/woonbehoefte/additional-evidence', active: true }]);
   });
 

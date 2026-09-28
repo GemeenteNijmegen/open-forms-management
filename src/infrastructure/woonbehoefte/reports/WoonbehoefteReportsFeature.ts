@@ -14,6 +14,7 @@ import { ManagementApi } from '../../ManagementApi';
 import { applyPageLambdaDefaults } from '../../PageLambda';
 import { PermissionsTable } from '../../PermissionsTable';
 import { SessionsTable } from '../../SessionsTable';
+import { ProjectDetailsTable } from '../project-details/ProjectDetailsTable';
 import { WoonbehoefteCasesTable } from '../WoonbehoefteCasesTable';
 import { applyWoonbehoefteOpenZaakDataSourceAccess } from '../WoonbehoefteDataSourceAccess';
 import { WoonbehoefteSourceCacheTable } from '../WoonbehoefteSourceCacheTable';
@@ -26,6 +27,7 @@ export interface WoonbehoefteReportsFeatureProps {
   configuration: Configuration;
   sourceCacheTable: WoonbehoefteSourceCacheTable;
   casesTable: WoonbehoefteCasesTable;
+  projectDetailsTable: ProjectDetailsTable;
 }
 
 /**
@@ -53,11 +55,13 @@ export class WoonbehoefteReportsFeature extends Construct {
     reportsBucket.grantWorkerAccess(excelWorkerFunction);
     props.casesTable.grantReportWorkerAccess(excelWorkerFunction);
     props.sourceCacheTable.grantReportWorkerAccess(excelWorkerFunction);
+    props.projectDetailsTable.grantReportWorkerAccess(excelWorkerFunction);
     props.auditTrailTable.grantPut(excelWorkerFunction);
     excelWorkerFunction.addEnvironment('WOONBEHOEFTE_REPORTS_TABLE', reportsTable.table.tableName);
     excelWorkerFunction.addEnvironment('WOONBEHOEFTE_REPORTS_BUCKET', reportsBucket.bucket.bucketName);
     excelWorkerFunction.addEnvironment('WOONBEHOEFTE_SOURCE_CACHE_TABLE', props.sourceCacheTable.table.tableName);
     excelWorkerFunction.addEnvironment('WOONBEHOEFTE_CASES_TABLE', props.casesTable.table.tableName);
+    excelWorkerFunction.addEnvironment('WOONBEHOEFTE_PROJECT_DETAILS_TABLE', props.projectDetailsTable.table.tableName);
     excelWorkerFunction.addEnvironment('AUDIT_TRAIL_TABLE', props.auditTrailTable.table.tableName);
 
     const pageFunction = new WoonbehoefteReportsFunction(this, 'page-function', {

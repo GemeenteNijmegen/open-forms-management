@@ -13,6 +13,11 @@ import { CaseActivity, CaseNote, WoonbehoefteCase } from '../../app/woonbehoefte
 import { WoonbehoefteSourceRecord } from '../../app/woonbehoefte/domain/WoonbehoefteSource';
 import { resolveWoonbehoefteOverviewFilter } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewFilter';
 import { buildWoonbehoefteOverviewViewModel, joinCasesWithSources } from '../../app/woonbehoefte/overview/WoonbehoefteOverviewViewModel';
+import { FacilityLine, HousingLine, KovaLine, ProjectDetailsWorkVersion } from '../../app/woonbehoefte/project-details/domain/ProjectDetails';
+import { ProjectPolygon } from '../../app/woonbehoefte/project-details/location/ProjectLocation';
+import { buildProjectDetailsViewModel } from '../../app/woonbehoefte/project-details/ui/ProjectDetailsViewModel';
+import { buildRankingDetailViewModel } from '../../app/woonbehoefte/ranking/detail/RankingDetailViewModel';
+import { buildRankingOverviewViewModel } from '../../app/woonbehoefte/ranking/overview/RankingOverviewViewModel';
 import { WoonbehoefteReport } from '../../app/woonbehoefte/reports/domain/WoonbehoefteReport';
 import {
   buildWoonbehoefteReportRequestFormViewModel, buildWoonbehoefteReportsListViewModel,
@@ -146,6 +151,112 @@ export const woonbehoefteOverviewWithMix = {
   page: woonbehoeftePage('medewerker@example.invalid'),
   data: {
     ...buildWoonbehoefteOverviewViewModel(joinCasesWithSources(cases, sources), resolveWoonbehoefteOverviewFilter(undefined), 'medewerker@example.invalid'),
+    canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+  },
+};
+
+// Geslaagde batch zonder fouten: geen permanent alert, alleen de gesloten samenvatting bij de batchknop.
+export const woonbehoefteOverviewBatchReady = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...woonbehoefteOverviewWithMix.data,
+    projectDetailsBatchSummary: true,
+    projectDetailsBatchCompletedAtLabel: '25 september 2026 10:13',
+    projectDetailsBatchCreated: 23,
+    projectDetailsBatchSkipped: 2,
+    projectDetailsBatchFailed: 0,
+  },
+};
+
+// CUTOFF-batch: blijft een zichtbare waarschuwing, geen dubbele samenvatting.
+export const woonbehoefteOverviewBatchWarning = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...woonbehoefteOverviewWithMix.data,
+    projectDetailsBatchWarning: true,
+    projectDetailsBatchCutoff: true,
+    projectDetailsBatchCreated: 3,
+    projectDetailsBatchSkipped: 1,
+    projectDetailsBatchFailed: 0,
+  },
+};
+
+// Ranking-tabblad: compacte alleen-lezen tabel, alle dossiers, gerangschikt eerst op positie.
+export const woonbehoefteRankingOverview = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildRankingOverviewViewModel(
+      joinCasesWithSources(cases, sources), new Map([['OF-2026-00061', 2], ['OF-2026-00033', 7]]), new Map(), {},
+    ),
+    tabs: buildWoonbehoefteTabs('ranking', true, true),
+  },
+};
+
+// Sorteerkeuze Rangschikking actief: gerangschikt eerst op positie, ongerangschikt onderaan op ontvangstdatum.
+export const woonbehoefteOverviewSortedByRanking = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildWoonbehoefteOverviewViewModel(
+      joinCasesWithSources(cases, sources), resolveWoonbehoefteOverviewFilter({ sort: 'ranking' }), 'medewerker@example.invalid',
+      new Map([['OF-2026-00061', 2], ['OF-2026-00033', 7]]),
+    ),
+    canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+  },
+};
+
+// De vijf nieuwe statussen naast elkaar: geel/oranje/groen/groen/rood, en de lengte van "Correctie wacht op antwoord" naast de kortere labels.
+const casesWithNewStatuses: WoonbehoefteCase[] = [
+  woonbehoefteCase({ caseReference: 'OF-2026-00301', status: 'READY_FOR_RANKING', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00302', status: 'CORRECTION_NEEDED', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00303', status: 'CORRECTION_WAITING_FOR_RESPONSE', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00304', status: 'READY_MIJN_AANSLUITING', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00305', status: 'CAPACITY_MA_SUBMITTED', claimedBy: 'medewerker@example.invalid' }),
+  woonbehoefteCase({ caseReference: 'OF-2026-00306', status: 'WITHDRAWN', claimedBy: 'medewerker@example.invalid' }),
+];
+
+const sourcesForNewStatuses: WoonbehoefteSourceRecord[] = [
+  source({ caseReference: 'OF-2026-00301', projectName: 'Nieuwbouwproject Hatertseveld', applicantType: 'PROJECT_APPLICANT' }),
+  source({ caseReference: 'OF-2026-00302', projectName: 'Verbouwing Bottendaal', applicantType: 'INDIVIDUAL' }),
+  source({ caseReference: 'OF-2026-00303', projectName: 'Nieuwbouw Weezenhof fase 2', applicantType: 'PROJECT_APPLICANT' }),
+  source({ caseReference: 'OF-2026-00304', projectName: 'Uitbreiding zorgcomplex Hees', applicantType: 'PROJECT_APPLICANT' }),
+  source({ caseReference: 'OF-2026-00305', projectName: 'Nieuwbouw Grootstal', applicantType: 'MUNICIPALITY_NIJMEGEN' }),
+  source({ caseReference: 'OF-2026-00306', projectName: 'Ingetrokken aanvraag Neerbosch', applicantType: 'INDIVIDUAL' }),
+];
+
+export const woonbehoefteOverviewNewStatuses = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildWoonbehoefteOverviewViewModel(
+      joinCasesWithSources(casesWithNewStatuses, sourcesForNewStatuses), resolveWoonbehoefteOverviewFilter(undefined), 'medewerker@example.invalid',
+    ),
+    canManage: true,
+    tabs: buildWoonbehoefteTabs('aanvragen', true, true),
+    csrfToken: 'preview-csrf-token',
+    isRefreshing: false,
+    refreshStarted: false,
+    refreshAlreadyRunning: false,
+  },
+};
+
+// Toont de uitgebreide statusfilter (elf opties) met een aantal van de nieuwe statussen al aangevinkt.
+export const woonbehoefteOverviewNewStatusesFilterSelected = {
+  page: woonbehoeftePage('medewerker@example.invalid'),
+  data: {
+    ...buildWoonbehoefteOverviewViewModel(
+      joinCasesWithSources(casesWithNewStatuses, sourcesForNewStatuses),
+      resolveWoonbehoefteOverviewFilter({ status: 'CORRECTION_NEEDED,CORRECTION_WAITING_FOR_RESPONSE,READY_MIJN_AANSLUITING,CAPACITY_MA_SUBMITTED,WITHDRAWN' }),
+      'medewerker@example.invalid',
+    ),
     canManage: true,
     tabs: buildWoonbehoefteTabs('aanvragen', true, true),
     csrfToken: 'preview-csrf-token',
@@ -526,6 +637,16 @@ export const woonbehoefteDetailProposedInadmissible = {
   ),
 };
 
+// Zaak in één van de nieuwe gewone statussen: de select toont alle negen gewone statussen in de vaste volgorde, Ingetrokken onderaan.
+export const woonbehoefteDetailCorrectionNeeded = {
+  page: detailPage('OF-2026-00302'),
+  data: buildWoonbehoefteDetailViewModel(
+    woonbehoefteCase({ caseReference: 'OF-2026-00302', status: 'CORRECTION_NEEDED', claimedBy: 'medewerker@example.invalid' }),
+    source({ caseReference: 'OF-2026-00302', projectName: 'Verbouwing Bottendaal', applicantType: 'INDIVIDUAL' }),
+    'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+  ),
+};
+
 export const woonbehoefteDetailInadmissible = {
   page: detailPage('OF-2026-00033'),
   data: buildWoonbehoefteDetailViewModel(
@@ -588,5 +709,308 @@ export const woonbehoefteDetailSaved = {
       [detailNote], [detailActivity], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
     ),
     savedMessage: 'Beoordeling opgeslagen. Controleer of de status van de aanvraag nog klopt.',
+  },
+};
+
+const rankedPreviewOrder = Array.from({ length: 145 }, (_, index) => `OF-preview-${index}`);
+rankedPreviewOrder[11] = 'OF-2026-00142';
+
+export const woonbehoefteDetailRanked = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      detailCase, detailSource, 'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00142', { orderedCaseReferences: rankedPreviewOrder, revision: 3 }, 'IN_PROGRESS', true, '', 'preview-csrf-token'),
+  },
+};
+
+export const woonbehoefteDetailRankedViewOnly = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(detailCase, detailSource, 'READY', [], [], [], false, 'kijker@example.invalid', ''),
+    ranking: buildRankingDetailViewModel('OF-2026-00142', { orderedCaseReferences: rankedPreviewOrder, revision: 3 }, 'IN_PROGRESS', false, ''),
+  },
+};
+
+export const woonbehoefteDetailUnranked = {
+  page: detailPage('OF-2026-00075'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00075', status: 'NEW' }), undefined, 'FAILED', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00075', { orderedCaseReferences: ['OF-preview-1', 'OF-preview-2'], revision: 1 }, 'NEW', true, '', 'preview-csrf-token'),
+  },
+};
+
+export const woonbehoefteDetailWithdrawnRanked = {
+  page: detailPage('OF-2026-00033'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00033', status: 'WITHDRAWN', claimedBy: 'medewerker@example.invalid' }),
+      source({ caseReference: 'OF-2026-00033', projectName: 'Ingetrokken aanvraag met nog een rang', applicantType: 'PROJECT_APPLICANT' }),
+      'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00033', { orderedCaseReferences: ['OF-2026-00033'], revision: 1 }, 'WITHDRAWN', true, '', 'preview-csrf-token'),
+  },
+};
+
+export const woonbehoefteDetailRankingNotInitialized = {
+  page: detailPage('OF-2026-00061'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00061', status: 'IN_PROGRESS', claimedBy: 'medewerker@example.invalid' }),
+      source({ caseReference: 'OF-2026-00061', projectName: 'Uitbreiding wijkcentrum Lindenholt', applicantType: 'MUNICIPALITY_NIJMEGEN' }),
+      'READY', [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    ranking: buildRankingDetailViewModel('OF-2026-00061', undefined, 'IN_PROGRESS', true, '', 'preview-csrf-token'),
+  },
+};
+
+// Fictieve, niet uit een echt dossier afkomstige polygonen (zie 01-context.md: geen echte dossierdata in previews).
+const PREVIEW_SOURCE_POLYGON: ProjectPolygon = {
+  type: 'Polygon',
+  coordinates: [[[5.811185, 51.851814], [5.846297, 51.851682], [5.846124, 51.83477], [5.811026, 51.834902], [5.811185, 51.851814]]],
+};
+const PREVIEW_MANUAL_POLYGON: ProjectPolygon = {
+  type: 'Polygon',
+  coordinates: [[[5.858952, 51.84241], [5.859964, 51.841259], [5.860509, 51.842102], [5.858952, 51.84241]]],
+};
+
+function projectDetailsWorkVersion(overrides: Partial<ProjectDetailsWorkVersion> & { caseReference: string }): ProjectDetailsWorkVersion {
+  return {
+    readableProjectName: 'Nieuwbouwproject Dukenburg',
+    projectDescription: 'Realisatie van 10 grondgebonden woningen in twee bouwfasen.',
+    additionalInformation: '',
+    projectWideNotes: 'Deze gegevens gelden voor het hele project.\nZonnepanelen achter de meter: ja\nAantal zonnepanelen: 40',
+    housingLines: {},
+    collectiveFacilityLines: {},
+    kovaLines: {},
+    createdAt: '2026-08-21T09:00:00.000Z',
+    createdBy: 'woonbehoefte-project-details-worker',
+    updatedAt: '2026-08-21T09:00:00.000Z',
+    updatedBy: 'woonbehoefte-project-details-worker',
+    ...overrides,
+  };
+}
+
+// Overige gegevens zoals buildOtherDetails die daadwerkelijk zou opleveren: meerdere gelabelde regels, niet één losse zin.
+const HOUSING_OTHER_DETAILS_VARIANTS = [
+  'Verwarmingswijze: warmtenetLaagTemp',
+  'Verwarmingswijze: individueleLuchtwarmtepomp\nGewenst vermogen afname (kW): 25',
+  'Verwarmingswijze: centraleWarmtepomp\nGewenst vermogen afname (kW): 60\nGewenst vermogen teruglevering (kW): 10',
+];
+
+const FACILITY_OTHER_DETAILS_VARIANTS = [
+  'Afname/teruglevering: afname\nTransportvermogen afname (kW): 45',
+  'Afname/teruglevering: beide\nTransportvermogen afname (kW): 30\nTransportvermogen teruglevering (kW): 30',
+  'Afname/teruglevering: afname\nTransportvermogen afname (kW): 12',
+];
+
+const KOVA_OTHER_DETAILS_VARIANTS = [
+  'Verwarmingswijze: centraleWarmtepomp\nZonnepanelen achter de meter: ja\nAantal zonnepanelen: 24\nWattpiek per zonnepaneel: 350\n'
+    + 'Laadpalen achter de meter: ja\nAantal laadpalen: 2\nPiekvermogen laadpalen (kW): 22\nTransportvermogen afname (kW): 40',
+  'Verwarmingswijze: nogNietBekend\nZonnepanelen achter de meter: nogNietBekend\nLaadpalen achter de meter: nee\nTransportvermogen afname (kW): 18',
+  'Verwarmingswijze: wko\nZonnepanelen achter de meter: nee\nLaadpalen achter de meter: ja\nAantal laadpalen: 1\n'
+    + 'Piekvermogen laadpalen (kW): 11\nBeschrijving functie: Gemeenschappelijke ruimte met keuken en fietsenstalling',
+];
+
+function projectDetailsHousingLine(overrides: Partial<HousingLine> & { lineId: string; order: number }): HousingLine {
+  const otherDetails = HOUSING_OTHER_DETAILS_VARIANTS[overrides.order % HOUSING_OTHER_DETAILS_VARIANTS.length];
+  return { type: 'WOONHUIS', connectionCount: 10, connectionType: '3x25A', otherDetails, homesAccordingToForm: 10, ...overrides };
+}
+
+function projectDetailsFacilityLine(overrides: Partial<FacilityLine> & { lineId: string; order: number }): FacilityLine {
+  const otherDetails = FACILITY_OTHER_DETAILS_VARIANTS[overrides.order % FACILITY_OTHER_DETAILS_VARIANTS.length];
+  return { facilityType: 'collectieveWarmteKoudeVoorziening', connectionCount: 2, connectionType: '3x25A', otherDetails, ...overrides };
+}
+
+function projectDetailsKovaLine(overrides: Partial<KovaLine> & { lineId: string; order: number }): KovaLine {
+  const otherDetails = KOVA_OTHER_DETAILS_VARIANTS[overrides.order % KOVA_OTHER_DETAILS_VARIANTS.length];
+  return { function: 'Kinderopvang', connectionCount: 1, connectionType: '1x40A', otherDetails, ...overrides };
+}
+
+// Elke regel toont hier de vrije tekst die overblijft nadat de medewerker of aanvrager ooit 'anders' had
+// gekozen en die had ingevuld: de werkversie bewaart alleen die tekst, geen apart 'anders'-veld meer.
+const projectDetailsOnePerCategoryWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  housingLines: {
+    'wonen-1': projectDetailsHousingLine({ lineId: 'wonen-1', order: 0, connectionType: 'Tijdelijke aansluiting via de buren tijdens de verbouwing' }),
+  },
+  collectiveFacilityLines: {
+    'voorz-1': projectDetailsFacilityLine({ lineId: 'voorz-1', order: 0, facilityType: 'Gedeelde fietsenstalling met oplaadpunten' }),
+  },
+  kovaLines: {
+    'kova-1': projectDetailsKovaLine({ lineId: 'kova-1', order: 0, function: 'Buitenschoolse opvang in bijgebouw' }),
+  },
+});
+
+// 6 wonen, 15 voorzieningen, 18 KOVA: het grootst realistisch gevulde dossier uit de gemeten voorbeelden (01-context-en-besluiten.md).
+// Met een geldige bronlocatie, zodat deze preview ook toont dat de locatiekaart onder veel herhalende groepen bruikbaar blijft.
+const projectDetailsManyLinesWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  mijnAansluitingKenmerk: 'MA-2026-00142',
+  sourceLocationPolygon: PREVIEW_SOURCE_POLYGON,
+  housingLines: Object.fromEntries(Array.from({ length: 6 }, (_, index) => {
+    const lineId = `wonen-${index + 1}`;
+    return [lineId, projectDetailsHousingLine({
+      lineId, order: index, type: index % 2 === 0 ? 'WOONHUIS' : 'APPARTEMENTEN', connectionCount: index + 1, homesAccordingToForm: index + 1,
+    })];
+  })),
+  collectiveFacilityLines: Object.fromEntries(Array.from({ length: 15 }, (_, index) => {
+    const lineId = `voorz-${index + 1}`;
+    return [lineId, projectDetailsFacilityLine({ lineId, order: index, facilityType: `Voorziening ${index + 1}` })];
+  })),
+  kovaLines: Object.fromEntries(Array.from({ length: 18 }, (_, index) => {
+    const lineId = `kova-${index + 1}`;
+    return [lineId, projectDetailsKovaLine({ lineId, order: index, function: `Functie ${index + 1}` })];
+  })),
+});
+
+const projectDetailsEmptyCategoryWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  housingLines: { 'wonen-1': projectDetailsHousingLine({ lineId: 'wonen-1', order: 0 }) },
+  collectiveFacilityLines: {},
+  kovaLines: {},
+});
+
+function baseDetailData(canManage: boolean, actorEmail: string) {
+  return buildWoonbehoefteDetailViewModel(
+    detailCase, detailSource, 'READY', [], [], [], canManage, actorEmail, '', canManage ? 'preview-csrf-token' : undefined,
+  );
+}
+
+export const woonbehoefteDetailProjectDetailsNew = {
+  page: detailPage('OF-2026-00151'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00151', status: 'NEW' }), source({ caseReference: 'OF-2026-00151', projectName: 'Nieuw dossier' }), 'READY',
+      [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00151', undefined, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsPending = {
+  page: detailPage('OF-2026-00151'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00151', status: 'NEW' }), source({ caseReference: 'OF-2026-00151', projectName: 'Nieuw dossier' }), 'READY',
+      [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    projectDetails: buildProjectDetailsViewModel(
+      'OF-2026-00151', undefined, { caseReference: 'OF-2026-00151', status: 'PENDING', attemptedAt: '2026-08-21T09:00:00.000Z' },
+      true, 'preview-csrf-token', '',
+    ),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsFailed = {
+  page: detailPage('OF-2026-00151'),
+  data: {
+    ...buildWoonbehoefteDetailViewModel(
+      woonbehoefteCase({ caseReference: 'OF-2026-00151', status: 'NEW' }), source({ caseReference: 'OF-2026-00151', projectName: 'Nieuw dossier' }), 'READY',
+      [], [], [], true, 'medewerker@example.invalid', '', 'preview-csrf-token',
+    ),
+    projectDetails: buildProjectDetailsViewModel(
+      'OF-2026-00151', undefined,
+      { caseReference: 'OF-2026-00151', status: 'FAILED', attemptedAt: '2026-08-21T09:00:00.000Z', failureReasonCode: 'CSV_PARSE_ERROR' },
+      true, 'preview-csrf-token', '',
+    ),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsReadyOnePerCategory = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsOnePerCategoryWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsReadyManyLines = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsManyLinesWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsReadyEmptyCategory = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsEmptyCategoryWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsReadOnly = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(false, 'kijker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsOnePerCategoryWorkVersion, undefined, false, undefined, ''),
+  },
+};
+
+const projectDetailsLocationSourceValidWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  sourceLocationPolygon: PREVIEW_SOURCE_POLYGON,
+});
+
+const projectDetailsLocationSourceSelfIntersectingWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  sourceLocationIssue: 'SELF_INTERSECTING',
+});
+
+const projectDetailsLocationManualCorrectedWorkVersion = projectDetailsWorkVersion({
+  caseReference: 'OF-2026-00142',
+  sourceLocationIssue: 'SELF_INTERSECTING',
+  manualLocationPolygon: PREVIEW_MANUAL_POLYGON,
+  manualLocationSetAt: '2026-09-20T14:32:00.000Z',
+  manualLocationSetBy: 'medewerker@example.invalid',
+});
+
+export const woonbehoefteDetailProjectDetailsLocationSourceValid = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsLocationSourceValidWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+// Geen bronlocatie ingevuld en geen handmatige correctie: dezelfde werkversie als de "één per categorie"-preview.
+export const woonbehoefteDetailProjectDetailsLocationMissing = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsOnePerCategoryWorkVersion, undefined, true, 'preview-csrf-token', ''),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsLocationSelfIntersecting = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel(
+      'OF-2026-00142', projectDetailsLocationSourceSelfIntersectingWorkVersion, undefined, true, 'preview-csrf-token', '',
+    ),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsLocationManualCorrected = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(true, 'medewerker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel(
+      'OF-2026-00142', projectDetailsLocationManualCorrectedWorkVersion, undefined, true, 'preview-csrf-token', '',
+    ),
+  },
+};
+
+export const woonbehoefteDetailProjectDetailsLocationReadOnly = {
+  page: detailPage('OF-2026-00142'),
+  data: {
+    ...baseDetailData(false, 'kijker@example.invalid'),
+    projectDetails: buildProjectDetailsViewModel('OF-2026-00142', projectDetailsLocationSourceValidWorkVersion, undefined, false, undefined, ''),
   },
 };

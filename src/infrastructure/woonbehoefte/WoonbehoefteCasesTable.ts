@@ -9,6 +9,10 @@ import { Statics } from '../../Statics';
  * `SOURCE#PRIMARY`/`SOURCE#ADDITIONAL#<uuid>`, `NOTE#<createdAt>#<id>`, `ACTIVITY#<occurredAt>#<id>`.
  * None of that comes back from the source (objects) once it's gone, so PITR stays on and the table survives even
  * after the feature itself gets removed.
+ *
+ * One extra, unrelated singleton item also lives here: pk = RANKING, sk = CURRENT, the actuele
+ * rangschikking (see RankingStore). It is never sk = CASE, so the existing case-scan (listCases) and
+ * the CaseVersions stream worker already ignore it without any change to either.
  */
 export class WoonbehoefteCasesTable extends Construct {
   public readonly table: Table;
@@ -52,5 +56,10 @@ export class WoonbehoefteCasesTable extends Construct {
   // The Excel report worker only ever reads: the ~400-case Scan for the export, Query for a case's source links. Never a write.
   grantReportWorkerAccess(grantee: IGrantable): Grant {
     return this.table.grant(grantee, 'dynamodb:GetItem', 'dynamodb:Query', 'dynamodb:Scan');
+  }
+
+  // The one-time ranking import function only ever conditionally creates the fixed RANKING/CURRENT item.
+  grantRankingImportAccess(grantee: IGrantable): Grant {
+    return this.table.grant(grantee, 'dynamodb:PutItem');
   }
 }

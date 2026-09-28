@@ -13,8 +13,8 @@ interface ColumnDef {
 }
 
 // Explicit type: String (never 'Formula') is what keeps a value starting with =, +, - or @ literal text.
-function textCell(value: string, wrap = false): Cell {
-  return { value, type: String, format: TEXT_FORMAT, ...(wrap ? { wrap: true } : {}) };
+function textCell(value: string, wrap = false, alignVertical?: 'top'): Cell {
+  return { value, type: String, format: TEXT_FORMAT, ...(wrap ? { wrap: true } : {}), ...(alignVertical ? { alignVertical } : {}) };
 }
 
 function numberCell(value: number | undefined): Cell {
@@ -111,6 +111,58 @@ const FIXED_COLUMNS: ColumnDef[] = [
   { header: 'KOVA', width: 10, cell: (row) => textCell(row.kovaLabel) },
 ];
 
+// F. Mijn Aansluiting, alleen bij includeProjectDetails, na de vaste dossierkolommen en vóór de dynamische
+// formulierveldkolommen: exact de volgorde van de Projectdetails-sectie op de detailpagina.
+const WIDE_PROJECT_DETAILS_COLUMN_WIDTH = 50;
+
+const PROJECT_DETAILS_COLUMNS: ColumnDef[] = [
+  {
+    header: 'Mijn Aansluiting - Aanvullende informatie',
+    width: 40,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.additionalInformation ?? '', true),
+  },
+  { header: 'Mijn Aansluiting - Kenmerk', width: 20, cell: (row) => textCell(row.projectDetails?.mijnAansluitingKenmerk ?? '') },
+  { header: 'Mijn Aansluiting - Projectnaam', width: 26, cell: (row) => textCell(row.projectDetails?.projectName ?? '') },
+  {
+    header: 'Mijn Aansluiting - Projecttoelichting',
+    width: 40,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.projectDescription ?? '', true),
+  },
+  {
+    header: 'Mijn Aansluiting - Wonen',
+    width: WIDE_PROJECT_DETAILS_COLUMN_WIDTH,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.housingLinesText ?? '', true, 'top'),
+  },
+  {
+    header: 'Mijn Aansluiting - Collectieve voorzieningen',
+    width: WIDE_PROJECT_DETAILS_COLUMN_WIDTH,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.facilityLinesText ?? '', true, 'top'),
+  },
+  {
+    header: 'Mijn Aansluiting - KOVA',
+    width: WIDE_PROJECT_DETAILS_COLUMN_WIDTH,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.kovaLinesText ?? '', true, 'top'),
+  },
+  {
+    header: 'Mijn Aansluiting - Projectbrede gegevens',
+    width: 40,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.projectWideNotes ?? '', true),
+  },
+  { header: 'Mijn Aansluiting - Herkomst projectlocatie', width: 22, cell: (row) => textCell(row.projectDetails?.locationOriginLabel ?? '') },
+  {
+    header: 'Mijn Aansluiting - Projectlocatie GeoJSON',
+    width: WIDE_PROJECT_DETAILS_COLUMN_WIDTH,
+    wrap: true,
+    cell: (row) => textCell(row.projectDetails?.locationGeoJson ?? '', true, 'top'),
+  },
+];
+
 // G. Bijlagen, na de vaste en dynamische formulierveldkolommen, altijd vóór Bronwaarschuwing.
 const ATTACHMENTS_COLUMN: ColumnDef = {
   header: 'Bijlagen', width: 40, wrap: true, cell: (row) => textCell(row.attachmentFilenamesText, true),
@@ -138,8 +190,16 @@ function buildRawFormFieldColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
   }));
 }
 
-function buildColumns(rows: WoonbehoefteReportRow[]): ColumnDef[] {
-  return [...FIXED_COLUMNS, ...buildRawFormFieldColumns(rows), ATTACHMENTS_COLUMN, BRONWAARSCHUWING_COLUMN];
+// includeProjectDetails, not whether a row happens to carry data, decides column presence: an empty
+// selection with the option on still gets the ten Mijn Aansluiting-koppen.
+function buildColumns(rows: WoonbehoefteReportRow[], includeProjectDetails: boolean): ColumnDef[] {
+  return [
+    ...FIXED_COLUMNS,
+    ...(includeProjectDetails ? PROJECT_DETAILS_COLUMNS : []),
+    ...buildRawFormFieldColumns(rows),
+    ATTACHMENTS_COLUMN,
+    BRONWAARSCHUWING_COLUMN,
+  ];
 }
 
 // Every header wraps, regardless of whether its own data cells do: long headers (like the two-line evidence ones) must never get cut off.
@@ -152,14 +212,14 @@ function dataRow(row: WoonbehoefteReportRow, columns: ColumnDef[]): Row {
 }
 
 /** The exact cell data writeWoonbehoefteReportExcel hands to write-excel-file, exposed so tests can check cell types/values directly. */
-export function buildWoonbehoefteReportSheetData(rows: WoonbehoefteReportRow[]): Row[] {
-  const columns = buildColumns(rows);
+export function buildWoonbehoefteReportSheetData(rows: WoonbehoefteReportRow[], includeProjectDetails: boolean = false): Row[] {
+  const columns = buildColumns(rows, includeProjectDetails);
   return [headerRow(columns), ...rows.map((row) => dataRow(row, columns))];
 }
 
 /** Writes the full Woonbehoefte report as an XLSX Buffer. Never touches S3; that's the caller's job. */
-export async function writeWoonbehoefteReportExcel(rows: WoonbehoefteReportRow[]): Promise<Buffer> {
-  const columns = buildColumns(rows);
+export async function writeWoonbehoefteReportExcel(rows: WoonbehoefteReportRow[], includeProjectDetails: boolean = false): Promise<Buffer> {
+  const columns = buildColumns(rows, includeProjectDetails);
   const data = [headerRow(columns), ...rows.map((row) => dataRow(row, columns))];
 
   const columnWidths = columns.map((column) => ({ width: column.width }));

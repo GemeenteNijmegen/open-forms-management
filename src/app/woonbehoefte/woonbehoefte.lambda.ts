@@ -15,6 +15,13 @@ import { WoonbehoefteDocumentDownloadHandler } from './documents/WoonbehoefteDoc
 import { WoonbehoefteNoteHandler } from './notes/WoonbehoefteNoteHandler';
 import { WoonbehoefteOverviewHandler } from './overview/WoonbehoefteOverviewHandler';
 import { WoonbehoefteRefreshHandler } from './overview/WoonbehoefteRefreshHandler';
+import { createProjectDetailsStore } from './project-details/persistence/createProjectDetailsStore';
+import { ProjectDetailsActionHandler } from './project-details/ui/ProjectDetailsActionHandler';
+import { ProjectDetailsLocationDownloadHandler } from './project-details/ui/ProjectDetailsLocationDownloadHandler';
+import { ProjectDetailsTriggerHandler } from './project-details/ui/ProjectDetailsTriggerHandler';
+import { createRankingStore } from './ranking/createRankingStore';
+import { RankingOverviewHandler } from './ranking/overview/RankingOverviewHandler';
+import { RankingActionHandler } from './ranking/RankingActionHandler';
 import { createWoonbehoefteSourceCacheStore } from './source/createWoonbehoefteSourceCacheStore';
 import { errorReason } from '../../observability/errorReason';
 import { logger } from '../../observability/Logger';
@@ -35,15 +42,21 @@ const auditTrail = createAuditTrail(dynamoDBClient);
 const authorizationService = new AuthorizationService(createPermissionRepository(dynamoDBClient), auditTrail);
 const caseRepository = createWoonbehoefteCaseRepository(dynamoDBClient);
 const sourceCacheStore = createWoonbehoefteSourceCacheStore(dynamoDBClient);
+const projectDetailsStore = createProjectDetailsStore(dynamoDBClient);
+const rankingStore = createRankingStore(dynamoDBClient);
 // Read-only reuse of the extra-bewijzen source cache, same table: shows gekoppelde documenten on the hoofdzaak, never written to from here.
 const additionalSourceCacheStore = createAdditionalEvidenceSourceCacheStore(dynamoDBClient);
 
-const overviewHandler = new WoonbehoefteOverviewHandler(authorizationService, caseRepository, sourceCacheStore);
+const overviewHandler = new WoonbehoefteOverviewHandler(authorizationService, caseRepository, sourceCacheStore, projectDetailsStore, rankingStore);
 const claimHandler = new WoonbehoefteClaimHandler(authorizationService, caseRepository, auditTrail);
 const statusHandler = new WoonbehoefteStatusHandler(authorizationService, caseRepository, auditTrail);
 const assessmentHandler = new WoonbehoefteAssessmentHandler(authorizationService, caseRepository, auditTrail);
 const noteHandler = new WoonbehoefteNoteHandler(authorizationService, caseRepository, auditTrail);
 const checkHandler = new WoonbehoefteCheckHandler(authorizationService, caseRepository, auditTrail);
+const rankingActionHandler = new RankingActionHandler(authorizationService, rankingStore, auditTrail);
+const rankingOverviewHandler = new RankingOverviewHandler(authorizationService, caseRepository, sourceCacheStore, rankingStore, projectDetailsStore);
+const projectDetailsActionHandler = new ProjectDetailsActionHandler(authorizationService, projectDetailsStore, auditTrail);
+const projectDetailsLocationDownloadHandler = new ProjectDetailsLocationDownloadHandler(authorizationService, caseRepository, projectDetailsStore);
 
 /**
  * Dispatches every Woonbehoefte page/action route, the same single-Lambda-multiple-routes shape
@@ -61,6 +74,8 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
 
     const caseReference = event.pathParameters?.caseReference;
     const documentId = event.pathParameters?.documentId;
+    const category = event.pathParameters?.category;
+    const lineId = event.pathParameters?.lineId;
     const isBase64Encoded = Boolean(event.isBase64Encoded);
 
     logger.appendKeys({
@@ -72,6 +87,9 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     if (event.routeKey === 'GET /woonbehoefte') {
       return await overviewHandler.handleRequest(identity, event.queryStringParameters);
     }
+    if (event.routeKey === 'GET /woonbehoefte/ranking') {
+      return await rankingOverviewHandler.handleRequest(identity, event.queryStringParameters);
+    }
     if (event.routeKey === 'POST /woonbehoefte/refresh') {
       const env = environmentVariables(['WOONBEHOEFTE_SYNC_WORKER_FUNCTION_NAME'] as const);
       const refreshHandler = new WoonbehoefteRefreshHandler(
@@ -79,12 +97,22 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
       );
       return await refreshHandler.handleRequest(identity, cookieHeader, event.body, isBase64Encoded, correlationId);
     }
+    if (event.routeKey === 'POST /woonbehoefte/project-details/refresh') {
+      const env = environmentVariables(['WOONBEHOEFTE_PROJECT_DETAILS_WORKER_FUNCTION_NAME'] as const);
+      const triggerHandler = new ProjectDetailsTriggerHandler(
+        authorizationService, projectDetailsStore, lambdaClient, env.WOONBEHOEFTE_PROJECT_DETAILS_WORKER_FUNCTION_NAME, auditTrail,
+      );
+      return await triggerHandler.handleBatchStart(identity, cookieHeader, event.body, isBase64Encoded, correlationId);
+    }
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}') {
       const openZaakClient = await getOpenZaakClient();
       const detailHandler = new WoonbehoefteDetailHandler(
-        authorizationService, caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore,
+        authorizationService, caseRepository, sourceCacheStore, openZaakClient, additionalSourceCacheStore, projectDetailsStore, rankingStore,
       );
       return await detailHandler.handleRequest(identity, caseReference, event.queryStringParameters);
+    }
+    if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}/project-details/location.geojson') {
+      return await projectDetailsLocationDownloadHandler.handleRequest(identity, caseReference);
     }
     if (event.routeKey === 'GET /woonbehoefte/cases/{caseReference}/documents/{documentId}') {
       const openZaakClient = await getOpenZaakClient();
@@ -113,6 +141,15 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/inadmissible/confirm') {
       return await statusHandler.handleConfirmInadmissible(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
     }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/ranking/insert') {
+      return await rankingActionHandler.handleInsert(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/ranking/move') {
+      return await rankingActionHandler.handleMove(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/ranking/remove') {
+      return await rankingActionHandler.handleRemove(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/notes') {
       return await noteHandler.handleRequest(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
     }
@@ -121,6 +158,37 @@ export async function handler(event: APIGatewayProxyEventV2, context: Context): 
     }
     if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/check/complete') {
       return await checkHandler.handleRequest('complete', identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/start') {
+      const env = environmentVariables(['WOONBEHOEFTE_PROJECT_DETAILS_WORKER_FUNCTION_NAME'] as const);
+      const triggerHandler = new ProjectDetailsTriggerHandler(
+        authorizationService, projectDetailsStore, lambdaClient, env.WOONBEHOEFTE_PROJECT_DETAILS_WORKER_FUNCTION_NAME, auditTrail,
+      );
+      return await triggerHandler.handleCaseStart(identity, caseReference, cookieHeader, event.body, isBase64Encoded, correlationId);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/start-empty') {
+      return await projectDetailsActionHandler.handleManualStart(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/project') {
+      return await projectDetailsActionHandler.handleProject(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/additional-information') {
+      return await projectDetailsActionHandler.handleAdditionalInformation(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/project-wide') {
+      return await projectDetailsActionHandler.handleProjectWide(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/location') {
+      return await projectDetailsActionHandler.handleLocation(identity, caseReference, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/lines/{category}') {
+      return await projectDetailsActionHandler.handleLineCreate(identity, caseReference, category, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/lines/{category}/{lineId}') {
+      return await projectDetailsActionHandler.handleLineUpdate(identity, caseReference, category, lineId, cookieHeader, event.body, isBase64Encoded);
+    }
+    if (event.routeKey === 'POST /woonbehoefte/cases/{caseReference}/project-details/lines/{category}/{lineId}/delete') {
+      return await projectDetailsActionHandler.handleLineDelete(identity, caseReference, category, lineId, cookieHeader, event.body, isBase64Encoded);
     }
 
     const html = render(notFoundTemplate, { title: 'Pagina niet gevonden', features: [], currentPath: event.rawPath, actorEmail: identity.email });

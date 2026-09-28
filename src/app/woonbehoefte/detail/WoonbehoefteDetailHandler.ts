@@ -1,5 +1,7 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
 import { buildWoonbehoefteDetailViewModel, WoonbehoefteSourceAvailability } from './WoonbehoefteDetailViewModel';
+import { errorReason } from '../../../observability/errorReason';
+import { logger } from '../../../observability/Logger';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
 import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient';
@@ -15,6 +17,10 @@ import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository'
 import { loadWoonbehoefteDocuments, WoonbehoefteDocumentSource } from '../documents/WoonbehoefteDocumentsLoader';
 import { isFailedSource, isReadySource, WoonbehoefteSourceRecord } from '../domain/WoonbehoefteSource';
 import { sanitizeWoonbehoefteFilterQuery } from '../overview/WoonbehoefteOverviewFilter';
+import { ProjectDetailsStore } from '../project-details/persistence/ProjectDetailsStore';
+import { buildProjectDetailsViewModel, buildUnavailableProjectDetailsViewModel, ProjectDetailsViewModel } from '../project-details/ui/ProjectDetailsViewModel';
+import { buildRankingDetailViewModel, buildUnavailableRankingDetailViewModel } from '../ranking/detail/RankingDetailViewModel';
+import { RankingStore } from '../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 import detailTemplate from '../templates/woonbehoefte-detail.mustache';
 
@@ -31,6 +37,14 @@ const SAVED_MESSAGES: Record<string, string> = {
   'check-completed': 'Check afgerond.',
   'note': 'Aantekening toegevoegd.',
   'assessment': 'Beoordeling opgeslagen. Controleer of de status van de aanvraag nog klopt.',
+  'project-details': 'Wijziging opgeslagen.',
+};
+
+// Separate namespace from SAVED_MESSAGES/status above: ranking has its own optimistic-lock (revision), not case.version.
+const RANKING_SAVED_MESSAGES: Record<string, string> = {
+  insert: 'Toegevoegd aan de rangschikking.',
+  move: 'Positie gewijzigd.',
+  remove: 'Uit de rangschikking verwijderd.',
 };
 
 /**
@@ -46,6 +60,8 @@ export class WoonbehoefteDetailHandler {
     private readonly sourceCacheStore: WoonbehoefteSourceCacheStore,
     private readonly openZaakClient: OpenZaakClient,
     private readonly additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore,
+    private readonly projectDetailsStore: ProjectDetailsStore,
+    private readonly rankingStore: RankingStore,
   ) { }
 
   async handleRequest(
@@ -110,15 +126,49 @@ export class WoonbehoefteDetailHandler {
       csrf?.value, additionalDocumentGroups,
     );
 
+    // A ranking read-error is limited to this section: the rest of the detail page stays fully usable.
+    // Read first so its live position can feed the copyable project name below, without a second ranking-store read.
+    let ranking;
+    try {
+      const rankingList = await this.rankingStore.getCurrentList();
+      ranking = buildRankingDetailViewModel(caseReference, rankingList, caseItems.woonbehoefteCase.status, canManage, backQuery, csrf?.value);
+    } catch (error) {
+      logger.error('Ranking kon niet worden gelezen', { caseReference, reason: errorReason(error) });
+      ranking = buildUnavailableRankingDetailViewModel(caseReference, canManage, backQuery, csrf?.value);
+    }
+
+    // Alleen de eigen werkversie/pogingstatus, nooit een CSV-fetch: de detailpagina blijft bruikbaar tijdens PENDING/FAILED.
+    // Een leesfout hier mag de rest van de detailpagina niet meeslepen; de sectie toont dan alleen zichzelf als onbeschikbaar.
+    let projectDetails: ProjectDetailsViewModel;
+    try {
+      const [projectDetailsWorkVersion, projectDetailsAttempt] = await Promise.all([
+        this.projectDetailsStore.getWorkVersion(caseReference),
+        this.projectDetailsStore.getAttempt(caseReference),
+      ]);
+      projectDetails = buildProjectDetailsViewModel(
+        caseReference, projectDetailsWorkVersion, projectDetailsAttempt, canManage, csrf?.value, backQuery, queryStringParameters?.locationError,
+        ranking.position,
+      );
+    } catch (error) {
+      logger.error('Projectdetails: werkversie/pogingstatus konden niet worden gelezen', { caseReference, reason: errorReason(error) });
+      projectDetails = buildUnavailableProjectDetailsViewModel(caseReference, canManage, csrf?.value, backQuery);
+    }
+
     const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
     const html = render(
       detailTemplate,
       { title: `${viewModel.caseReference} - Woonbehoefte`, features, currentPath: `/woonbehoefte/cases/${caseReference}`, actorEmail: identity.email },
       {
         ...viewModel,
+        projectDetails,
+        ranking,
         showStaleWarning: queryStringParameters?.status === 'stale',
         ...(queryStringParameters?.saved && SAVED_MESSAGES[queryStringParameters.saved]
           ? { savedMessage: SAVED_MESSAGES[queryStringParameters.saved] }
+          : {}),
+        rankingStaleWarning: queryStringParameters?.rankingStatus === 'stale',
+        ...(queryStringParameters?.rankingSaved && RANKING_SAVED_MESSAGES[queryStringParameters.rankingSaved]
+          ? { rankingSavedMessage: RANKING_SAVED_MESSAGES[queryStringParameters.rankingSaved] }
           : {}),
       },
     );

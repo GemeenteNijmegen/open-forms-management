@@ -33,13 +33,65 @@
   <p class="woonbehoefte-loading">Bezig met verversen…</p>
   {{/isRefreshing}}
 
+  {{#projectDetailsStarted}}
+  <div class="utrecht-alert utrecht-alert--success" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Projectdetails voorinvullen gestart. Dit kan enkele minuten duren.</p>
+    </div>
+  </div>
+  {{/projectDetailsStarted}}
+  {{#projectDetailsFailed}}
+  <div class="utrecht-alert utrecht-alert--error" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">Projectdetails voorinvullen kon niet worden gestart. Probeer het opnieuw.</p>
+    </div>
+  </div>
+  {{/projectDetailsFailed}}
+  {{#projectDetailsBatchRunning}}
+  <p class="woonbehoefte-loading">Projectdetails-batch loopt nog…</p>
+  {{/projectDetailsBatchRunning}}
+  {{#projectDetailsBatchStale}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">
+        De vorige batch is niet aantoonbaar afgerond. Start Projectdetails voorinvullen opnieuw om de resterende dossiers te verwerken.
+      </p>
+    </div>
+  </div>
+  {{/projectDetailsBatchStale}}
+  {{#projectDetailsBatchWarning}}
+  <div class="utrecht-alert utrecht-alert--warning" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">
+        Laatste projectdetails-batch: {{projectDetailsBatchCreated}} aangemaakt, {{projectDetailsBatchSkipped}} overgeslagen, {{projectDetailsBatchFailed}} mislukt.
+        {{#projectDetailsBatchCutoff}}Niet alle dossiers zijn verwerkt; klik nogmaals op "Projectdetails voorinvullen" om te hervatten.{{/projectDetailsBatchCutoff}}
+      </p>
+    </div>
+  </div>
+  {{/projectDetailsBatchWarning}}
+
   <div class="woonbehoefte-refresh-bar">
     <form method="post" action="/woonbehoefte/refresh">
       <input type="hidden" name="csrfToken" value="{{csrfToken}}">
       <input type="hidden" name="back" value="{{backQuery}}">
       <button type="submit" class="utrecht-button utrecht-button--secondary-action">Verversen</button>
     </form>
+    <form method="post" action="/woonbehoefte/project-details/refresh">
+      <input type="hidden" name="csrfToken" value="{{csrfToken}}">
+      <input type="hidden" name="back" value="{{backQuery}}">
+      <button type="submit" class="utrecht-button utrecht-button--secondary-action">Projectdetails voorinvullen</button>
+    </form>
   </div>
+
+  {{#projectDetailsBatchSummary}}
+  <details class="woonbehoefte-details">
+    <summary>Laatste projectdetails-batch</summary>
+    <p class="utrecht-paragraph">
+      {{#projectDetailsBatchCompletedAtLabel}}Afgerond op {{projectDetailsBatchCompletedAtLabel}}.{{/projectDetailsBatchCompletedAtLabel}}
+      {{projectDetailsBatchCreated}} aangemaakt, {{projectDetailsBatchSkipped}} overgeslagen, {{projectDetailsBatchFailed}} mislukt.
+    </p>
+  </details>
+  {{/projectDetailsBatchSummary}}
 
   <details class="woonbehoefte-filter">
     <summary class="utrecht-form-label">Zoeken en filteren</summary>
@@ -99,6 +151,14 @@
         <label class="utrecht-form-field__label utrecht-form-label utrecht-form-label--checkbox" for="check-requested">Alleen check gevraagd</label>
       </div>
 
+      <div class="utrecht-form-field">
+        <label class="utrecht-form-label" for="sort">Sorteren op</label>
+        <select class="utrecht-select utrecht-select--html-select" id="sort" name="sort">
+          <option value="received" {{#sortReceived}}selected{{/sortReceived}}>Ontvangstdatum</option>
+          <option value="ranking" {{#sortRanking}}selected{{/sortRanking}}>Rangschikking</option>
+        </select>
+      </div>
+
       <button type="submit" class="utrecht-button utrecht-button--primary-action woonbehoefte-filter__submit">Filteren</button>
     </form>
   </details>
@@ -108,7 +168,7 @@
   {{#hasRows}}
   <div>
     {{#rows}}
-    <article class="nijmegen-search-results woonbehoefte-record">
+    <article id="{{anchorId}}" class="nijmegen-search-results woonbehoefte-record">
       <div class="nijmegen-search-results__content">
         <h2 class="nijmegen-search-results__heading utrecht-heading-4">
           <a class="utrecht-link" href="{{detailHref}}">{{caseReference}}</a>
@@ -118,6 +178,7 @@
           <div class="woonbehoefte-record__field">
             <span class="woonbehoefte-record__field-label">Project</span>
             <span{{#hasSourceConflict}} class="woonbehoefte-badge woonbehoefte-badge--inadmissible"{{/hasSourceConflict}}>{{projectName}}</span>
+            <span class="woonbehoefte-record__rank">{{rankLabel}}</span>
           </div>
           <div class="woonbehoefte-record__field">
             <span class="woonbehoefte-record__field-label">Behandelaar</span>

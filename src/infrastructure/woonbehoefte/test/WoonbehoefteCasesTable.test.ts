@@ -22,9 +22,15 @@ describe('WoonbehoefteCasesTable', () => {
     handler: 'index.handler',
     code: Code.fromInline('exports.handler = async () => {};'),
   });
+  const rankingimporter = new Function(stack, 'rankingimporter', {
+    runtime: Runtime.NODEJS_24_X,
+    handler: 'index.handler',
+    code: Code.fromInline('exports.handler = async () => {};'),
+  });
   casesTable.grantWorkerAccess(worker);
   casesTable.grantFrontendAccess(frontend);
   casesTable.grantReportWorkerAccess(reportreader);
+  casesTable.grantRankingImportAccess(rankingimporter);
   const template = Template.fromStack(stack);
 
   it('creates exactly one table with pk/sk as its keys, PITR enabled and no GSI', () => {
@@ -78,5 +84,14 @@ describe('WoonbehoefteCasesTable', () => {
     expect(actions).not.toEqual(expect.arrayContaining([
       'dynamodb:PutItem', 'dynamodb:UpdateItem', 'dynamodb:DeleteItem', 'dynamodb:TransactWriteItems',
     ]));
+  });
+
+  it('grants the ranking importer only PutItem: it just conditionally creates the RANKING/CURRENT item once', () => {
+    const policies = template.findResources('AWS::IAM::Policy', Match.objectLike({
+      Properties: { Roles: Match.arrayWith([Match.objectLike({ Ref: Match.stringLikeRegexp('rankingimporter') })]) },
+    }));
+    const actions = Object.values(policies).flatMap((policy: any) => policy.Properties.PolicyDocument.Statement
+      .flatMap((statement: any) => (Array.isArray(statement.Action) ? statement.Action : [statement.Action])));
+    expect(actions).toEqual(['dynamodb:PutItem']);
   });
 });

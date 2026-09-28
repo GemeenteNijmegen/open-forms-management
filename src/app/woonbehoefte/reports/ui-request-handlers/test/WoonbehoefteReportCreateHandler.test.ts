@@ -66,7 +66,7 @@ describe('WoonbehoefteReportCreateHandler', () => {
     expect(response.headers?.Location).toBe('/woonbehoefte/overzichten?status=queued');
     expect(store.createQueued).toHaveBeenCalledWith({
       filter: expect.objectContaining({ statuses: ['NEW', 'IN_PROGRESS'], search: 'Lindenhof' }),
-      options: { includeAllFormFields: true, includeAttachmentFilenames: false },
+      options: { includeAllFormFields: true, includeAttachmentFilenames: false, includeProjectDetails: false },
       requestedBy: 'medewerker@nijmegen.nl',
     });
     expect(send).toHaveBeenCalledTimes(1);
@@ -74,8 +74,22 @@ describe('WoonbehoefteReportCreateHandler', () => {
 
     const auditedEvent = auditTrail.events.find((event) => event.eventType === 'WOONBEHOEFTE_EXCEL_REQUESTED');
     expect(auditedEvent).toMatchObject({ outcome: 'SUCCESS', metadata: { reportId: 'report-1', includeAllFormFields: true } });
-    // No filter contents (statuses/search) in the audit metadata: only reportId and the two option booleans.
-    expect(Object.keys(auditedEvent!.metadata!)).toEqual(['reportId', 'includeAllFormFields', 'includeAttachmentFilenames']);
+    // No filter contents (statuses/search) in the audit metadata: only reportId and the three option booleans.
+    expect(Object.keys(auditedEvent!.metadata!)).toEqual(['reportId', 'includeAllFormFields', 'includeAttachmentFilenames', 'includeProjectDetails']);
+  });
+
+  it('reads includeProjectDetails from the same form as the other two export options', async () => {
+    const { service } = makeService();
+    const store = makeStore();
+    const lambdaClient = { send: jest.fn().mockResolvedValue({}) } as unknown as LambdaClient;
+    const handler = new WoonbehoefteReportCreateHandler(service, store as unknown as WoonbehoefteReportStore, lambdaClient, new FakeAuditTrail(), 'worker-function');
+
+    const body = formBody({ csrfToken, includeProjectDetails: 'on' });
+    await handler.handleRequest({ principalId: 'employee-1', email: 'medewerker@nijmegen.nl' }, cookieHeader, body, false);
+
+    expect(store.createQueued).toHaveBeenCalledWith(expect.objectContaining({
+      options: { includeAllFormFields: false, includeAttachmentFilenames: false, includeProjectDetails: true },
+    }));
   });
 
   it('denies the request without a valid CSRF token, never creating a report', async () => {

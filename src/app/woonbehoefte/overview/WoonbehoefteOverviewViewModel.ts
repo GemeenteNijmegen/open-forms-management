@@ -50,6 +50,24 @@ export function compareByRegistrationAtDesc(a: WoonbehoefteCaseWithSource, b: Wo
   return (b.source?.registrationAt ?? '').localeCompare(a.source?.registrationAt ?? '');
 }
 
+// Position 1 first; two ranked cases compare by position, two unranked cases fall back to receivedAt desc.
+export function compareByRanking(rankByCaseReference: Map<string, number>) {
+  return (a: WoonbehoefteCaseWithSource, b: WoonbehoefteCaseWithSource): number => {
+    const rankA = rankByCaseReference.get(a.woonbehoefteCase.caseReference);
+    const rankB = rankByCaseReference.get(b.woonbehoefteCase.caseReference);
+    if (rankA !== undefined && rankB !== undefined) {
+      return rankA - rankB;
+    }
+    if (rankA !== undefined) {
+      return -1;
+    }
+    if (rankB !== undefined) {
+      return 1;
+    }
+    return compareByRegistrationAtDesc(a, b);
+  };
+}
+
 export function matchesOverviewFilter(
   entry: WoonbehoefteCaseWithSource, filter: WoonbehoefteOverviewFilter, actorEmail: string | undefined,
 ): boolean {
@@ -96,9 +114,15 @@ export function matchesOverviewFilter(
   return true;
 }
 
+// A stable, HTML-id-safe anchor for a card: OF-references are already id-safe, no encoding needed.
+export function overviewRecordAnchorId(caseReference: string): string {
+  return `dossier-${caseReference}`;
+}
+
 export interface WoonbehoefteOverviewRow {
   caseReference: string;
   detailHref: string;
+  anchorId: string;
   statusLabel: string;
   statusToken: string;
   projectName: string;
@@ -112,15 +136,17 @@ export interface WoonbehoefteOverviewRow {
   startPeriodLabel: string;
   readinessLabel: string;
   checkRequested: boolean;
+  rankLabel: string;
 }
 
-export function buildOverviewRow(entry: WoonbehoefteCaseWithSource, backQuery: string): WoonbehoefteOverviewRow {
+export function buildOverviewRow(entry: WoonbehoefteCaseWithSource, backQuery: string, rank?: number): WoonbehoefteOverviewRow {
   const { woonbehoefteCase, source, hasSourceConflict } = entry;
   const readiness = woonbehoefteCase.assessment.assessedProjectReadiness;
   const detailHref = `/woonbehoefte/cases/${encodeURIComponent(woonbehoefteCase.caseReference)}${backQuery ? `?back=${encodeURIComponent(backQuery)}` : ''}`;
   return {
     caseReference: woonbehoefteCase.caseReference,
     detailHref,
+    anchorId: overviewRecordAnchorId(woonbehoefteCase.caseReference),
     statusLabel: CASE_STATUS_LABELS[woonbehoefteCase.status],
     statusToken: woonbehoefteCase.status.toLowerCase().replace(/_/g, '-'),
     projectName: hasSourceConflict
@@ -136,6 +162,7 @@ export function buildOverviewRow(entry: WoonbehoefteCaseWithSource, backQuery: s
     startPeriodLabel: formatPeriodLabel(woonbehoefteCase.assessment.assessedStartPeriod),
     readinessLabel: readiness ? PROJECT_READINESS_LABELS[readiness] : 'Nog niet vastgesteld',
     checkRequested: woonbehoefteCase.check.requested,
+    rankLabel: rank !== undefined ? `Rang: ${rank}` : 'Rang: –',
   };
 }
 
@@ -159,17 +186,23 @@ export interface WoonbehoefteOverviewViewModel {
   assignmentUnclaimed: boolean;
   checkRequestedOnly: boolean;
   search: string;
+  sortReceived: boolean;
+  sortRanking: boolean;
   hasMore: boolean;
   nextVisibleCount?: number;
+  // The anchor id of the first card "Meer tonen" reveals, so the browser can jump straight to it.
+  nextCardAnchorId?: string;
   backQuery: string;
 }
 
 export function buildWoonbehoefteOverviewViewModel(
   entries: WoonbehoefteCaseWithSource[], filter: WoonbehoefteOverviewFilter, actorEmail: string | undefined,
+  rankByCaseReference: Map<string, number> = new Map(),
 ): WoonbehoefteOverviewViewModel {
+  const comparator = filter.sort === 'RANKING' ? compareByRanking(rankByCaseReference) : compareByRegistrationAtDesc;
   const matched = entries
     .filter((entry) => matchesOverviewFilter(entry, filter, actorEmail))
-    .sort(compareByRegistrationAtDesc);
+    .sort(comparator);
 
   const availableStartYears = [...new Set(
     entries.map((e) => periodYear(e.woonbehoefteCase.assessment.assessedStartPeriod)).filter((y): y is number => y !== undefined),
@@ -179,7 +212,7 @@ export function buildWoonbehoefteOverviewViewModel(
   const page = matched.slice(0, filter.visibleCount);
 
   return {
-    rows: page.map((entry) => buildOverviewRow(entry, backQuery)),
+    rows: page.map((entry) => buildOverviewRow(entry, backQuery, rankByCaseReference.get(entry.woonbehoefteCase.caseReference))),
     hasRows: matched.length > 0,
     totalCountLabel: `${matched.length} ${matched.length === 1 ? 'aanvraag' : 'aanvragen'}`,
     statusOptions: CASE_STATUSES.map((status) => statusOption(status, filter)),
@@ -194,8 +227,15 @@ export function buildWoonbehoefteOverviewViewModel(
     assignmentUnclaimed: filter.assignment === 'UNCLAIMED',
     checkRequestedOnly: filter.checkRequestedOnly,
     search: filter.search ?? '',
+    sortReceived: filter.sort === 'RECEIVED',
+    sortRanking: filter.sort === 'RANKING',
     hasMore: page.length < matched.length,
-    ...(page.length < matched.length ? { nextVisibleCount: filter.visibleCount + OVERVIEW_PAGE_SIZE } : {}),
+    ...(page.length < matched.length
+      ? {
+        nextVisibleCount: filter.visibleCount + OVERVIEW_PAGE_SIZE,
+        nextCardAnchorId: overviewRecordAnchorId(matched[page.length].woonbehoefteCase.caseReference),
+      }
+      : {}),
     backQuery,
   };
 }

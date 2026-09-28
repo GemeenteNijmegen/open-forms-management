@@ -5,6 +5,7 @@ import { AttachmentFilenamesOutcome, buildAttachmentFilenamesOutcome } from './a
 import { WoonbehoefteReport } from './domain/WoonbehoefteReport';
 import { writeWoonbehoefteReportExcel } from './excel/WoonbehoefteExcelWriter';
 import { matchesReportFilter } from './filters/WoonbehoefteReportFilter';
+import { fetchWoonbehoefteReportProjectDetails } from './projectdetails/fetchWoonbehoefteReportProjectDetails';
 import { fetchWoonbehoefteRawFormFields, RawFormFieldsOutcome } from './rawformfields/fetchWoonbehoefteRawFormFields';
 import { buildWoonbehoefteReportRows } from './reportbuilder/buildWoonbehoefteReportRows';
 import { WoonbehoefteReportStore } from './store/WoonbehoefteReportStore';
@@ -17,6 +18,9 @@ import { OpenZaakClient } from '../../../shared/clients/open-zaak/OpenZaakClient
 import { AdditionalEvidenceSourceCacheStore } from '../additional-evidence/source/AdditionalEvidenceSourceCacheStore';
 import { WoonbehoefteCaseRepository } from '../cases/WoonbehoefteCaseRepository';
 import { compareByRegistrationAtDesc, joinCasesWithSources } from '../overview/WoonbehoefteOverviewViewModel';
+import { ProjectDetailsWorkVersion } from '../project-details/domain/ProjectDetails';
+import { ProjectDetailsStore } from '../project-details/persistence/ProjectDetailsStore';
+import { RankingStore } from '../ranking/RankingStore';
 import { WoonbehoefteSourceCacheStore } from '../source/WoonbehoefteSourceCacheStore';
 
 export interface WoonbehoefteExcelWorkerDependencies {
@@ -24,6 +28,8 @@ export interface WoonbehoefteExcelWorkerDependencies {
   sourceCacheStore: WoonbehoefteSourceCacheStore;
   additionalSourceCacheStore: AdditionalEvidenceSourceCacheStore;
   openZaakClient: OpenZaakClient;
+  projectDetailsStore: ProjectDetailsStore;
+  rankingStore: RankingStore;
   s3Client: S3Client;
   reportStore: WoonbehoefteReportStore;
   auditTrail: AuditTrail;
@@ -33,7 +39,7 @@ export interface WoonbehoefteExcelWorkerDependencies {
 // The worker calls Open Zaak on its own behalf, well after the medewerker's original request/session ended.
 const WORKER_ACTOR: EmployeeIdentity = { principalId: 'woonbehoefte-excel-worker' };
 
-type FailurePhase = 'CASE_DATA_ERROR' | 'SOURCE_DATA_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
+type FailurePhase = 'CASE_DATA_ERROR' | 'SOURCE_DATA_ERROR' | 'PROJECT_DETAILS_ERROR' | 'RANKING_ERROR' | 'EXCEL_ERROR' | 'STORAGE_ERROR';
 
 function storageKeyFor(reportId: string): string {
   return `reports/${reportId}.xlsx`;
@@ -43,7 +49,11 @@ function storageKeyFor(reportId: string): string {
  * Drives one report from a conditional QUEUED->BUILDING claim to a final status. Reads Cases and the
  * source cache (both the primary and, when includeAttachmentFilenames is on, the Additional Evidence
  * partition), never Objects. Open Zaak is only called when includeAllFormFields or includeAttachmentFilenames
- * is on, and only for what each option needs, never for document content otherwise.
+ * is on, and only for what each option needs, never for document content otherwise. When includeProjectDetails
+ * is on, the current WORKVERSION per matched dossier is read from the Projectdetails-tabel (GetItem only); a
+ * read failure there is never turned into a warning, it fails the whole report like the other data phases.
+ * The actual ranking (RANKING/CURRENT item, same Cases table) is read once and always applied, independent
+ * of any report option; a read failure there also fails the whole report, never a silent empty-rank export.
  */
 export async function runWoonbehoefteExcelReport(
   reportId: string, deps: WoonbehoefteExcelWorkerDependencies, isPastCutoff: () => boolean, correlationId: string,
@@ -114,10 +124,32 @@ export async function runWoonbehoefteExcelReport(
       }
     }
 
+    const includeProjectDetails = Boolean(report.options.includeProjectDetails);
+    let workVersionsByCaseReference = new Map<string, ProjectDetailsWorkVersion>();
+    if (includeProjectDetails) {
+      phase = 'PROJECT_DETAILS_ERROR';
+      workVersionsByCaseReference = await fetchWoonbehoefteReportProjectDetails(deps.projectDetailsStore, entries);
+      if (isPastCutoff()) {
+        await cutoff(report, deps, correlationId);
+        return;
+      }
+    }
+
+    phase = 'RANKING_ERROR';
+    const rankingList = await deps.rankingStore.getCurrentList();
+    const rankByCaseReference = new Map(rankingList?.orderedCaseReferences.map((caseReference, index) => [caseReference, index + 1]) ?? []);
+    if (isPastCutoff()) {
+      await cutoff(report, deps, correlationId);
+      return;
+    }
+
     phase = 'EXCEL_ERROR';
-    const rows = buildWoonbehoefteReportRows(entries, rawFormFieldsByCaseReference, attachmentFilenamesByCaseReference);
+    const rows = buildWoonbehoefteReportRows(
+      entries, rawFormFieldsByCaseReference, attachmentFilenamesByCaseReference, workVersionsByCaseReference, includeProjectDetails,
+      rankByCaseReference,
+    );
     const warningCount = rows.filter((row) => row.sourceWarning).length;
-    const excelBuffer = await writeWoonbehoefteReportExcel(rows);
+    const excelBuffer = await writeWoonbehoefteReportExcel(rows, includeProjectDetails);
     if (isPastCutoff()) {
       await cutoff(report, deps, correlationId);
       return;

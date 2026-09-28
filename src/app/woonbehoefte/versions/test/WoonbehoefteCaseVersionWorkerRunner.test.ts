@@ -22,6 +22,18 @@ function newWriter(): jest.Mocked<CaseVersionWriter> {
 const NOW = new Date('2026-08-25T10:00:00.000Z');
 
 describe('processWoonbehoefteCaseVersionRecord', () => {
+  it('ignores the RANKING/CURRENT item: never versioned as if it were a case', async () => {
+    const writer = newWriter();
+    const rankingImage = { pk: { S: 'RANKING' }, sk: { S: 'CURRENT' }, orderedCaseReferences: { L: [] }, revision: { N: '1' } };
+
+    await processWoonbehoefteCaseVersionRecord(
+      record({ eventName: 'INSERT', dynamodb: { Keys: { pk: rankingImage.pk, sk: rankingImage.sk }, NewImage: rankingImage } }),
+      writer, NOW,
+    );
+
+    expect(writer.putVersion).not.toHaveBeenCalled();
+  });
+
   it('saves the NEW image on INSERT', async () => {
     const writer = newWriter();
     const newImage = caseImage(1);

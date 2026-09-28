@@ -9,6 +9,8 @@ export const WOONBEHOEFTE_REPORT_ACTIVE_STATUSES: WoonbehoefteReportStatus[] = [
 export interface WoonbehoefteReportOptions {
   includeAllFormFields: boolean;
   includeAttachmentFilenames: boolean;
+  /** Ontbreekt op oudere opgeslagen requests; behandel dat overal als false, nooit als een verplicht veld. */
+  includeProjectDetails?: boolean;
 }
 
 export interface WoonbehoefteReport {
