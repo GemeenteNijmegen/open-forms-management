@@ -68,6 +68,13 @@ export class Statics {
    */
   static readonly secretObjectsCredentials = `/${Statics.projectName}/objects/credentials`;
 
+  // MARK: ESF-controle, zelfde Objects API (ssmObjectsBaseUrl) met een eigen read-only token
+  static readonly ssmEsfObjectTypeUrl = `/${Statics.projectName}/esf/objecttype-url`;
+  /**
+   * JSON secret met `apiToken`, alleen read op het ESF-objecttype.
+   */
+  static readonly secretEsfObjectsCredentials = `/${Statics.projectName}/esf/objects-credentials`;
+
   // MARK: Open Zaak Documenten API (alleen configuratie in subproject 1, nog geen client)
   static readonly ssmOpenZaakDocumentenBaseUrl = `/${Statics.projectName}/open-zaak/documenten-base-url`;
   /**

@@ -37,6 +37,7 @@ export class ParameterStack extends Stack {
 
     this.oidcParameters();
     this.objectsParameters();
+    this.esfParameters();
     this.openZaakParameters();
     this.keycloakParameters();
   }
@@ -68,6 +69,19 @@ export class ParameterStack extends Stack {
     new Secret(this, 'objects-credentials', {
       secretName: Statics.secretObjectsCredentials,
       description: 'Objects API credentials (JSON met apiToken)',
+      secretStringValue: SecretValue.unsafePlainText(JSON.stringify({ apiToken: '' })),
+    });
+  }
+
+  private esfParameters() {
+    new StringParameter(this, 'esf-objecttype-url', {
+      parameterName: Statics.ssmEsfObjectTypeUrl,
+      stringValue: '-',
+      description: 'URL van het ESF-objecttype (ESFTaak) zonder trailing slash, precies zoals in het type-veld van een object, bijvoorbeeld https://example.com/objecttypes/api/v2/objecttypes/<uuid>',
+    });
+    new Secret(this, 'esf-objects-credentials', {
+      secretName: Statics.secretEsfObjectsCredentials,
+      description: 'Objects API-token voor ESF-controle (JSON met apiToken), alleen read op het ESF-objecttype',
       secretStringValue: SecretValue.unsafePlainText(JSON.stringify({ apiToken: '' })),
     });
   }
