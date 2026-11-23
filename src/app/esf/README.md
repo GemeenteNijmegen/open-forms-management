@@ -5,8 +5,8 @@ hebben geen toegang tot de Objects API zelf. Deze pagina laat daarom alleen zien
 verandert niets in Objects.
 
 Een beheerder vult het periodenummer in (YYYYMM), kiest clientnummer of dossiernummer en vult de waarde in. Bij elke gevonden taak staan de periode,
-het clientnummer, het dossiernummer en alle records met index, status en registratiedatum. Herhaalde statussen blijven staan: bij open, open,
-afgerond zijn dat drie regels.
+het clientnummer, het dossiernummer, het object-UUID en alle records met index, status en registratiedatum, zoals ze in Objects staan. Herhaalde
+statussen blijven staan: bij open, open, afgerond zijn dat drie regels.
 
 ```mermaid
 flowchart LR
@@ -22,18 +22,19 @@ periodenummer in de taak. Aanmaak-, termijn- en verloopdatums doen niet mee, wan
 veld of operator meegeven. Elk object wordt daarna in code nog een keer op die voorwaarden gecontroleerd.
 
 Per taak komen alle records uit het history-endpoint, gesorteerd op index. De typeVersion is de schemaversie van het objecttype en geen
-volgnummer. Twee taken voor dezelfde cliënt en periode blijven aparte groepen. Hoort een record bij een andere periode dan gezocht, dan is dat een
-afwijking in de data en toont de pagina voor die taak geen statussen.
+volgnummer. Een cliënt heeft per periode één taak en een taak wisselt nooit van periode, dus de historie wordt niet opnieuw op periode
+gecontroleerd.
 
 | Situatie | Wat de pagina doet |
 |---|---|
 | Niets gevonden | Meldt dat er geen ESF-taken zijn voor deze periode en zoekopdracht |
 | Ongeldige invoer | Invoermelding, geen aanroep naar Objects |
 | Geen recht of ongeldig CSRF-token | 403, geen aanroep naar Objects |
-| Objects faalt, of de historie is niet compleet | Storingsmelding met correlation ID, nooit een deelresultaat of "geen resultaat" |
+| Audit-start kan niet worden geschreven | Storingsmelding, geen aanroep naar Objects |
+| Objects faalt, of de historie is niet compleet | Meldt een probleem met de Objects API, nooit een deelresultaat of "geen resultaat" |
 
-Periodenummer is zes cijfers met een maand van 01 tot en met 12. Clientnummer en dossiernummer blijven strings, dus voorloopnullen blijven staan.
-De Objects API accepteert geen dubbele underscore in een filterwaarde, dus die wordt bij de invoer geweigerd.
+Periodenummer is zes cijfers met een maand van 01 tot en met 12. Het nummer is maximaal 30 tekens en blijft een string, zoals in het
+ESFTaak-schema, dus voorloopnullen blijven staan. Alleen een dubbele underscore wordt geweigerd, omdat de Objects API die in een filterwaarde niet accepteert.
 
 ## Rechten en audit
 
@@ -49,4 +50,4 @@ schrijven, dan volgt geen zoekactie. Dat wijkt af van recordAudit, dat fouten sl
 
 Een eigen Lambda en clientfactory houden het token los van Sport en Woonbehoefte, ten koste van wat herhaling. Er is geen cache of zoekindex: elke
 zoekactie leest live, dus een zoekactie kost een lijstaanroep plus een historie-aanroep per taak. Veldautorisatie in de Objects API is bewust niet
-gebruikt. De allowlist in de mapping is de grens: alleen periode, nummers en records gaan naar de view, nooit een ruwe response.
+gebruikt. De allowlist in de mapping is de grens: alleen periode, nummers, object-UUID en records gaan naar de view, nooit een ruwe response.
