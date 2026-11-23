@@ -1,0 +1,82 @@
+{{>header}}
+<main id="main-content">
+  <h1>ESF-controle</h1>
+
+  <form method="post" action="/esf/zoeken" class="esf-form">
+    <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="periodenummer">Periode</label>
+      <input type="text" class="utrecht-textbox esf-form__periode" id="periodenummer" name="periodenummer" value="{{periodenummer}}" inputmode="numeric" maxlength="6" placeholder="JJJJMM" required>
+    </div>
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="zoeksoort">Zoeken op</label>
+      <select class="utrecht-select utrecht-select--html-select" id="zoeksoort" name="zoeksoort">
+        {{#zoeksoortOptions}}
+        <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+        {{/zoeksoortOptions}}
+      </select>
+    </div>
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="zoekwaarde">Nummer</label>
+      <input type="text" class="utrecht-textbox esf-form__nummer" id="zoekwaarde" name="zoekwaarde" value="{{zoekwaarde}}" maxlength="30" autocomplete="off" required>
+    </div>
+    <button type="submit" class="utrecht-button utrecht-button--primary-action">Zoeken</button>
+  </form>
+
+  {{#hasErrors}}
+  <div class="utrecht-alert utrecht-alert--error esf-message" role="alert">
+    <div class="utrecht-alert__content">
+      {{#errors}}
+      <p class="utrecht-alert__message">{{.}}</p>
+      {{/errors}}
+    </div>
+  </div>
+  {{/hasErrors}}
+
+  {{#failureMessage}}
+  <div class="utrecht-alert utrecht-alert--error esf-message" role="alert">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{failureMessage}}</p>
+    </div>
+  </div>
+  {{/failureMessage}}
+
+  {{#notFoundMessage}}
+  <div class="utrecht-alert utrecht-alert--info esf-message" role="status">
+    <div class="utrecht-alert__content">
+      <p class="utrecht-alert__message">{{notFoundMessage}}</p>
+    </div>
+  </div>
+  {{/notFoundMessage}}
+
+  {{#results}}
+  <section class="esf-results" aria-labelledby="esf-results-heading">
+    <h2 id="esf-results-heading" class="utrecht-heading-2">{{heading}}</h2>
+    {{#tasks}}
+    <article class="esf-task">
+      <h3 class="utrecht-heading-3">{{heading}}</h3>
+      <p class="utrecht-paragraph">Clientnummer {{clientnummer}} · Dossiernummer {{dossiernummer}}<br>Object {{objectUuid}}</p>
+      <table class="esf-records">
+        <thead>
+          <tr>
+            <th scope="col">Index</th>
+            <th scope="col">Status</th>
+            <th scope="col">Geregistreerd op</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#records}}
+          <tr>
+            <td>{{index}}</td>
+            <td>{{status}}</td>
+            <td>{{registrationAt}}</td>
+          </tr>
+          {{/records}}
+        </tbody>
+      </table>
+    </article>
+    {{/tasks}}
+  </section>
+  {{/results}}
+</main>
+{{>footer}}

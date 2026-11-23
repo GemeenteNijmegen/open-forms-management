@@ -13,6 +13,7 @@ import { Configurable } from './Configuration';
 import { resolveAccountHostedZone } from './infrastructure/AccountHostedZone';
 import { addApplicationAlarms } from './infrastructure/ApplicationAlarms';
 import { AuditTrailTable } from './infrastructure/AuditTrailTable';
+import { EsfFeature } from './infrastructure/esf/EsfFeature';
 import { addLogoutRoute } from './infrastructure/LogoutRoute';
 import { ManagementApi } from './infrastructure/ManagementApi';
 import { ManagementDistribution } from './infrastructure/ManagementDistribution';
@@ -138,6 +139,14 @@ export class AppStack extends Stack {
     );
 
     new WoonbehoefteFeature(this, 'woonbehoefte', {
+      managementApi,
+      permissionsTable: this.permissionsTable,
+      auditTrailTable: this.auditTrailTable,
+      sessionsTable: this.sessionsTable,
+      configuration: this.props.configuration,
+    });
+
+    new EsfFeature(this, 'esf', {
       managementApi,
       permissionsTable: this.permissionsTable,
       auditTrailTable: this.auditTrailTable,

@@ -26,4 +26,12 @@ export const REGISTERED_PERMISSION_RESOURCES: PermissionResourceDefinition[] = [
     ],
     scopes: [],
   },
+  {
+    resource: 'esf',
+    label: 'ESF',
+    actions: [
+      { action: 'view', label: 'Bekijken' },
+    ],
+    scopes: [],
+  },
 ];
