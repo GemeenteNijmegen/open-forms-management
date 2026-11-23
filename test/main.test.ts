@@ -4,6 +4,11 @@ import { Template } from 'aws-cdk-lib/assertions';
 import { AppStack } from '../src/AppStack';
 import { PipelineStack } from '../src/PipelineStack';
 
+// The package index also loads projen, whose ESM-only dax dependency Jest cannot require.
+jest.mock('@gemeentenijmegen/projen-project-type', () => ({
+  getNodeVersion: () => jest.requireActual<typeof import('fs')>('fs').readFileSync('.nvmrc', 'utf-8').trim(),
+}));
+
 describe('AppStack', () => {
   let stack: Stack;
   const config = {

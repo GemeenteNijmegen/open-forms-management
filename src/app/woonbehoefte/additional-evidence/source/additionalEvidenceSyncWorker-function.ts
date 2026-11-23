@@ -17,7 +17,7 @@ export class AdditionalEvidenceSyncWorkerFunction extends lambda.Function {
     super(scope, id, {
       description: 'src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts',
       ...props,
-      runtime: new lambda.Runtime('nodejs24.x', lambda.RuntimeFamily.NODEJS),
+      runtime: new lambda.Runtime('nodejs24.x', lambda.RuntimeFamily.NODEJS, { supportsInlineCode: true }),
       handler: 'index.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../../../../assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda')),
     });

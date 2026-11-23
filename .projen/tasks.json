@@ -37,7 +37,7 @@
         "BUMPFILE": "dist/version.txt",
         "RELEASETAG": "dist/releasetag.txt",
         "RELEASE_TAG_PREFIX": "",
-        "BUMP_PACKAGE": "commit-and-tag-version@^12"
+        "BUMP_PACKAGE": "commit-and-tag-version@^13"
       },
       "steps": [
         {
@@ -130,7 +130,18 @@
       "description": "Create a JavaScript bundle from src/app/auth/auth.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/auth/auth.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/auth/auth.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -139,7 +150,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/auth/auth.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/auth/auth.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/auth/auth.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/auth/auth.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/auth/auth.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -148,7 +171,18 @@
       "description": "Create a JavaScript bundle from src/app/home/home.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/home/home.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/home/home.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -157,7 +191,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/home/home.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/home/home.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/home/home.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/home/home.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/home/home.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -166,7 +212,18 @@
       "description": "Create a JavaScript bundle from src/app/login/login.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/login/login.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/login/login.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -175,7 +232,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/login/login.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/login/login.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/login/login.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/login/login.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/login/login.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -184,7 +253,18 @@
       "description": "Create a JavaScript bundle from src/app/logout/logout.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/logout/logout.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/logout/logout.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -193,7 +273,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/logout/logout.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/logout/logout.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/logout/logout.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/logout/logout.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/logout/logout.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -202,7 +294,18 @@
       "description": "Create a JavaScript bundle from src/app/permissions/permissions.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/permissions/permissions.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/permissions/permissions.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/permissions/permissions.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/permissions/permissions.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -211,7 +314,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/permissions/permissions.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/permissions/permissions.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/permissions/permissions.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/permissions/permissions.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/permissions/permissions.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -220,7 +335,18 @@
       "description": "Create a JavaScript bundle from src/app/sport/cache/sportCacheWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/sport/cache/sportCacheWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/cache/sportCacheWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/sport/cache/sportCacheWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/sport/cache/sportCacheWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -229,7 +355,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/sport/cache/sportCacheWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/sport/cache/sportCacheWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/cache/sportCacheWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/sport/cache/sportCacheWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/sport/cache/sportCacheWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -238,7 +376,18 @@
       "description": "Create a JavaScript bundle from src/app/sport/reporter/sportExcelWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/sport/reporter/sportExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/reporter/sportExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/sport/reporter/sportExcelWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/sport/reporter/sportExcelWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -247,7 +396,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/sport/reporter/sportExcelWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/sport/reporter/sportExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/reporter/sportExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/sport/reporter/sportExcelWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/sport/reporter/sportExcelWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -256,7 +417,18 @@
       "description": "Create a JavaScript bundle from src/app/sport/sport.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/sport/sport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/sport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/sport/sport.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/sport/sport.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -265,7 +437,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/sport/sport.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/sport/sport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/sport/sport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/sport/sport.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/sport/sport.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -274,7 +458,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/additionalEvidence.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/additional-evidence/additionalEvidence.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -283,7 +478,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/additionalEvidence.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/additional-evidence/additionalEvidence.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/additional-evidence/additionalEvidence.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -292,7 +499,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -301,7 +519,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/additional-evidence/source/additionalEvidenceSyncWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -310,7 +540,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -319,7 +560,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/project-details/initialization/projectDetailsWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -328,7 +581,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/ranking/import/rankingImport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/ranking/import/rankingImport.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -337,7 +601,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/ranking/import/rankingImport.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/ranking/import/rankingImport.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/ranking/import/rankingImport.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -346,7 +622,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -355,7 +642,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/reports/woonbehoefteExcelWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -364,7 +663,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/reports/woonbehoefteReports.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/reports/woonbehoefteReports.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -373,7 +683,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/reports/woonbehoefteReports.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/reports/woonbehoefteReports.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/reports/woonbehoefteReports.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -382,7 +704,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -391,7 +724,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/source/woonbehoefteSyncWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -400,7 +745,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -409,7 +765,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/versions/woonbehoefteCaseVersionWorker.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -418,7 +786,18 @@
       "description": "Create a JavaScript bundle from src/app/woonbehoefte/woonbehoefte.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/woonbehoefte.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/woonbehoefte.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/woonbehoefte.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/woonbehoefte.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
         }
       ]
     },
@@ -427,7 +806,19 @@
       "description": "Continuously update the JavaScript bundle from src/app/woonbehoefte/woonbehoefte.lambda.ts",
       "steps": [
         {
-          "exec": "esbuild --bundle src/app/woonbehoefte/woonbehoefte.lambda.ts --target=\"node24\" --platform=\"node\" --outfile=\"assets/app/woonbehoefte/woonbehoefte.lambda/index.js\" --tsconfig=\"test/tsconfig.json\" --external:@aws-sdk/* --loader:.mustache=text --watch"
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/woonbehoefte/woonbehoefte.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/woonbehoefte/woonbehoefte.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
         }
       ]
     },
@@ -462,30 +853,39 @@
       "name": "clobber",
       "description": "hard resets to HEAD of origin and cleans the local repo",
       "env": {
-        "BRANCH": "$(git branch --show-current)"
+        "BRANCH": "$(git branch --show-current)",
+        "HEAD_COMMIT": "$(git rev-parse --short HEAD)"
       },
       "steps": [
         {
-          "exec": "git checkout -b scratch",
-          "name": "save current HEAD in \"scratch\" branch"
+          "exec": "git checkout -B \"scratch-$HEAD_COMMIT\"",
+          "name": "save current HEAD in a \"scratch-<commit>\" branch"
         },
         {
-          "exec": "git checkout $BRANCH"
+          "exec": "git checkout \"$BRANCH\""
         },
         {
-          "exec": "git fetch origin",
+          "execArgs": [
+            "git",
+            "fetch",
+            "origin"
+          ],
           "name": "fetch latest changes from origin"
         },
         {
-          "exec": "git reset --hard origin/$BRANCH",
+          "exec": "git reset --hard \"origin/$BRANCH\"",
           "name": "hard reset to origin commit"
         },
         {
-          "exec": "git clean -fdx",
+          "execArgs": [
+            "git",
+            "clean",
+            "-fdx"
+          ],
           "name": "clean all untracked files"
         },
         {
-          "say": "ready to rock! (unpushed commits are under the \"scratch\" branch)"
+          "say": "ready to rock! (unpushed commits are under a \"scratch-<commit>\" branch)"
         }
       ],
       "condition": "git diff --exit-code > /dev/null"
@@ -575,7 +975,19 @@
       },
       "steps": [
         {
-          "exec": "eslint --ext .ts,.tsx --fix --no-error-on-unmatched-pattern $@ src test tests projenrc .projenrc.ts",
+          "execArgs": [
+            "eslint",
+            "--ext",
+            ".ts,.tsx",
+            "--fix",
+            "--no-error-on-unmatched-pattern",
+            "$@",
+            "src",
+            "test",
+            "tests",
+            "projenrc",
+            ".projenrc.ts"
+          ],
           "receiveArgs": true
         }
       ]
@@ -663,7 +1075,11 @@
       },
       "steps": [
         {
-          "exec": "rm -fr dist"
+          "execArgs": [
+            "rm",
+            "-fr",
+            "dist"
+          ]
         },
         {
           "spawn": "bump"
@@ -677,7 +1093,8 @@
         {
           "exec": "git diff --ignore-space-at-eol --exit-code"
         }
-      ]
+      ],
+      "condition": "git log --oneline -1 | grep -v \"chore(release):\" > /dev/null"
     },
     "synth": {
       "name": "synth",
@@ -709,7 +1126,11 @@
       "description": "Run tests",
       "steps": [
         {
-          "exec": "jest --passWithNoTests --updateSnapshot",
+          "execArgs": [
+            "jest",
+            "--passWithNoTests",
+            "--updateSnapshot"
+          ],
           "receiveArgs": true
         },
         {
@@ -722,7 +1143,10 @@
       "description": "Run jest in watch mode",
       "steps": [
         {
-          "exec": "jest --watch"
+          "execArgs": [
+            "jest",
+            "--watch"
+          ]
         }
       ]
     },
@@ -735,7 +1159,7 @@
         "BUMPFILE": "dist/version.txt",
         "RELEASETAG": "dist/releasetag.txt",
         "RELEASE_TAG_PREFIX": "",
-        "BUMP_PACKAGE": "commit-and-tag-version@^12"
+        "BUMP_PACKAGE": "commit-and-tag-version@^13"
       },
       "steps": [
         {
