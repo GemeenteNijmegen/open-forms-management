@@ -1,10 +1,12 @@
 import { ApiGatewayV2Response, Response } from '@gemeentenijmegen/apigateway-http/lib/V2/Response';
+import { buildEsfViewModel, EsfViewInput } from './EsfViewModel';
 import { EmployeeIdentity } from '../../../shared/auth/EmployeeIdentity';
 import { AuthorizationService } from '../../../shared/authorization/AuthorizationService';
+import { PermissionEvaluator } from '../../../shared/authorization/PermissionEvaluator';
 import { visibleFeatures } from '../../../shared/navigation/FeatureRegistry';
 import { REGISTERED_FEATURES } from '../../../shared/navigation/RegisteredFeatures';
 import { render } from '../../../shared/rendering/Renderer';
-import { CSRF_FORM_FIELD, issueCsrfToken } from '../../../shared/security/csrf/CsrfProtection';
+import { issueCsrfToken } from '../../../shared/security/csrf/CsrfProtection';
 import { visiblePermissionsFeature } from '../../permissions/PermissionsNavigationFeature';
 import esfTemplate from '../templates/esf.mustache';
 
@@ -19,14 +21,21 @@ export class EsfPageHandler {
     if (denied) {
       return denied;
     }
-
-    const features = [...visibleFeatures(REGISTERED_FEATURES, context.evaluator), ...visiblePermissionsFeature(context.evaluator)];
-    const csrfToken = issueCsrfToken();
-    const html = render(
-      esfTemplate,
-      { title: 'ESF-controle', features, currentPath: '/esf', actorEmail: identity.email },
-      { csrfField: CSRF_FORM_FIELD, csrfToken: csrfToken.value },
-    );
-    return Response.html(html, 200, csrfToken.cookie);
+    return renderEsfPage(identity, context.evaluator, {}, 200);
   }
+}
+
+// Search results contain clientnummer and dossiernummer, so no response of this page may be cached.
+export function renderEsfPage(
+  identity: EmployeeIdentity, evaluator: PermissionEvaluator, input: Omit<EsfViewInput, 'csrfToken'>, statusCode: number,
+): ApiGatewayV2Response {
+  const features = [...visibleFeatures(REGISTERED_FEATURES, evaluator), ...visiblePermissionsFeature(evaluator)];
+  const csrfToken = issueCsrfToken();
+  const html = render(
+    esfTemplate,
+    { title: 'ESF-controle', features, currentPath: '/esf', actorEmail: identity.email },
+    buildEsfViewModel({ ...input, csrfToken: csrfToken.value }),
+  );
+  const response = Response.html(html, statusCode, csrfToken.cookie);
+  return { ...response, headers: { ...response.headers, 'Cache-Control': 'private, no-store', 'Pragma': 'no-cache' } };
 }

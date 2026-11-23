@@ -23,6 +23,31 @@ const objectsPageSchema = z.object({
   results: z.array(objectResourceSchema),
 });
 
+const objectHistoryRecordSchema = z.looseObject({
+  index: z.number().int(),
+  data: z.unknown(),
+  registrationAt: z.string().optional(),
+});
+
+const objectHistoryPageSchema = z.object({
+  count: z.number(),
+  next: z.string().nullable(),
+  previous: z.string().nullable(),
+  results: z.array(objectHistoryRecordSchema),
+});
+
+export type ObjectHistoryRecord = z.infer<typeof objectHistoryRecordSchema>;
+export type ObjectHistoryPage = z.infer<typeof objectHistoryPageSchema>;
+
+export function parseObjectHistoryPage(body: unknown): ObjectHistoryPage {
+  const result = objectHistoryPageSchema.safeParse(body);
+  if (!result.success) {
+    logger.warn('Objects history response failed validation', { issues: summarizeZodIssues(result.error) });
+    throw new HttpClientError('invalid-response', 'Objects history response failed validation', { cause: result.error });
+  }
+  return result.data;
+}
+
 export type ObjectRecord = z.infer<typeof objectRecordSchema>;
 export type ObjectResource = z.infer<typeof objectResourceSchema>;
 export type ObjectsPage = z.infer<typeof objectsPageSchema>;

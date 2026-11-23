@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { esfSearchForm } from './fixtures/esf';
+import { esfInvalidInput, esfNotFound, esfOneTask, esfSearchForm, esfUnavailable } from './fixtures/esf';
 import { forbiddenData } from './fixtures/forbidden';
 import { homeWithFeatures, noPermissionsData, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
@@ -263,6 +263,10 @@ export async function renderAll(): Promise<void> {
       woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsLocationReadOnly.page, woonbehoefteDetailProjectDetailsLocationReadOnly.data,
     ),
     'esf': render(esfTemplate, esfSearchForm.page, esfSearchForm.data),
+    'esf-one-task': render(esfTemplate, esfOneTask.page, esfOneTask.data),
+    'esf-not-found': render(esfTemplate, esfNotFound.page, esfNotFound.data),
+    'esf-invalid-input': render(esfTemplate, esfInvalidInput.page, esfInvalidInput.data),
+    'esf-unavailable': render(esfTemplate, esfUnavailable.page, esfUnavailable.data),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));
