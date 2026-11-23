@@ -28,4 +28,11 @@ export const REGISTERED_FEATURES: Feature[] = [
     action: 'exceloverzicht',
     dedupeKey: 'woonbehoefte',
   },
+  {
+    id: 'esf',
+    label: 'ESF-controle',
+    route: '/esf',
+    resource: 'esf',
+    action: 'view',
+  },
 ];

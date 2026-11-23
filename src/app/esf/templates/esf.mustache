@@ -1,0 +1,25 @@
+{{>header}}
+<main id="main-content">
+  <h1>ESF-controle</h1>
+
+  <form method="post" action="/esf/zoeken" class="esf-form">
+    <input type="hidden" name="{{csrfField}}" value="{{csrfToken}}">
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="periodenummer">Periode</label>
+      <input type="text" class="utrecht-textbox esf-form__periode" id="periodenummer" name="periodenummer" inputmode="numeric" maxlength="6" placeholder="JJJJMM" required>
+    </div>
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="zoeksoort">Zoeken op</label>
+      <select class="utrecht-select utrecht-select--html-select" id="zoeksoort" name="zoeksoort">
+        <option value="clientnummer">Clientnummer</option>
+        <option value="dossiernummer">Dossiernummer</option>
+      </select>
+    </div>
+    <div class="utrecht-form-field">
+      <label class="utrecht-form-label" for="zoekwaarde">Nummer</label>
+      <input type="text" class="utrecht-textbox esf-form__nummer" id="zoekwaarde" name="zoekwaarde" inputmode="numeric" autocomplete="off" required>
+    </div>
+    <button type="submit" class="utrecht-button utrecht-button--primary-action">Zoeken</button>
+  </form>
+</main>
+{{>footer}}
