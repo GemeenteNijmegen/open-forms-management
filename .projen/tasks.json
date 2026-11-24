@@ -76,6 +76,9 @@
           "spawn": "bundle:app/auth/auth.lambda"
         },
         {
+          "spawn": "bundle:app/esf/esf.lambda"
+        },
+        {
           "spawn": "bundle:app/home/home.lambda"
         },
         {
@@ -157,6 +160,47 @@
             "--target=node24",
             "--platform=node",
             "--outfile=assets/app/auth/auth.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text",
+            "--watch"
+          ]
+        }
+      ]
+    },
+    "bundle:app/esf/esf.lambda": {
+      "name": "bundle:app/esf/esf.lambda",
+      "description": "Create a JavaScript bundle from src/app/esf/esf.lambda.ts",
+      "steps": [
+        {
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/esf/esf.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/esf/esf.lambda/index.js",
+            "--packages=bundle",
+            "--tsconfig=test/tsconfig.json",
+            "--external:@aws-sdk/*",
+            "--loader:.mustache=text"
+          ]
+        }
+      ]
+    },
+    "bundle:app/esf/esf.lambda:watch": {
+      "name": "bundle:app/esf/esf.lambda:watch",
+      "description": "Continuously update the JavaScript bundle from src/app/esf/esf.lambda.ts",
+      "steps": [
+        {
+          "execArgs": [
+            "esbuild",
+            "--bundle",
+            "src/app/esf/esf.lambda.ts",
+            "--target=node24",
+            "--platform=node",
+            "--outfile=assets/app/esf/esf.lambda/index.js",
             "--packages=bundle",
             "--tsconfig=test/tsconfig.json",
             "--external:@aws-sdk/*",

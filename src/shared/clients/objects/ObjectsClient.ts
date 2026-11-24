@@ -2,7 +2,10 @@ import { ObjectsClientConfiguration } from './ObjectsConfiguration';
 import { paginate, PageEnvelope } from './ObjectsPagination';
 import { ObjectsQuery, serializeObjectsQuery } from './ObjectsQuery';
 import { ObjectsRegistrationRange, requireValidRange, resolveRangeOrdering } from './ObjectsRegistrationRange';
-import { ObjectResource, ObjectsPage, parseObjectResource, parseObjectsPage, requireRegistrationAt } from './ObjectsResponse';
+import {
+  ObjectHistoryPage, ObjectHistoryRecord, ObjectResource, ObjectsPage, parseObjectHistoryPage, parseObjectResource, parseObjectsPage,
+  requireRegistrationAt,
+} from './ObjectsResponse';
 import { logger } from '../../../observability/Logger';
 import { HttpClient, HttpClientOptions, RequestHeaders, readJsonBody, toHttpClientError } from '../http/HttpClient';
 import { HttpClientError } from '../http/HttpClientError';
@@ -135,6 +138,33 @@ export class ObjectsClient {
       results.push(object);
     }
     return results;
+  }
+
+  // All records of one object over every page. Throws instead of returning fewer records than the API counted.
+  async getObjectHistory(uuid: string): Promise<ObjectHistoryRecord[]> {
+    if (!isValidUuid(uuid)) {
+      throw new Error('Objects getObjectHistory requires a valid UUID');
+    }
+
+    let count = 0;
+    const fetchPage = async (url: string): Promise<ObjectHistoryPage> => {
+      const response = await this.http.get('getObjectHistory', url, { headers: this.headers });
+      if (!response.ok) {
+        throw toHttpClientError('objects', 'getObjectHistory', response);
+      }
+      const historyPage = parseObjectHistoryPage(await readJsonBody(response, 'Objects history response'));
+      count = historyPage.count;
+      return historyPage;
+    };
+
+    const records: ObjectHistoryRecord[] = [];
+    for await (const record of paginate(this.buildUrl(`objects/${uuid}/history`), fetchPage, (next) => this.validateNextUrl(next))) {
+      records.push(record);
+    }
+    if (records.length !== count) {
+      throw new HttpClientError('invalid-response', `Objects history returned ${records.length} of ${count} records`);
+    }
+    return records;
   }
 
   private async fetchObjectsPage(operation: string, url: string, signal?: AbortSignal): Promise<ObjectsPage> {

@@ -835,3 +835,68 @@ footer {
   flex-wrap: wrap;
   gap: var(--nijmegen-space-200);
 }
+
+/* Eén zoekregel die op een smal scherm onder elkaar valt. */
+.esf-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--nijmegen-space-100) var(--nijmegen-space-150);
+}
+
+/* Zelfde ontbrekende NLDS-stijl als bij Woonbehoefte hierboven: label boven het veld, padding en het pijltje van de keuzelijst. */
+.esf-form .utrecht-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nijmegen-space-50);
+  margin: 0;
+}
+
+.esf-form__periode {
+  inline-size: 8em;
+}
+
+.esf-form__nummer {
+  inline-size: 12em;
+}
+
+.esf-form .utrecht-select,
+.esf-form .utrecht-textbox {
+  padding-inline: var(--nijmegen-space-100);
+  padding-block: var(--nijmegen-space-50);
+}
+
+.esf-form .utrecht-select.utrecht-select--html-select:not([multiple]) {
+  padding-inline-end: var(--nijmegen-space-300);
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6l6 -6" /></svg>');
+}
+
+.esf-message,
+.esf-results {
+  margin-block-start: var(--nijmegen-space-200);
+}
+
+.esf-task {
+  margin-block-start: var(--nijmegen-space-200);
+  max-inline-size: 40em;
+}
+
+.esf-records {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.esf-records th,
+.esf-records td {
+  text-align: left;
+  padding: var(--nijmegen-space-50) var(--nijmegen-space-100);
+}
+
+.esf-records th {
+  color: var(--nijmegen-color-foreground-subdued);
+  border-block-end: 1px solid var(--nijmegen-color-border-default);
+}
+
+.esf-records tbody tr:nth-child(even) {
+  background-color: var(--nijmegen-color-background-hover);
+}

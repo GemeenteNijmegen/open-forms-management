@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { esfInvalidInput, esfNotFound, esfOneTask, esfSearchForm, esfUnavailable } from './fixtures/esf';
 import { forbiddenData } from './fixtures/forbidden';
 import { homeWithFeatures, noPermissionsData, notFoundData } from './fixtures/home';
 import { loginData } from './fixtures/login';
@@ -32,6 +33,7 @@ import {
   woonbehoefteOverviewWithMix, woonbehoefteRankingOverview,
   woonbehoefteReportsOverview, woonbehoefteReportsOverviewEmpty,
 } from './fixtures/woonbehoefte';
+import esfTemplate from '../app/esf/templates/esf.mustache';
 import homeTemplate from '../app/home/templates/home.mustache';
 import noPermissionsTemplate from '../app/home/templates/no-permissions.mustache';
 import notFoundTemplate from '../app/home/templates/notFound.mustache';
@@ -106,6 +108,7 @@ const ROUTE_TO_PREVIEW_FILE: Record<string, string> = {
   '/woonbehoefte': 'woonbehoefte-overview-mix',
   '/woonbehoefte/additional-evidence': 'woonbehoefte-additional-evidence-overview',
   '/woonbehoefte/overzichten': 'woonbehoefte-reports-overview',
+  '/esf': 'esf',
 };
 
 function stubFileName(route: string): string {
@@ -259,6 +262,11 @@ export async function renderAll(): Promise<void> {
     'woonbehoefte-detail-project-details-location-read-only': render(
       woonbehoefteDetailTemplate, woonbehoefteDetailProjectDetailsLocationReadOnly.page, woonbehoefteDetailProjectDetailsLocationReadOnly.data,
     ),
+    'esf': render(esfTemplate, esfSearchForm.page, esfSearchForm.data),
+    'esf-one-task': render(esfTemplate, esfOneTask.page, esfOneTask.data),
+    'esf-not-found': render(esfTemplate, esfNotFound.page, esfNotFound.data),
+    'esf-invalid-input': render(esfTemplate, esfInvalidInput.page, esfInvalidInput.data),
+    'esf-unavailable': render(esfTemplate, esfUnavailable.page, esfUnavailable.data),
   };
 
   const stubRoutes = findUnregisteredRoutes(Object.values(pages));
